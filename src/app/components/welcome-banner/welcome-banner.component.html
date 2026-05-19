@@ -1,0 +1,82 @@
+<div class="wb-backdrop" (click)="onBackdropClick($event)">
+  <div class="wb-modal" role="dialog" aria-modal="true" aria-labelledby="wb-title">
+
+    <!-- Header -->
+    <div class="wb-header">
+      <div class="wb-header-icon">
+        <i class="bi bi-receipt-cutoff"></i>
+      </div>
+      <div>
+        <h2 class="wb-title" id="wb-title">Welcome to Receipt Tracker</h2>
+        <p class="wb-subtitle">A few things to know before you begin</p>
+      </div>
+    </div>
+
+    <!-- Storage Setup -->
+    <div class="wb-section wb-section-warning">
+      <div class="wb-section-icon">
+        <i class="bi bi-hdd-network-fill"></i>
+      </div>
+      <div>
+        <h3 class="wb-section-title">Storage Setup Required</h3>
+        <p class="wb-section-body">
+          Your uploaded receipts need a destination to be stored.
+          Please configure your storage settings — choose between
+          <strong>local filesystem</strong> or your own <strong>AWS S3 bucket</strong>.
+          Until configured, files fall back to the server's default upload directory.
+        </p>
+        <button class="btn btn-primary btn-sm mt-2" (click)="goToSettings()">
+          <i class="bi bi-gear-fill me-1"></i>Configure Storage
+        </button>
+      </div>
+    </div>
+
+    <!-- Privacy Notice -->
+    <div class="wb-section">
+      <div class="wb-section-icon wb-icon-blue">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <div>
+        <h3 class="wb-section-title">Your Privacy</h3>
+        <p class="wb-section-body">
+          We do not sell, share, or monetize your data in any way.
+          Your receipts and personal information are stored securely and used
+          <strong>solely</strong> to power the features of this app — spending
+          analytics, cashback insights, and receipt management. We do not use your data
+          for advertising or any third-party analytics platforms.
+          You can delete your account and all associated data at any time.
+        </p>
+      </div>
+    </div>
+
+    <!-- Legal -->
+    <div class="wb-section wb-section-legal">
+      <div class="wb-section-icon wb-icon-gray">
+        <i class="bi bi-file-text-fill"></i>
+      </div>
+      <div>
+        <h3 class="wb-section-title">Legal Disclaimer</h3>
+        <p class="wb-section-body">
+          Receipt Tracker is a personal expense management tool intended for individual use.
+          It does not constitute financial, tax, or legal advice. The analytics and cashback
+          estimates shown are for reference only and may not reflect actual card terms or
+          tax obligations. Always consult a qualified professional for financial or tax decisions.
+          By continuing to use this service you acknowledge these terms.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer: dismiss checkbox + close -->
+    <div class="wb-footer">
+      <label class="wb-dismiss-label">
+        <input type="checkbox" class="form-check-input me-2"
+               [(ngModel)]="dismissChecked">
+        Don't show this again
+      </label>
+      <button class="btn btn-outline-secondary btn-sm" (click)="close()">
+        Close
+      </button>
+    </div>
+
+  </div>
+</div>

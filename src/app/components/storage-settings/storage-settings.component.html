@@ -1,0 +1,327 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="page-title mb-0">
+    <i class="bi bi-hdd-network me-2 text-primary"></i>Storage Settings
+  </h1>
+  <button class="btn btn-sm btn-outline-secondary" (click)="showInfo()" title="Privacy &amp; legal notice">
+    <i class="bi bi-info-circle me-1"></i>Privacy &amp; Legal
+  </button>
+</div>
+
+<p class="text-muted mb-4">
+  Choose where your uploaded receipt files are stored.
+  AWS S3 is recommended for cloud-hosted deployments.
+</p>
+
+<!-- Not-yet-saved notice — shown until the user saves at least once -->
+<div *ngIf="!currentConfig?.storageConfigured && !loading" class="alert alert-warning d-flex gap-2 mb-4">
+  <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+  <div>
+    <strong>Storage not configured.</strong>
+    Your settings have not been saved yet — uploaded files are going to the
+    <strong>server default directory</strong>
+    <code *ngIf="defaultStoragePath">({{ defaultStoragePath }})</code>.
+    Configure your preferred storage below and click <strong>Save Configuration</strong> to persist it.
+  </div>
+</div>
+
+<!-- Loading -->
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary"></div>
+  <p class="text-muted mt-2">Loading configuration…</p>
+</div>
+
+<ng-container *ngIf="!loading">
+
+  <!-- ── Storage Usage Card ──────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-bar-chart-line me-2 text-primary"></i>Storage Usage
+        </h5>
+        <button class="btn btn-sm btn-outline-secondary" (click)="loadUsage()" [disabled]="loadingUsage"
+                title="Refresh usage">
+          <i class="bi" [class.bi-arrow-clockwise]="!loadingUsage"
+             [class.spinner-border]="loadingUsage"
+             [class.spinner-border-sm]="loadingUsage"></i>
+        </button>
+      </div>
+
+      <div *ngIf="loadingUsage && !usage" class="text-center py-3 text-muted small">
+        <div class="spinner-border spinner-border-sm me-2"></div>Calculating…
+      </div>
+
+      <div *ngIf="usage" class="usage-grid">
+
+        <div class="usage-stat">
+          <div class="usage-stat-icon" style="background:#ede9fe; color:#7c3aed;">
+            <i class="bi bi-hdd-fill"></i>
+          </div>
+          <div>
+            <div class="usage-stat-value">{{ usage.formattedSize }}</div>
+            <div class="usage-stat-label">Total Size</div>
+          </div>
+        </div>
+
+        <div class="usage-stat">
+          <div class="usage-stat-icon" style="background:#dbeafe; color:#2563eb;">
+            <i class="bi bi-file-earmark-text-fill"></i>
+          </div>
+          <div>
+            <div class="usage-stat-value">{{ usage.filesFound }}</div>
+            <div class="usage-stat-label">Files Stored</div>
+          </div>
+        </div>
+
+        <div class="usage-stat" *ngIf="usage.filesNotFound > 0">
+          <div class="usage-stat-icon" style="background:#fee2e2; color:#dc2626;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+          </div>
+          <div>
+            <div class="usage-stat-value">{{ usage.filesNotFound }}</div>
+            <div class="usage-stat-label">Files Missing</div>
+          </div>
+        </div>
+
+        <div class="usage-stat">
+          <div class="usage-stat-icon" style="background:#dcfce7; color:#16a34a;">
+            <i class="bi" [class.bi-hdd-network-fill]="usage.storageType === 'S3'"
+                         [class.bi-folder-fill]="usage.storageType === 'LOCAL'"></i>
+          </div>
+          <div>
+            <div class="usage-stat-value">{{ usage.storageType }}</div>
+            <div class="usage-stat-label">Backend</div>
+          </div>
+        </div>
+
+      </div><!-- /usage-grid -->
+
+      <div *ngIf="usage" class="usage-location mt-3">
+        <i class="bi bi-geo-alt me-1"></i>
+        <span class="text-muted small">{{ usage.location }}</span>
+        <span *ngIf="usage.storageType === 'LOCAL' && !currentConfig?.localStoragePath"
+              class="badge bg-secondary ms-2" style="font-size:.7rem;">server default</span>
+      </div>
+
+    </div>
+  </div>
+
+  <form [formGroup]="form">
+
+    <!-- ── Storage type selector ───────────────────────────────────── -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Storage Type</h5>
+        <div class="storage-type-grid">
+
+          <div class="storage-option-card"
+               [class.active]="storageType === 'LOCAL'"
+               (click)="setType('LOCAL')">
+            <i class="bi bi-hdd storage-option-icon"></i>
+            <div class="fw-600">Local Storage</div>
+            <div class="text-muted small mt-1">Store files on the server's filesystem. Good for self-hosted deployments.</div>
+            <span *ngIf="storageType === 'LOCAL'" class="selected-badge">
+              <i class="bi bi-check-circle-fill me-1"></i>Selected
+            </span>
+          </div>
+
+          <div class="storage-option-card"
+               [class.active]="storageType === 'S3'"
+               (click)="setType('S3')">
+            <i class="bi bi-cloud-arrow-up storage-option-icon"></i>
+            <div class="fw-600">AWS S3</div>
+            <div class="text-muted small mt-1">Store files in your own Amazon S3 bucket. Recommended for public/cloud deployments.</div>
+            <span *ngIf="storageType === 'S3'" class="selected-badge">
+              <i class="bi bi-check-circle-fill me-1"></i>Selected
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LOCAL settings ─────────────────────────────────────────── -->
+    <div *ngIf="storageType === 'LOCAL'" class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-1">
+          <i class="bi bi-folder2-open me-2 text-primary"></i>Local Path
+        </h5>
+
+        <!-- Current active path banner -->
+        <div class="alert alert-secondary py-2 mb-3 d-flex align-items-start gap-2">
+          <i class="bi bi-geo-alt-fill flex-shrink-0 mt-1"></i>
+          <div>
+            <span class="fw-600 small">Currently active path:&nbsp;</span>
+            <code class="small" *ngIf="currentConfig?.localStoragePath">{{ currentConfig?.localStoragePath }}</code>
+            <code class="small text-muted" *ngIf="!currentConfig?.localStoragePath">{{ defaultStoragePath }}&nbsp;<span class="badge bg-secondary ms-1">server default</span></code>
+            <div class="text-muted" style="font-size:.75rem; margin-top:.2rem" *ngIf="!currentConfig?.localStoragePath">
+              No custom path saved — using the server's built-in upload directory.
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Set a custom absolute path to override the default.
+          Leave empty to keep using the server default shown above.
+          The path must be writable by the server process
+          (e.g.&nbsp;<code>/data/receipts</code> on Linux/Mac or&nbsp;<code>C:\receipts</code> on Windows).
+        </p>
+
+        <label class="form-label">Custom directory path <span class="text-muted fw-normal">(optional)</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-folder"></i></span>
+          <input type="text" class="form-control" formControlName="localStoragePath"
+                 [placeholder]="'Override default: ' + defaultStoragePath">
+          <button class="btn btn-outline-secondary" type="button"
+                  (click)="testConnection()" [disabled]="testing">
+            <span *ngIf="testing" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!testing" class="bi bi-plug me-1"></i>
+            Test Path
+          </button>
+        </div>
+
+        <div *ngIf="testResult" class="mt-2 alert py-2"
+             [class.alert-success]="testResult.success"
+             [class.alert-danger]="!testResult.success">
+          <i class="bi me-1"
+             [class.bi-check-circle-fill]="testResult.success"
+             [class.bi-x-circle-fill]="!testResult.success"></i>
+          {{ testResult.message }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── S3 settings ────────────────────────────────────────────── -->
+    <div *ngIf="storageType === 'S3'" class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-1">
+          <i class="bi bi-cloud me-2 text-primary"></i>AWS S3 Configuration
+        </h5>
+
+        <!-- S3 status banner -->
+        <div class="alert py-2 mb-3 d-flex align-items-start gap-2"
+             [class.alert-success]="currentConfig?.storageConfigured && currentConfig?.s3BucketName"
+             [class.alert-warning]="!currentConfig?.storageConfigured || !currentConfig?.s3BucketName">
+          <i class="bi flex-shrink-0 mt-1"
+             [class.bi-check-circle-fill]="currentConfig?.storageConfigured && currentConfig?.s3BucketName"
+             [class.bi-exclamation-triangle-fill]="!currentConfig?.storageConfigured || !currentConfig?.s3BucketName"></i>
+          <div>
+            <span class="fw-600 small" *ngIf="currentConfig?.storageConfigured && currentConfig?.s3BucketName">
+              Connected to bucket:&nbsp;<code>{{ currentConfig?.s3BucketName }}</code>
+              <span *ngIf="currentConfig?.s3Region">&nbsp;({{ currentConfig?.s3Region }})</span>
+            </span>
+            <span class="fw-600 small" *ngIf="!currentConfig?.storageConfigured || !currentConfig?.s3BucketName">
+              Not configured — fill in the fields below and click Save Configuration.
+            </span>
+          </div>
+        </div>
+
+        <p class="text-muted small mb-3">
+          Files will be uploaded to your bucket using the credentials you provide.
+          We recommend creating a dedicated IAM user with
+          <code>s3:PutObject</code> + <code>s3:HeadBucket</code> permissions on this bucket only.
+        </p>
+
+        <div class="alert alert-info d-flex gap-2 mb-4 py-2">
+          <i class="bi bi-shield-lock-fill flex-shrink-0 mt-1"></i>
+          <span>
+            Your credentials are encrypted with <strong>AES-256-GCM</strong> before being stored.
+            The secret access key is never returned after saving.
+          </span>
+        </div>
+
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label">S3 Bucket Name <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-bucket"></i></span>
+              <input type="text" class="form-control" formControlName="s3BucketName"
+                     placeholder="my-receipts-bucket">
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">AWS Region <span class="text-danger">*</span></label>
+            <select class="form-select" formControlName="s3Region">
+              <option *ngFor="let r of awsRegions" [value]="r.value">
+                {{ r.label }} ({{ r.value }})
+              </option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Access Key ID <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-key"></i></span>
+              <input type="text" class="form-control" formControlName="s3AccessKeyId"
+                     placeholder="AKIAIOSFODNN7EXAMPLE" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">
+              Secret Access Key
+              <span *ngIf="currentConfig?.s3SecretKeyConfigured" class="tag tag-green ms-1 align-middle">
+                <i class="bi bi-check-circle-fill me-1"></i>Configured
+              </span>
+              <span *ngIf="!currentConfig?.s3SecretKeyConfigured" class="text-danger">*</span>
+            </label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input [type]="showSecretKey ? 'text' : 'password'"
+                     class="form-control" formControlName="s3SecretAccessKey"
+                     [placeholder]="currentConfig?.s3SecretKeyConfigured
+                       ? '••••••••••••••••••••••••••••• (leave empty to keep existing)'
+                       : 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'"
+                     autocomplete="new-password">
+              <button class="btn btn-outline-secondary" type="button"
+                      (click)="showSecretKey = !showSecretKey" [title]="showSecretKey ? 'Hide' : 'Show'">
+                <i class="bi" [class.bi-eye]="!showSecretKey" [class.bi-eye-slash]="showSecretKey"></i>
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /row -->
+
+        <!-- Test connection -->
+        <div class="mt-4 d-flex align-items-center gap-3 flex-wrap">
+          <button class="btn btn-outline-secondary" type="button"
+                  (click)="testConnection()" [disabled]="testing">
+            <span *ngIf="testing" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!testing" class="bi bi-plug me-1"></i>
+            Test Connection
+          </button>
+
+          <div *ngIf="testResult" class="alert mb-0 py-1 px-3"
+               [class.alert-success]="testResult.success"
+               [class.alert-danger]="!testResult.success">
+            <i class="bi me-1"
+               [class.bi-check-circle-fill]="testResult.success"
+               [class.bi-x-circle-fill]="!testResult.success"></i>
+            {{ testResult.message }}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Save button ────────────────────────────────────────────── -->
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <button class="btn btn-primary" type="button"
+              (click)="save()" [disabled]="saving">
+        <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!saving" class="bi bi-floppy me-1"></i>
+        Save Configuration
+      </button>
+
+      <div *ngIf="saveSuccess" class="alert alert-success mb-0 py-1 px-3">
+        <i class="bi bi-check-circle-fill me-1"></i>Configuration saved!
+      </div>
+      <div *ngIf="saveError" class="alert alert-danger mb-0 py-1 px-3">
+        <i class="bi bi-x-circle-fill me-1"></i>{{ saveError }}
+      </div>
+    </div>
+
+  </form>
+</ng-container>

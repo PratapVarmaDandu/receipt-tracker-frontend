@@ -1,0 +1,286 @@
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary"></div>
+</div>
+
+<div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+<div *ngIf="!loading && receipt">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <a routerLink="/receipts" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="page-title mb-0">{{ receipt.storeName }}</h1>
+        <span class="text-muted small">{{ receipt.purchaseDateTime | date:'EEEE, MMMM d, y · h:mm a' }}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button *ngIf="!editing" class="btn btn-sm btn-outline-primary" (click)="editing=true">
+        <i class="bi bi-pencil me-1"></i>Edit
+      </button>
+      <button *ngIf="editing" class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving">
+        <span *ngIf="!saving"><i class="bi bi-check2 me-1"></i>Save</span>
+        <span *ngIf="saving"><span class="spinner-border spinner-border-sm"></span></span>
+      </button>
+      <button *ngIf="editing" class="btn btn-sm btn-outline-secondary" (click)="editing=false">Cancel</button>
+      <button class="btn btn-sm btn-outline-danger" (click)="delete()">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEW MODE -->
+  <div *ngIf="!editing">
+    <div class="row g-3 mb-3">
+      <!-- Left column: receipt details -->
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <div class="store-icon" [class]="storeCss[receipt.storeType]">
+                    <i class="bi" [class]="storeIcons[receipt.storeType]"></i>
+                  </div>
+                  <div>
+                    <div class="small text-muted">Category</div>
+                    <div class="fw-500">{{ storeLabels[receipt.storeType] }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="small text-muted">Payment</div>
+                <div class="fw-500">
+                  {{ receipt.cardBank || '—' }} {{ receipt.cardType || '' }}
+                  <span *ngIf="receipt.lastFourDigits" class="text-muted small">••••{{ receipt.lastFourDigits }}</span>
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <div class="small text-muted">Date</div>
+                <div class="fw-500">{{ receipt.purchaseDateTime | date:'MMM d, y' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white">
+            <span class="fw-600" style="font-weight:600;"><i class="bi bi-list-ul me-2"></i>
+              Items ({{ receipt.items.length }})</span>
+          </div>
+          <div *ngIf="!receipt.items?.length" class="card-body text-center text-muted py-4">
+            No items extracted. Edit to add items manually.
+          </div>
+          <div *ngIf="receipt.items?.length" class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>Item</th><th>Qty</th><th>Unit Price</th><th class="text-end">Total</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of receipt.items">
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.unitPrice | currency }}</td>
+                  <td class="text-end fw-500">{{ item.totalPrice | currency }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light">
+                <tr *ngIf="receipt.subtotal">
+                  <td colspan="3" class="text-end text-muted">Subtotal</td>
+                  <td class="text-end">{{ receipt.subtotal | currency }}</td>
+                </tr>
+                <tr *ngIf="receipt.tax">
+                  <td colspan="3" class="text-end text-muted">Tax</td>
+                  <td class="text-end">{{ receipt.tax | currency }}</td>
+                </tr>
+                <tr *ngIf="receipt.tip">
+                  <td colspan="3" class="text-end text-muted">Tip</td>
+                  <td class="text-end">{{ receipt.tip | currency }}</td>
+                </tr>
+                <tr>
+                  <td colspan="3" class="text-end fw-700">Total</td>
+                  <td class="text-end fw-700 text-success" style="font-size:1.05rem;">
+                    {{ receipt.total | currency }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: cashback panel -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white">
+            <span class="fw-600" style="font-weight:600;"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Cashback</span>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted small">Earned with your card</span>
+              <span class="text-success fw-600">{{ receipt.cashbackEarned | currency }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <span class="text-muted small">Best possible</span>
+              <span class="text-primary fw-600">{{ receipt.potentialCashback | currency }}</span>
+            </div>
+            <div class="progress mb-2" style="height:8px;">
+              <div class="progress-bar bg-success"
+                   [style.width.%]="receipt.potentialCashback ? (receipt.cashbackEarned! / receipt.potentialCashback!) * 100 : 100">
+              </div>
+            </div>
+
+            <div *ngIf="cashbackGap() > 0.01"
+                 class="alert alert-warning p-2 small mb-0 mt-3">
+              <i class="bi bi-lightbulb-fill me-1"></i>
+              Use <strong>{{ receipt.bestCard }}</strong> ({{ receipt.bestCardRate }}) to earn
+              <strong>{{ receipt.potentialCashback | currency }}</strong> here instead.
+            </div>
+            <div *ngIf="cashbackGap() <= 0.01"
+                 class="alert alert-success p-2 small mb-0 mt-3">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              You're using the best card for this category!
+            </div>
+          </div>
+        </div>
+
+        <!-- Totals card -->
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted small">Subtotal</span>
+              <span>{{ receipt.subtotal | currency }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted small">Tax</span>
+              <span>{{ receipt.tax | currency }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom" *ngIf="receipt.tip">
+              <span class="text-muted small">Tip</span>
+              <span>{{ receipt.tip | currency }}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 mt-1">
+              <span class="fw-700">Total</span>
+              <span class="fw-700 text-success" style="font-size:1.1rem;">{{ receipt.total | currency }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODE -->
+  <div *ngIf="editing" [formGroup]="form">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white fw-600" style="font-weight:600;">Store & Date</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <label class="form-label">Store Name</label>
+            <input class="form-control" formControlName="storeName">
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" formControlName="storeType">
+              <option *ngFor="let t of storeTypes" [value]="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Date & Time</label>
+            <input class="form-control" type="datetime-local" formControlName="purchaseDateTime">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white fw-600" style="font-weight:600;">Payment Card</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <label class="form-label">Bank</label>
+            <select class="form-select" formControlName="cardBank">
+              <option value="">—</option>
+              <option *ngFor="let b of cardBanks" [value]="b">{{ b.replace('_',' ') }}</option>
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label">Network</label>
+            <select class="form-select" formControlName="cardType">
+              <option value="">—</option>
+              <option *ngFor="let t of cardTypes" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label">Last 4 Digits</label>
+            <input class="form-control" formControlName="lastFourDigits" maxlength="4">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white fw-600" style="font-weight:600;">Totals</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-sm-3">
+            <label class="form-label">Subtotal</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input class="form-control" type="number" step="0.01" formControlName="subtotal">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Tax</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input class="form-control" type="number" step="0.01" formControlName="tax">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Tip</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input class="form-control" type="number" step="0.01" formControlName="tip">
+            </div>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label">Total *</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input class="form-control" type="number" step="0.01" formControlName="total">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white d-flex justify-content-between">
+        <span class="fw-600" style="font-weight:600;">Items</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="addItem()">
+          <i class="bi bi-plus me-1"></i>Add
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0" formArrayName="items">
+          <thead class="table-light">
+            <tr><th>Name</th><th style="width:70px;">Qty</th>
+              <th style="width:110px;">Unit $</th><th style="width:110px;">Total $</th>
+              <th style="width:50px;"></th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items.controls; let i=index" [formGroupName]="i">
+              <td><input class="form-control form-control-sm" formControlName="name"></td>
+              <td><input class="form-control form-control-sm" type="number" formControlName="quantity"></td>
+              <td><input class="form-control form-control-sm" type="number" step="0.01" formControlName="unitPrice"></td>
+              <td><input class="form-control form-control-sm" type="number" step="0.01" formControlName="totalPrice"></td>
+              <td><button type="button" class="btn btn-sm btn-outline-danger border-0" (click)="removeItem(i)">
+                <i class="bi bi-trash"></i>
+              </button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
