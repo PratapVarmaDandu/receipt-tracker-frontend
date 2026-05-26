@@ -1,5 +1,5 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="page-title mb-0"><i class="bi bi-cloud-upload me-2 text-primary"></i>Add Receipt</h1>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h1 class="page-title mb-0"><i class="bi bi-cloud-upload me-2 text-primary"></i>Add Document</h1>
   <div class="btn-group">
     <button class="btn btn-sm" [class.btn-primary]="mode==='upload'" [class.btn-outline-primary]="mode!=='upload'" (click)="mode='upload'">
       <i class="bi bi-camera me-1"></i>Scan / Upload
@@ -23,6 +23,22 @@
 <div *ngIf="mode==='upload'">
 
   <div *ngIf="!uploadedReceipt">
+    <!-- Document type toggle -->
+    <div class="doc-type-toggle mb-3 d-flex gap-2">
+      <button class="btn btn-sm flex-fill"
+              [class.btn-primary]="docType==='receipt'"
+              [class.btn-outline-secondary]="docType!=='receipt'"
+              (click)="docType='receipt'">
+        <i class="bi bi-receipt me-1"></i>Receipt / Invoice
+      </button>
+      <button class="btn btn-sm flex-fill"
+              [class.btn-primary]="docType==='bank'"
+              [class.btn-outline-secondary]="docType!=='bank'"
+              (click)="docType='bank'">
+        <i class="bi bi-bank me-1"></i>Bank Statement
+      </button>
+    </div>
+
     <div class="upload-zone"
          [class.dragover]="dragging"
          (dragover)="onDragOver($event)"
@@ -30,111 +46,187 @@
          (drop)="onDrop($event)"
          (click)="fileInput.click()">
       <div *ngIf="!uploading">
-        <i class="bi bi-receipt d-block mb-3"></i>
-        <p class="fw-600 mb-1" style="color:#4f46e5;font-weight:600;">Drop your receipt here</p>
+        <i class="bi d-block mb-3" [class.bi-receipt]="docType==='receipt'" [class.bi-bank]="docType==='bank'"></i>
+        <p class="fw-600 mb-1" style="color:#4f46e5;font-weight:600;">
+          {{ docType === 'bank' ? 'Drop your bank statement here' : 'Drop your receipt here' }}
+        </p>
         <p class="text-muted mb-2" style="font-size:.875rem;">or click to browse</p>
-        <small class="text-muted">Supports: JPG, PNG, WEBP, PDF (max 20 MB)</small>
+        <small class="text-muted">Supports: JPG, PNG, WEBP, HEIC, PDF (max 20 MB)</small>
       </div>
       <div *ngIf="uploading" class="text-center">
         <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted mb-0">Scanning receipt with OCR…</p>
+        <p class="text-muted mb-0">
+          {{ docType === 'bank' ? 'Analysing bank statement…' : 'Scanning receipt with OCR…' }}
+        </p>
       </div>
-      <input #fileInput type="file" class="d-none" accept="image/*,.pdf" (change)="onFileSelected($event)">
+      <input #fileInput type="file" class="d-none" accept="image/*,.heic,.heif,.pdf" (change)="onFileSelected($event)">
     </div>
 
     <div class="mt-3 p-3 rounded" style="background:#f0f9ff; border:1px solid #bae6fd;">
-      <h6 class="mb-2" style="color:#0369a1;"><i class="bi bi-info-circle me-1"></i>OCR Tips for Best Results</h6>
-      <ul class="mb-0 small text-muted">
-        <li>Lay receipt flat on a dark surface</li>
-        <li>Good lighting — avoid shadows over text</li>
-        <li>Capture the full receipt in frame</li>
-        <li>For crumpled receipts, flatten and re-photograph</li>
-      </ul>
+      <ng-container *ngIf="docType==='receipt'">
+        <h6 class="mb-2" style="color:#0369a1;"><i class="bi bi-info-circle me-1"></i>OCR Tips for Best Results</h6>
+        <ul class="mb-0 small text-muted">
+          <li>Lay receipt flat on a dark surface</li>
+          <li>Good lighting — avoid shadows over text</li>
+          <li>Capture the full receipt in frame</li>
+          <li>For crumpled receipts, flatten and re-photograph</li>
+        </ul>
+      </ng-container>
+      <ng-container *ngIf="docType==='bank'">
+        <h6 class="mb-2" style="color:#0369a1;"><i class="bi bi-info-circle me-1"></i>Bank Statement Tips</h6>
+        <ul class="mb-0 small text-muted">
+          <li>PDF exports from your bank portal work best</li>
+          <li>Transactions are auto-detected and categorised</li>
+          <li>Debits (spending) are imported; deposits are skipped</li>
+          <li>Supports Chase, BofA, Wells Fargo, Citi, Capital One and more</li>
+        </ul>
+      </ng-container>
     </div>
   </div>
 
-  <!-- Extracted receipt preview -->
+  <!-- Extracted data preview -->
   <div *ngIf="uploadedReceipt" class="card border-0 shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-      <span class="fw-600" style="font-weight:600;"><i class="bi bi-check-circle-fill text-success me-2"></i>Extracted Receipt Data</span>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <span class="fw-600" style="font-weight:600;">
+        <i class="bi bi-check-circle-fill text-success me-2"></i>
+        {{ isBankStatement ? 'Extracted Statement Data' : 'Extracted Receipt Data' }}
+      </span>
       <span class="text-muted small">Review and confirm</span>
     </div>
     <div class="card-body">
-      <div class="row g-3 mb-3">
-        <div class="col-sm-6">
-          <label class="form-label small fw-500">Store</label>
-          <p class="mb-0 fw-600">{{ uploadedReceipt.storeName }}</p>
-        </div>
-        <div class="col-sm-3">
-          <label class="form-label small fw-500">Type</label>
-          <p class="mb-0">{{ uploadedReceipt.storeType }}</p>
-        </div>
-        <div class="col-sm-3">
-          <label class="form-label small fw-500">Date</label>
-          <p class="mb-0">{{ uploadedReceipt.purchaseDateTime | date:'MMM d, y h:mm a' }}</p>
-        </div>
-      </div>
-      <div class="row g-3 mb-3">
-        <div class="col-sm-4">
-          <label class="form-label small fw-500">Card</label>
-          <p class="mb-0">{{ uploadedReceipt.cardBank || '—' }} {{ uploadedReceipt.cardType || '' }}
-            <span *ngIf="uploadedReceipt.lastFourDigits"> ****{{ uploadedReceipt.lastFourDigits }}</span>
-          </p>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small fw-500">Subtotal</label>
-          <p class="mb-0">{{ uploadedReceipt.subtotal | currency }}</p>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small fw-500">Tax</label>
-          <p class="mb-0">{{ uploadedReceipt.tax | currency }}</p>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small fw-500">Tip</label>
-          <p class="mb-0">{{ uploadedReceipt.tip | currency }}</p>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small fw-500">Total</label>
-          <p class="mb-0 fw-700 text-success" style="font-size:1.1rem;">{{ uploadedReceipt.total | currency }}</p>
-        </div>
-      </div>
 
-      <!-- Items table -->
-      <div *ngIf="uploadedReceipt.items?.length">
-        <h6 class="section-title">Items ({{ uploadedReceipt.items.length }})</h6>
-        <table class="table table-sm table-hover">
-          <thead class="table-light"><tr>
-            <th>Item</th><th>Qty</th><th>Unit Price</th><th class="text-end">Total</th>
-          </tr></thead>
-          <tbody>
-            <tr *ngFor="let item of uploadedReceipt.items">
-              <td>{{ item.name }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>{{ item.unitPrice | currency }}</td>
-              <td class="text-end">{{ item.totalPrice | currency }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- Bank Statement view -->
+      <ng-container *ngIf="isBankStatement">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label small fw-500">Bank</label>
+            <p class="mb-0 fw-600">{{ uploadedReceipt.storeName }}</p>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small fw-500">Account</label>
+            <p class="mb-0">
+              <span *ngIf="uploadedReceipt.lastFourDigits">****{{ uploadedReceipt.lastFourDigits }}</span>
+              <span *ngIf="!uploadedReceipt.lastFourDigits">—</span>
+            </p>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small fw-500">Statement Date</label>
+            <p class="mb-0">{{ uploadedReceipt.purchaseDateTime | date:'MMM d, y' }}</p>
+          </div>
+        </div>
 
-      <!-- Cashback highlight -->
-      <div class="p-3 rounded mt-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
-        <div class="d-flex justify-content-between">
-          <span class="small text-muted">Cashback earned with your card</span>
-          <span class="text-success fw-600">{{ uploadedReceipt.cashbackEarned | currency }}</span>
+        <!-- Transactions table -->
+        <div *ngIf="uploadedReceipt.items?.length">
+          <h6 class="section-title">Transactions ({{ uploadedReceipt.items.length }})</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr><th>Date</th><th>Description</th><th class="text-end">Amount</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of uploadedReceipt.items">
+                  <td class="text-nowrap text-muted small">{{ item.description || '—' }}</td>
+                  <td>{{ item.name }}</td>
+                  <td class="text-end">{{ item.totalPrice | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="d-flex justify-content-between mt-1">
-          <span class="small text-muted">Best possible ({{ uploadedReceipt.bestCard }})</span>
-          <span class="text-primary fw-600">{{ uploadedReceipt.potentialCashback | currency }} ({{ uploadedReceipt.bestCardRate }})</span>
+
+        <div class="p-3 rounded mt-3" style="background:#f0f9ff; border:1px solid #bae6fd;">
+          <div class="d-flex justify-content-between">
+            <span class="small text-muted">Total spending detected</span>
+            <span class="text-primary fw-600">{{ uploadedReceipt.total | currency }}</span>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="small text-muted">Transactions imported</span>
+            <span class="fw-600">{{ uploadedReceipt.items?.length || 0 }}</span>
+          </div>
         </div>
-      </div>
+      </ng-container>
+
+      <!-- Receipt / Invoice view -->
+      <ng-container *ngIf="!isBankStatement">
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <label class="form-label small fw-500">Store</label>
+            <p class="mb-0 fw-600">{{ uploadedReceipt.storeName }}</p>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small fw-500">Type</label>
+            <p class="mb-0">{{ uploadedReceipt.storeType }}</p>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label small fw-500">Date</label>
+            <p class="mb-0">{{ uploadedReceipt.purchaseDateTime | date:'MMM d, y h:mm a' }}</p>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-sm-4">
+            <label class="form-label small fw-500">Card</label>
+            <p class="mb-0">{{ uploadedReceipt.cardBank || '—' }} {{ uploadedReceipt.cardType || '' }}
+              <span *ngIf="uploadedReceipt.lastFourDigits"> ****{{ uploadedReceipt.lastFourDigits }}</span>
+            </p>
+          </div>
+          <div class="col-6 col-sm-2">
+            <label class="form-label small fw-500">Subtotal</label>
+            <p class="mb-0">{{ uploadedReceipt.subtotal | currency }}</p>
+          </div>
+          <div class="col-6 col-sm-2">
+            <label class="form-label small fw-500">Tax</label>
+            <p class="mb-0">{{ uploadedReceipt.tax | currency }}</p>
+          </div>
+          <div class="col-6 col-sm-2">
+            <label class="form-label small fw-500">Tip</label>
+            <p class="mb-0">{{ uploadedReceipt.tip | currency }}</p>
+          </div>
+          <div class="col-6 col-sm-2">
+            <label class="form-label small fw-500">Total</label>
+            <p class="mb-0 fw-700 text-success" style="font-size:1.1rem;">{{ uploadedReceipt.total | currency }}</p>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <div *ngIf="uploadedReceipt.items?.length">
+          <h6 class="section-title">Items ({{ uploadedReceipt.items.length }})</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead class="table-light"><tr>
+                <th>Item</th><th>Qty</th><th class="d-none d-sm-table-cell">Unit Price</th><th class="text-end">Total</th>
+              </tr></thead>
+              <tbody>
+                <tr *ngFor="let item of uploadedReceipt.items">
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td class="d-none d-sm-table-cell">{{ item.unitPrice | currency }}</td>
+                  <td class="text-end">{{ item.totalPrice | currency }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Cashback highlight -->
+        <div class="p-3 rounded mt-3" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+          <div class="d-flex justify-content-between">
+            <span class="small text-muted">Cashback earned with your card</span>
+            <span class="text-success fw-600">{{ uploadedReceipt.cashbackEarned | currency }}</span>
+          </div>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="small text-muted">Best possible ({{ uploadedReceipt.bestCard }})</span>
+            <span class="text-primary fw-600">{{ uploadedReceipt.potentialCashback | currency }} ({{ uploadedReceipt.bestCardRate }})</span>
+          </div>
+        </div>
+      </ng-container>
+
     </div>
-    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end flex-wrap">
       <button class="btn btn-outline-secondary btn-sm" (click)="uploadedReceipt=null; success=''">
         <i class="bi bi-arrow-left me-1"></i>Upload Another
       </button>
       <button class="btn btn-primary btn-sm" (click)="confirmUpload()">
-        <i class="bi bi-check2 me-1"></i>View Full Receipt
+        <i class="bi bi-check2 me-1"></i>{{ isBankStatement ? 'View Statement' : 'View Full Receipt' }}
       </button>
     </div>
   </div>
@@ -201,25 +293,25 @@
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label">Subtotal</label>
             <div class="input-group"><span class="input-group-text">$</span>
               <input class="form-control" type="number" step="0.01" min="0" formControlName="subtotal">
             </div>
           </div>
-          <div class="col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label">Tax</label>
             <div class="input-group"><span class="input-group-text">$</span>
               <input class="form-control" type="number" step="0.01" min="0" formControlName="tax">
             </div>
           </div>
-          <div class="col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label">Tip</label>
             <div class="input-group"><span class="input-group-text">$</span>
               <input class="form-control" type="number" step="0.01" min="0" formControlName="tip">
             </div>
           </div>
-          <div class="col-sm-3">
+          <div class="col-6 col-sm-3">
             <label class="form-label">Total *</label>
             <div class="input-group"><span class="input-group-text">$</span>
               <input class="form-control" type="number" step="0.01" min="0" formControlName="total">
@@ -240,28 +332,31 @@
         <p class="text-muted text-center mb-0 py-2">No items added. Click "Add Item" to start.</p>
       </div>
       <div class="card-body p-0" *ngIf="items.length > 0">
-        <table class="table mb-0">
-          <thead class="table-light"><tr>
-            <th>Item Name</th><th style="width:80px;">Qty</th>
-            <th style="width:120px;">Unit Price</th><th style="width:120px;">Total</th>
-            <th style="width:50px;"></th>
-          </tr></thead>
-          <tbody formArrayName="items">
-            <tr *ngFor="let item of items.controls; let i=index" [formGroupName]="i">
-              <td><input class="form-control form-control-sm" formControlName="name" placeholder="Item name"></td>
-              <td><input class="form-control form-control-sm" type="number" min="1" formControlName="quantity"></td>
-              <td><input class="form-control form-control-sm" type="number" step="0.01" min="0" formControlName="unitPrice"></td>
-              <td><input class="form-control form-control-sm" type="number" step="0.01" min="0" formControlName="totalPrice"></td>
-              <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)">
-                <i class="bi bi-trash"></i>
-              </button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead class="table-light"><tr>
+              <th>Item Name</th><th style="width:80px;">Qty</th>
+              <th style="width:120px;" class="d-none d-sm-table-cell">Unit Price</th>
+              <th style="width:120px;">Total</th>
+              <th style="width:50px;"></th>
+            </tr></thead>
+            <tbody formArrayName="items">
+              <tr *ngFor="let item of items.controls; let i=index" [formGroupName]="i">
+                <td><input class="form-control form-control-sm" formControlName="name" placeholder="Item name"></td>
+                <td><input class="form-control form-control-sm" type="number" min="1" formControlName="quantity"></td>
+                <td class="d-none d-sm-table-cell"><input class="form-control form-control-sm" type="number" step="0.01" min="0" formControlName="unitPrice"></td>
+                <td><input class="form-control form-control-sm" type="number" step="0.01" min="0" formControlName="totalPrice"></td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger" (click)="removeItem(i)">
+                  <i class="bi bi-trash"></i>
+                </button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-end gap-2">
+    <div class="d-flex justify-content-end gap-2 flex-wrap">
       <button type="button" class="btn btn-outline-secondary" routerLink="/receipts">Cancel</button>
       <button type="submit" class="btn btn-primary" [disabled]="manualForm.invalid || processing">
         <span *ngIf="!processing"><i class="bi bi-save me-1"></i>Save Receipt</span>

@@ -11,12 +11,17 @@ import { Receipt, STORE_TYPE_LABELS } from '../../models/receipt.model';
 })
 export class UploadComponent {
   mode: 'upload' | 'manual' = 'upload';
+  docType: 'receipt' | 'bank' = 'receipt';
   dragging = false;
   uploading = false;
   processing = false;
   error = '';
   success = '';
   uploadedReceipt: Receipt | null = null;
+
+  get isBankStatement(): boolean {
+    return this.uploadedReceipt?.receiptType === 'BANK_STATEMENT';
+  }
 
   manualForm: FormGroup;
   storeTypes = Object.entries(STORE_TYPE_LABELS).map(([value, label]) => ({ value, label }));
@@ -68,9 +73,11 @@ export class UploadComponent {
   }
 
   processFile(file: File) {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
-    if (!allowed.includes(file.type)) {
-      this.error = 'Please upload an image (JPG, PNG, WEBP) or PDF file.';
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'];
+    if (!allowed.includes(file.type) && !allowedExts.includes(ext)) {
+      this.error = 'Please upload an image (JPG, PNG, WEBP, HEIC) or PDF file.';
       return;
     }
     this.uploading = true;
@@ -79,7 +86,9 @@ export class UploadComponent {
       next: (r) => {
         this.uploading = false;
         this.uploadedReceipt = r;
-        this.success = 'Receipt processed! Review and save the extracted data.';
+        this.success = r.receiptType === 'BANK_STATEMENT'
+          ? 'Bank statement processed! Review and confirm the transactions.'
+          : 'Receipt processed! Review and save the extracted data.';
       },
       error: (err) => {
         this.uploading = false;

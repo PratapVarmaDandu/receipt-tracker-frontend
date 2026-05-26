@@ -17,6 +17,46 @@ body {
   margin: 0;
 }
 
+/* Mobile header (visible only on small screens) */
+.mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  background: #1e1b4b;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+
+  .mobile-brand {
+    font-size: 1rem;
+    font-weight: 700;
+    i { color: #818cf8; margin-right: .4rem; }
+  }
+
+  .mobile-hamburger {
+    background: none;
+    border: none;
+    color: #c7d2fe;
+    font-size: 1.4rem;
+    padding: .2rem .4rem;
+    cursor: pointer;
+    line-height: 1;
+    &:hover { color: #fff; }
+  }
+}
+
+/* Sidebar overlay (mobile backdrop) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1040;
+  &.open { display: block; }
+}
+
 /* Sidebar */
 .sidebar {
   width: 240px;
@@ -27,6 +67,8 @@ body {
   flex-direction: column;
   position: fixed;
   top: 0; left: 0;
+  z-index: 1050;
+  transition: transform .25s ease;
 
   .sidebar-brand {
     padding: 1.5rem 1.25rem 1rem;
@@ -64,6 +106,31 @@ body {
   margin-left: 240px;
   padding: 2rem;
   min-height: 100vh;
+}
+
+/* ── Mobile breakpoints ──────────────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+  .mobile-header { display: flex; }
+
+  .sidebar {
+    transform: translateX(-100%);
+    top: 0;
+    &.open { transform: translateX(0); }
+  }
+
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  /* Stack stat cards on one column */
+  .stat-card { padding: 1rem; }
+
+  /* Make receipt cards full-width list */
+  .receipt-card { margin-bottom: .5rem; }
+
+  /* Tighter page title on mobile */
+  .page-title { font-size: 1.15rem; }
 }
 
 /* Stat cards */
@@ -141,6 +208,7 @@ body {
   &.restaurant { background: #fee2e2; color: #dc2626; }
   &.costco   { background: #dbeafe; color: #2563eb; }
   &.pharmacy { background: #f3e8ff; color: #7c3aed; }
+  &.bank     { background: #e0f2fe; color: #0369a1; }
   &.other    { background: #f1f5f9; color: #475569; }
 }
 

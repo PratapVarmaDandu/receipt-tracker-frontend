@@ -4,57 +4,72 @@
 </ng-container>
 
 <!-- App shell: sidebar + main -->
-<div class="d-flex" *ngIf="!isLoginPage">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <i class="bi bi-receipt-cutoff"></i>
-      Receipt Tracker
-    </div>
-    <nav class="pt-2">
-      <a routerLink="/dashboard" routerLinkActive="active">
-        <i class="bi bi-speedometer2"></i> Dashboard
-      </a>
-      <a routerLink="/upload" routerLinkActive="active">
-        <i class="bi bi-cloud-upload"></i> Upload Receipt
-      </a>
-      <a routerLink="/receipts" routerLinkActive="active">
-        <i class="bi bi-collection"></i> All Receipts
-      </a>
-      <a routerLink="/settings" routerLinkActive="active">
-        <i class="bi bi-hdd-network"></i> Storage Settings
-      </a>
-    </nav>
+<ng-container *ngIf="!isLoginPage">
+  <!-- Mobile header -->
+  <header class="mobile-header">
+    <span class="mobile-brand">
+      <i class="bi bi-receipt-cutoff"></i>Receipt Tracker
+    </span>
+    <button class="mobile-hamburger" (click)="toggleSidebar()" aria-label="Open menu">
+      <i class="bi" [class.bi-list]="!sidebarOpen" [class.bi-x-lg]="sidebarOpen"></i>
+    </button>
+  </header>
 
-    <!-- User profile + logout -->
-    <div class="sidebar-user" *ngIf="currentUser">
-      <img *ngIf="currentUser.picture"
-           [src]="currentUser.picture"
-           [alt]="currentUser.name"
-           class="user-avatar"
-           referrerpolicy="no-referrer">
-      <div class="user-info">
-        <span class="user-name">{{ currentUser.name }}</span>
-        <span class="user-email">{{ currentUser.email }}</span>
+  <!-- Backdrop overlay on mobile -->
+  <div class="sidebar-overlay" [class.open]="sidebarOpen" (click)="closeSidebar()"></div>
+
+  <div class="d-flex">
+    <aside class="sidebar" [class.open]="sidebarOpen">
+      <div class="sidebar-brand">
+        <i class="bi bi-receipt-cutoff"></i>
+        Receipt Tracker
       </div>
-      <button class="btn-logout" (click)="logout()" title="Sign out">
-        <i class="bi bi-box-arrow-right"></i>
-      </button>
-    </div>
+      <nav class="pt-2">
+        <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a routerLink="/upload" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-cloud-upload"></i> Upload
+        </a>
+        <a routerLink="/receipts" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-collection"></i> All Receipts
+        </a>
+        <a routerLink="/settings" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-hdd-network"></i> Storage Settings
+        </a>
+      </nav>
 
-    <div class="sidebar-bottom">
-      <button class="sidebar-info-btn" (click)="openWelcomeBanner()" title="Privacy & legal notice">
-        <i class="bi bi-info-circle me-1"></i>Privacy &amp; Legal
-      </button>
-      <div class="sidebar-cashback">
-        <i class="bi bi-lightning-charge-fill me-1"></i>Cashback Optimizer
+      <!-- User profile + logout -->
+      <div class="sidebar-user" *ngIf="currentUser">
+        <img *ngIf="currentUser.picture"
+             [src]="currentUser.picture"
+             [alt]="currentUser.name"
+             class="user-avatar"
+             referrerpolicy="no-referrer">
+        <div class="user-info">
+          <span class="user-name">{{ currentUser.name }}</span>
+          <span class="user-email">{{ currentUser.email }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()" title="Sign out">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
       </div>
-    </div>
-  </aside>
 
-  <main class="main-content flex-grow-1">
-    <router-outlet></router-outlet>
-  </main>
-</div>
+      <div class="sidebar-bottom">
+        <button class="sidebar-info-btn" (click)="openWelcomeBanner()" title="Privacy & legal notice">
+          <i class="bi bi-info-circle me-1"></i>Privacy &amp; Legal
+        </button>
+        <div class="sidebar-cashback">
+          <i class="bi bi-lightning-charge-fill me-1"></i>Cashback Optimizer
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content flex-grow-1">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</ng-container>
 
 <!-- Welcome / privacy banner (shown on first login or via sidebar link) -->
 <app-welcome-banner

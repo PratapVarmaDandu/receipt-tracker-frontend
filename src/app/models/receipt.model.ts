@@ -1,9 +1,10 @@
-export type StoreType = 'COSTCO' | 'GAS_STATION' | 'GROCERY' | 'RESTAURANT' | 'PHARMACY' | 'ONLINE' | 'OTHER';
+export type StoreType = 'COSTCO' | 'GAS_STATION' | 'GROCERY' | 'RESTAURANT' | 'PHARMACY' | 'ONLINE' | 'BANK' | 'OTHER';
+export type ReceiptDocType = 'PURCHASE' | 'RETURN' | 'INVOICE' | 'BANK_STATEMENT';
 
 export interface ReceiptItem {
   id?: number;
   name: string;
-  description?: string;
+  description?: string;   // transaction date for bank statement items
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -15,6 +16,7 @@ export interface Receipt {
   id?: number;
   storeName: string;
   storeType: StoreType;
+  receiptType?: ReceiptDocType;
   purchaseDateTime: string;
   cardType?: string;
   cardBank?: string;
@@ -78,6 +80,7 @@ export const STORE_TYPE_ICONS: Record<string, string> = {
   RESTAURANT:  'bi-cup-hot',
   PHARMACY:    'bi-capsule',
   ONLINE:      'bi-cart',
+  BANK:        'bi-bank',
   OTHER:       'bi-receipt'
 };
 
@@ -88,6 +91,7 @@ export const STORE_TYPE_LABELS: Record<string, string> = {
   RESTAURANT:  'Restaurant',
   PHARMACY:    'Pharmacy',
   ONLINE:      'Online',
+  BANK:        'Bank',
   OTHER:       'Other'
 };
 
@@ -98,5 +102,6 @@ export const STORE_TYPE_CSS: Record<string, string> = {
   RESTAURANT:  'restaurant',
   PHARMACY:    'pharmacy',
   ONLINE:      'other',
+  BANK:        'bank',
   OTHER:       'other'
 };

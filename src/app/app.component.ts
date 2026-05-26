@@ -14,6 +14,7 @@ export class AppComponent implements OnInit {
   currentUser: User | null = null;
   isLoginPage = false;
   showWelcomeBanner = false;
+  sidebarOpen = false;
 
   constructor(
     private authService: AuthService,
@@ -34,11 +35,20 @@ export class AppComponent implements OnInit {
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
         this.isLoginPage = (e.urlAfterRedirects || e.url) === '/login';
+        this.sidebarOpen = false;
       });
 
     this.uiEvents.openWelcomeBanner$.subscribe(() => {
       this.showWelcomeBanner = true;
     });
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen = false;
   }
 
   onBannerClosed(): void {
@@ -48,7 +58,6 @@ export class AppComponent implements OnInit {
   openWelcomeBanner(): void {
     this.showWelcomeBanner = true;
   }
-
 
   logout(): void {
     this.authService.logout().subscribe(() => {

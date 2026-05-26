@@ -9,18 +9,18 @@
 
 <p class="text-muted mb-4">
   Choose where your uploaded receipt files are stored.
-  AWS S3 is recommended for cloud-hosted deployments.
+  <strong>Local storage</strong> is the default — files are saved on the server's filesystem.
+  Switch to <strong>AWS S3</strong> only if you need cloud/multi-device access.
 </p>
 
 <!-- Not-yet-saved notice — shown until the user saves at least once -->
 <div *ngIf="!currentConfig?.storageConfigured && !loading" class="alert alert-warning d-flex gap-2 mb-4">
   <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
   <div>
-    <strong>Storage not configured.</strong>
-    Your settings have not been saved yet — uploaded files are going to the
-    <strong>server default directory</strong>
+    <strong>Storage not configured yet.</strong>
+    Files are currently going to <strong>Local storage</strong>
     <code *ngIf="defaultStoragePath">({{ defaultStoragePath }})</code>.
-    Configure your preferred storage below and click <strong>Save Configuration</strong> to persist it.
+    Review the settings below and click <strong>Save Configuration</strong> to confirm your choice.
   </div>
 </div>
 
@@ -118,8 +118,8 @@
                [class.active]="storageType === 'LOCAL'"
                (click)="setType('LOCAL')">
             <i class="bi bi-hdd storage-option-icon"></i>
-            <div class="fw-600">Local Storage</div>
-            <div class="text-muted small mt-1">Store files on the server's filesystem. Good for self-hosted deployments.</div>
+            <div class="fw-600">Local Storage <span class="badge bg-success ms-1" style="font-size:.65rem;">Default</span></div>
+            <div class="text-muted small mt-1">Files are saved on the server's filesystem. Simple and works out of the box — no extra credentials needed.</div>
             <span *ngIf="storageType === 'LOCAL'" class="selected-badge">
               <i class="bi bi-check-circle-fill me-1"></i>Selected
             </span>
@@ -130,7 +130,7 @@
                (click)="setType('S3')">
             <i class="bi bi-cloud-arrow-up storage-option-icon"></i>
             <div class="fw-600">AWS S3</div>
-            <div class="text-muted small mt-1">Store files in your own Amazon S3 bucket. Recommended for public/cloud deployments.</div>
+            <div class="text-muted small mt-1">Store files in your own Amazon S3 bucket. Use this for cloud-hosted or multi-device deployments.</div>
             <span *ngIf="storageType === 'S3'" class="selected-badge">
               <i class="bi bi-check-circle-fill me-1"></i>Selected
             </span>
