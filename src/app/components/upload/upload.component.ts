@@ -17,7 +17,15 @@ export class UploadComponent {
   processing = false;
   error = '';
   success = '';
+  fileSaveNotice = '';
+  fileSaveWarning = false;
   uploadedReceipt: Receipt | null = null;
+
+  /** true on iPhone, iPad, or Android browsers */
+  readonly isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  /** Toggles between camera capture and gallery picker on mobile */
+  useCamera = false;
 
   get isBankStatement(): boolean {
     return this.uploadedReceipt?.receiptType === 'BANK_STATEMENT';
@@ -72,6 +80,17 @@ export class UploadComponent {
     if (file) this.processFile(file);
   }
 
+  openFilePicker(fileInput: HTMLInputElement, camera: boolean) {
+    this.useCamera = camera;
+    // Set capture attribute dynamically before triggering click
+    if (camera) {
+      fileInput.setAttribute('capture', 'environment');
+    } else {
+      fileInput.removeAttribute('capture');
+    }
+    fileInput.click();
+  }
+
   processFile(file: File) {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
     const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
@@ -82,6 +101,8 @@ export class UploadComponent {
     }
     this.uploading = true;
     this.error = '';
+    this.fileSaveNotice = '';
+    this.fileSaveWarning = false;
     this.receiptService.upload(file).subscribe({
       next: (r) => {
         this.uploading = false;
@@ -89,6 +110,7 @@ export class UploadComponent {
         this.success = r.receiptType === 'BANK_STATEMENT'
           ? 'Bank statement processed! Review and confirm the transactions.'
           : 'Receipt processed! Review and save the extracted data.';
+        this.applyFileSaveNotice(r);
       },
       error: (err) => {
         this.uploading = false;
@@ -96,6 +118,29 @@ export class UploadComponent {
         this.error = `Upload failed: ${msg}. You can also use Manual Entry.`;
       }
     });
+  }
+
+  private applyFileSaveNotice(r: Receipt) {
+    switch (r.fileSaveStatus) {
+      case 'SAVED':
+        this.fileSaveWarning = false;
+        this.fileSaveNotice = this.isMobile
+          ? 'File saved to your configured storage.'
+          : `File saved to: ${r.fileSavedTo}`;
+        break;
+      case 'DEFAULT':
+        this.fileSaveWarning = false;
+        this.fileSaveNotice = this.isMobile
+          ? 'File stored in the default server folder.'
+          : `File stored in default folder: ${r.fileSavedTo}`;
+        break;
+      case 'FAILED':
+        this.fileSaveWarning = true;
+        this.fileSaveNotice = 'File could not be saved to storage — receipt data was still processed.';
+        break;
+      default:
+        break;
+    }
   }
 
   confirmUpload() {

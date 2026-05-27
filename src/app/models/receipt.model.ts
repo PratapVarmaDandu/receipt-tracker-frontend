@@ -28,6 +28,8 @@ export interface Receipt {
   total?: number;
   imageFileName?: string;
   uploadedAt?: string;
+  fileSaveStatus?: string;
+  fileSavedTo?: string;
   items: ReceiptItem[];
   cashbackEarned?: number;
   potentialCashback?: number;
