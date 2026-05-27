@@ -8,7 +8,7 @@
       <h5 class="mb-0 fw-semibold">
         <i class="bi bi-people me-2 text-primary"></i>Share Expense
       </h5>
-      <div class="text-muted small mt-1">{{ receipt?.storeName }} · ${{ receipt?.total | number:'1.2-2' }}</div>
+      <div class="text-muted small mt-1">{{ receipt.storeName }} · ${{ receipt.total | number:'1.2-2' }}</div>
     </div>
     <button class="btn-close" (click)="close()"></button>
   </div>
@@ -56,7 +56,7 @@
   <!-- Step 2: Custom amounts -->
   <div class="card-body px-4 py-4" *ngIf="step === 2">
     <p class="text-muted small mb-3">
-      Receipt total: <strong>${{ receipt?.total | number:'1.2-2' }}</strong>.
+      Receipt total: <strong>${{ receipt.total | number:'1.2-2' }}</strong>.
       Assign how much each person owes.
     </p>
 
