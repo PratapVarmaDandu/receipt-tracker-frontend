@@ -36,6 +36,7 @@ export class AppComponent implements OnInit {
       .subscribe((e: any) => {
         this.isLoginPage = (e.urlAfterRedirects || e.url) === '/login';
         this.sidebarOpen = false;
+        document.body.classList.remove('sidebar-open');
       });
 
     this.uiEvents.openWelcomeBanner$.subscribe(() => {
@@ -45,10 +46,12 @@ export class AppComponent implements OnInit {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+    document.body.classList.toggle('sidebar-open', this.sidebarOpen);
   }
 
   closeSidebar(): void {
     this.sidebarOpen = false;
+    document.body.classList.remove('sidebar-open');
   }
 
   onBannerClosed(): void {

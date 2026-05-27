@@ -6,6 +6,7 @@
   --danger: #ef4444;
   --surface: #f8fafc;
   --card-shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --mobile-header-height: 52px;
 }
 
 * { box-sizing: border-box; }
@@ -27,7 +28,9 @@ body {
   color: #fff;
   position: sticky;
   top: 0;
-  z-index: 1030;
+  height: var(--mobile-header-height);
+  /* Must be above sidebar (1050) so the X button stays tappable when sidebar is open */
+  z-index: 1060;
 
   .mobile-brand {
     font-size: 1rem;
@@ -108,13 +111,18 @@ body {
   min-height: 100vh;
 }
 
+/* Prevent background scroll when sidebar is open on mobile */
+body.sidebar-open { overflow: hidden; }
+
 /* ── Mobile breakpoints ──────────────────────────────────────────────────── */
 @media (max-width: 767.98px) {
   .mobile-header { display: flex; }
 
   .sidebar {
     transform: translateX(-100%);
-    top: 0;
+    /* Start below the sticky header so the header stays accessible */
+    top: var(--mobile-header-height);
+    min-height: calc(100vh - var(--mobile-header-height));
     &.open { transform: translateX(0); }
   }
 
