@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter, take } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
 import { UiEventsService } from './services/ui-events.service';
 import { User } from './models/user.model';
@@ -31,10 +31,23 @@ export class AppComponent implements OnInit {
       }
     });
 
+    // After login, redirect back to the share page if the user clicked "Login" from a share invite
+    this.authService.currentUser().pipe(
+      filter(user => user !== null),
+      take(1)
+    ).subscribe(() => {
+      const redirect = localStorage.getItem('postLoginRedirect');
+      if (redirect) {
+        localStorage.removeItem('postLoginRedirect');
+        this.router.navigateByUrl(redirect);
+      }
+    });
+
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
-        this.isLoginPage = (e.urlAfterRedirects || e.url) === '/login';
+        const url: string = e.urlAfterRedirects || e.url;
+        this.isLoginPage = url === '/login' || url.startsWith('/share/');
         this.sidebarOpen = false;
         document.body.classList.remove('sidebar-open');
       });

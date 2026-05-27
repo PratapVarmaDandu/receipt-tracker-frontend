@@ -6,11 +6,13 @@ import { ReceiptListComponent } from './components/receipt-list/receipt-list.com
 import { ReceiptDetailComponent } from './components/receipt-detail/receipt-detail.component';
 import { LoginComponent } from './components/login/login.component';
 import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
+import { ShareResponseComponent } from './components/share-response/share-response.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
   { path: 'login',        component: LoginComponent },
   { path: '',             redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'share/:token', component: ShareResponseComponent },
   { path: 'dashboard',    component: DashboardComponent,    canActivate: [AuthGuard] },
   { path: 'upload',       component: UploadComponent,       canActivate: [AuthGuard] },
   { path: 'receipts',     component: ReceiptListComponent,  canActivate: [AuthGuard] },

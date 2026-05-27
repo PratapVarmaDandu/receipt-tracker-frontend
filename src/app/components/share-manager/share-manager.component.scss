@@ -1,0 +1,31 @@
+.share-manager {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1rem;
+}
+
+.share-row {
+  background: #f8f9fa;
+  transition: background 0.15s;
+}
+
+.share-status-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.badge-pending          { background: #fff3cd; color: #856404; }
+  &.badge-accepted         { background: #d1e7dd; color: #0a3622; }
+  &.badge-denied           { background: #f8d7da; color: #58151c; }
+  &.badge-change-requested { background: #ffe0b2; color: #6d3600; }
+  &.badge-change-approved  { background: #d4edda; color: #155724; }
+  &.badge-change-rejected  { background: #e2e3e5; color: #41464b; }
+}
+
+.change-request-panel {
+  background: #fff8e1;
+  border-left: 3px solid #f59e0b;
+  border-radius: 4px;
+}

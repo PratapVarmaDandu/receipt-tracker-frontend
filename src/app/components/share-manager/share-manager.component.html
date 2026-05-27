@@ -1,0 +1,71 @@
+<div class="share-manager mt-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="fw-semibold mb-0"><i class="bi bi-people me-2"></i>Shared With</h6>
+    <span *ngIf="shares.length > 0" class="text-muted small">{{ shares.length }} invite{{ shares.length !== 1 ? 's' : '' }}</span>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-3">
+    <div class="spinner-border spinner-border-sm text-primary"></div>
+  </div>
+
+  <div *ngIf="!loading && shares.length === 0" class="text-muted small fst-italic">
+    No shares yet. Click "Share Expense" to invite someone.
+  </div>
+
+  <div *ngIf="!loading && shares.length > 0" class="share-list">
+    <div *ngFor="let share of shares" class="share-row card border-0 shadow-sm mb-2 p-3">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+        <!-- Left: invitee info -->
+        <div class="share-info">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="bi bi-person-circle text-muted"></i>
+            <span class="fw-medium">{{ share.inviteeEmail }}</span>
+            <span class="share-status-badge" [ngClass]="statusClass(share.status)">
+              {{ statusLabel(share.status) }}
+            </span>
+          </div>
+          <div class="small text-muted">
+            Share: <strong class="text-dark">${{ share.shareAmount | number:'1.2-2' }}</strong>
+            <span *ngIf="share.shareNote" class="ms-2 fst-italic">"{{ share.shareNote }}"</span>
+          </div>
+        </div>
+
+        <!-- Right: actions -->
+        <div class="share-actions d-flex gap-2 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" (click)="copyLink(share.inviteToken)" title="Copy invite link">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Change request detail -->
+      <div *ngIf="share.status === 'CHANGE_REQUESTED'" class="change-request-panel mt-3 p-3">
+        <div class="small mb-2">
+          <strong>Counter-offer:</strong> ${{ share.counterAmount | number:'1.2-2' }}
+          <span *ngIf="share.counterNote" class="ms-2 text-muted">"{{ share.counterNote }}"</span>
+        </div>
+        <div *ngIf="actionInProgress === share.id" class="text-center">
+          <span class="spinner-border spinner-border-sm"></span>
+        </div>
+        <div *ngIf="actionInProgress !== share.id" class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm btn-success" (click)="approve(share)">
+            <i class="bi bi-check2 me-1"></i>Approve ${{ share.counterAmount | number:'1.2-2' }}
+          </button>
+          <button class="btn btn-sm btn-outline-danger" (click)="reject(share, '')">
+            <i class="bi bi-x me-1"></i>Reject
+          </button>
+        </div>
+      </div>
+
+      <!-- Change approved / rejected status detail -->
+      <div *ngIf="share.status === 'CHANGE_APPROVED'" class="mt-2 small text-success">
+        <i class="bi bi-check-circle me-1"></i>
+        Approved at ${{ share.shareAmount | number:'1.2-2' }}
+      </div>
+      <div *ngIf="share.status === 'CHANGE_REJECTED' && share.changeResponseNote" class="mt-2 small text-muted fst-italic">
+        <i class="bi bi-x-circle me-1 text-danger"></i>
+        Rejected: "{{ share.changeResponseNote }}"
+      </div>
+    </div>
+  </div>
+</div>

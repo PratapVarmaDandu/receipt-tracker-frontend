@@ -16,6 +16,7 @@
 - `CredentialsInterceptor` applies `withCredentials: true` to every request — required for session cookies
 - API base: `environment.apiUrl` → `http://localhost:8080/api` (dev) / `/api` (prod via nginx)
 - Error handling pattern in services: `catchError(error => { this.logger…; return of(null); })`
+- Upload requests use `timeout(280000)` RxJS operator (280 s) so Angular errors cleanly before nginx's 300 s deadline
 
 ## Logging — always use LoggerService, never console.log
 ```typescript
@@ -59,6 +60,12 @@ npm run watch      # dev build with --watch
 ```
 No `test` script is wired up (Karma devDeps are present but unused).
 
+## Expense sharing components
+- `share-dialog/` — modal launched from receipt-detail; step 1: emails + split type, step 2: custom amounts, step 3: copy links
+- `share-manager/` — embedded panel in receipt-detail; shows per-receipt share rows with status badges and owner approve/reject
+- `share-response/` — public route `/share/:token` (no `AuthGuard`); handles login redirect via `localStorage.setItem('postLoginRedirect', …)`
+- `ShareResponseComponent` is treated as a full-screen page (same as `/login`) so `AppComponent.isLoginPage()` returns true for `/share/` paths
+
 ## Don't
 - Don't convert components to standalone — everything is NgModule-based
 - Don't add NgRx — use BehaviorSubject in services
@@ -66,3 +73,5 @@ No `test` script is wired up (Karma devDeps are present but unused).
 - Don't remove `withCredentials: true` from `CredentialsInterceptor` — breaks session auth
 - Don't declare new components without adding them to `AppModule.declarations`
 - Don't create Angular enums for `StoreType`/`ReceiptDocType` — they're string unions by design (match backend strings directly)
+- Don't add `AuthGuard` to `/share/:token` — invitees visit this before logging in
+- Don't use the `replace` pipe in templates — it doesn't exist in Angular; use a component method instead

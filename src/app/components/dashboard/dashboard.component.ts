@@ -1,6 +1,8 @@
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { AnalyticsData, CashbackSuggestion } from '../../models/receipt.model';
 import { AnalyticsService } from '../../services/analytics.service';
+import { ExpenseShareService } from '../../services/expense-share.service';
+import { ExpenseShare } from '../../models/expense-share.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -18,12 +20,27 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   analytics: AnalyticsData | null = null;
   loading = true;
   selectedRange = '12';
+  pendingShares: ExpenseShare[] = [];
 
   private charts: Chart[] = [];
 
-  constructor(private analyticsService: AnalyticsService) {}
+  constructor(
+    private analyticsService: AnalyticsService,
+    private shareService: ExpenseShareService
+  ) {}
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+    this.loadPendingShares();
+  }
+
+  loadPendingShares(): void {
+    this.shareService.getMyShares().subscribe(shares => {
+      this.pendingShares = shares.filter(s =>
+        s.status === 'PENDING' || s.status === 'CHANGE_APPROVED' || s.status === 'CHANGE_REJECTED'
+      );
+    });
+  }
 
   ngAfterViewInit() {
     if (this.analytics) this.drawCharts();

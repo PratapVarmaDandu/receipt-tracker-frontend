@@ -1,0 +1,149 @@
+<div class="share-response-wrapper">
+  <div class="share-response-card card border-0 shadow-sm mx-auto">
+
+    <!-- Loading -->
+    <div *ngIf="loading" class="card-body text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <div class="mt-2 text-muted small">Loading your invite…</div>
+    </div>
+
+    <!-- Not found -->
+    <div *ngIf="!loading && notFound" class="card-body text-center py-5">
+      <i class="bi bi-exclamation-circle text-warning" style="font-size:2.5rem"></i>
+      <h5 class="mt-3">Invite Not Found</h5>
+      <p class="text-muted small">This link may be invalid or the invite was removed.</p>
+    </div>
+
+    <!-- Loaded -->
+    <div *ngIf="!loading && data">
+      <!-- Header -->
+      <div class="card-header bg-white border-bottom px-4 py-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="share-icon">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div>
+            <h5 class="mb-0 fw-semibold">Expense Share Invite</h5>
+            <div class="text-muted small">from <strong>{{ data.ownerName }}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body px-4 py-4">
+
+        <!-- Receipt summary -->
+        <div class="receipt-summary mb-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h6 class="fw-semibold mb-0">{{ data.storeName }}</h6>
+              <div class="text-muted small">{{ data.purchaseDateTime | date:'MMMM d, y · h:mm a' }}</div>
+            </div>
+            <div class="text-end">
+              <div class="text-muted small">Receipt total</div>
+              <div class="fw-bold">${{ data.receiptTotal | number:'1.2-2' }}</div>
+            </div>
+          </div>
+
+          <!-- Items -->
+          <div *ngIf="data.items && data.items.length > 0" class="items-list mt-3">
+            <div class="text-muted small mb-2 fw-medium">ITEMS</div>
+            <div *ngFor="let item of data.items" class="item-row d-flex justify-content-between py-1">
+              <span class="small">{{ item.name }}<span *ngIf="item.quantity && item.quantity > 1"> × {{ item.quantity }}</span></span>
+              <span class="small text-muted" *ngIf="item.totalPrice">${{ item.totalPrice | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Your share -->
+        <div class="your-share-panel mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted small">Your share</div>
+              <div class="share-amount fw-bold">${{ data.shareAmount | number:'1.2-2' }}</div>
+            </div>
+            <div class="share-status-pill" [ngClass]="statusCssKey(data.status)">
+              {{ statusLabel(data.status) }}
+            </div>
+          </div>
+          <div *ngIf="data.shareNote" class="mt-2 small text-muted fst-italic">
+            Note from {{ data.ownerName }}: "{{ data.shareNote }}"
+          </div>
+        </div>
+
+        <!-- Status-specific messages -->
+        <div *ngIf="data.status === 'ACCEPTED'" class="alert alert-success py-2 small">
+          <i class="bi bi-check-circle me-1"></i>You accepted this share. Thank you!
+        </div>
+        <div *ngIf="data.status === 'DENIED'" class="alert alert-secondary py-2 small">
+          <i class="bi bi-x-circle me-1"></i>You denied this invite.
+        </div>
+        <div *ngIf="data.status === 'CHANGE_REQUESTED'" class="alert alert-warning py-2 small">
+          <i class="bi bi-hourglass-split me-1"></i>
+          Your change request (${{ data.counterAmount | number:'1.2-2' }}) is awaiting the owner's response.
+        </div>
+        <div *ngIf="data.status === 'CHANGE_APPROVED'" class="alert alert-success py-2 small">
+          <i class="bi bi-check-circle me-1"></i>
+          Your change request was approved. Final amount: <strong>${{ data.shareAmount | number:'1.2-2' }}</strong>
+        </div>
+        <div *ngIf="data.status === 'CHANGE_REJECTED'" class="mb-3">
+          <div class="alert alert-danger py-2 small mb-2">
+            <i class="bi bi-x-circle me-1"></i>Your change request was rejected.
+            <span *ngIf="data.changeResponseNote"> Reason: "{{ data.changeResponseNote }}"</span>
+          </div>
+          <div class="text-muted small">You can submit a new counter-offer below.</div>
+        </div>
+
+        <!-- Login prompt for unauthenticated users -->
+        <div *ngIf="!currentUser && (data.status === 'PENDING' || data.status === 'CHANGE_REJECTED')"
+             class="login-prompt text-center py-3">
+          <i class="bi bi-shield-lock text-primary" style="font-size:2rem"></i>
+          <p class="mt-2 mb-3 text-muted small">Log in with Google to accept, decline, or request a change.</p>
+          <button class="btn btn-primary" (click)="onLoginClick()">
+            <i class="bi bi-google me-2"></i>Login with Google
+          </button>
+        </div>
+
+        <!-- Action buttons (logged in, actionable status) -->
+        <div *ngIf="canAct && !actionDone">
+          <div *ngIf="error" class="alert alert-danger py-2 small mb-3">{{ error }}</div>
+
+          <div *ngIf="!showChangeForm" class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-success flex-fill" (click)="accept()" [disabled]="submitting">
+              <span *ngIf="!submitting"><i class="bi bi-check2 me-1"></i>Accept ${{ data.shareAmount | number:'1.2-2' }}</span>
+              <span *ngIf="submitting"><span class="spinner-border spinner-border-sm"></span></span>
+            </button>
+            <button class="btn btn-outline-warning flex-fill" (click)="showChangeForm = true" [disabled]="submitting">
+              <i class="bi bi-pencil me-1"></i>Request Change
+            </button>
+            <button class="btn btn-outline-danger flex-fill" (click)="deny()" [disabled]="submitting">
+              <i class="bi bi-x me-1"></i>Deny
+            </button>
+          </div>
+
+          <!-- Change request form -->
+          <div *ngIf="showChangeForm" class="change-form mt-2 p-3">
+            <h6 class="fw-semibold mb-3">Request a Different Amount</h6>
+            <div class="mb-3">
+              <label class="form-label small fw-medium">Your proposed amount ($)</label>
+              <input type="number" class="form-control form-control-sm"
+                     [(ngModel)]="counterAmount" min="0.01" step="0.01" placeholder="0.00">
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-medium">Note (optional)</label>
+              <textarea class="form-control form-control-sm" rows="2"
+                        [(ngModel)]="counterNote" placeholder="Explain why you're requesting a change…"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" (click)="showChangeForm = false">Cancel</button>
+              <button class="btn btn-sm btn-warning" (click)="submitChangeRequest()" [disabled]="submitting">
+                <span *ngIf="!submitting"><i class="bi bi-send me-1"></i>Submit Request</span>
+                <span *ngIf="submitting"><span class="spinner-border spinner-border-sm"></span></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- card-body -->
+    </div><!-- loaded -->
+  </div><!-- card -->
+</div>

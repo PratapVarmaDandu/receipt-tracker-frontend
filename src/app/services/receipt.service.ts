@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, timeout } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { Receipt } from '../models/receipt.model';
 import { environment } from '../../environments/environment';
@@ -54,9 +54,10 @@ export class ReceiptService {
     fd.append('file', file);
     
     return this.http.post<Receipt>(`${this.base}/upload`, fd).pipe(
+      timeout(280000),
       tap(receipt => {
         this.logger.apiCall(this.source, 'POST', '/receipts/upload', startTime);
-        this.logger.info(this.source, 
+        this.logger.info(this.source,
           `<<< upload() - SUCCESS: receiptId=${receipt.id}, store=${receipt.storeName}, total=${receipt.total}`);
       }),
       catchError(error => {

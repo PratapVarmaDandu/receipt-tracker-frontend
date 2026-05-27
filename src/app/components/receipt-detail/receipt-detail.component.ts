@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Receipt, STORE_TYPE_ICONS, STORE_TYPE_LABELS, STORE_TYPE_CSS } from '../../models/receipt.model';
 import { ReceiptService } from '../../services/receipt.service';
+import { ExpenseShare } from '../../models/expense-share.model';
 
 @Component({
   selector: 'app-receipt-detail',
@@ -24,6 +25,7 @@ export class ReceiptDetailComponent implements OnInit {
   storeIcons = STORE_TYPE_ICONS;
   storeLabels = STORE_TYPE_LABELS;
   storeCss = STORE_TYPE_CSS;
+  showShareDialog = false;
 
   constructor(
     private route: ActivatedRoute,

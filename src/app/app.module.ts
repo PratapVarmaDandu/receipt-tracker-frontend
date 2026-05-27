@@ -17,6 +17,9 @@ import { AuthService } from './services/auth.service';
 import { CredentialsInterceptor } from './interceptors/credentials.interceptor';
 import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
 import { WelcomeBannerComponent } from './components/welcome-banner/welcome-banner.component';
+import { ShareDialogComponent } from './components/share-dialog/share-dialog.component';
+import { ShareManagerComponent } from './components/share-manager/share-manager.component';
+import { ShareResponseComponent } from './components/share-response/share-response.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -31,7 +34,10 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     ReceiptDetailComponent,
     LoginComponent,
     StorageSettingsComponent,
-    WelcomeBannerComponent
+    WelcomeBannerComponent,
+    ShareDialogComponent,
+    ShareManagerComponent,
+    ShareResponseComponent
   ],
   imports: [
     BrowserModule,

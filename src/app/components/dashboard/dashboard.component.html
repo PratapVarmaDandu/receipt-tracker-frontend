@@ -13,6 +13,25 @@
   </div>
 </div>
 
+<!-- Pending share invites banner -->
+<div *ngIf="pendingShares.length > 0" class="alert alert-info d-flex align-items-center gap-3 mb-4 py-2">
+  <i class="bi bi-people-fill fs-5"></i>
+  <div class="flex-fill">
+    <strong>{{ pendingShares.length }} pending expense invite{{ pendingShares.length !== 1 ? 's' : '' }}</strong>
+    <div class="small mt-1 d-flex flex-wrap gap-2">
+      <a *ngFor="let share of pendingShares"
+         [routerLink]="['/share', share.inviteToken]"
+         class="text-decoration-none">
+        <span class="badge bg-light text-dark border">
+          {{ share.storeName }} · ${{ share.shareAmount | number:'1.2-2' }}
+          <span class="ms-1 text-warning" *ngIf="share.status === 'CHANGE_REJECTED'">⚠</span>
+          <span class="ms-1 text-success" *ngIf="share.status === 'CHANGE_APPROVED'">✓</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</div>
+
 <div *ngIf="loading" class="text-center py-5">
   <div class="spinner-border text-primary"></div>
   <p class="text-muted mt-2">Loading analytics…</p>

@@ -1,0 +1,83 @@
+.share-response-wrapper {
+  min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+.share-response-card {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 12px !important;
+}
+
+.share-icon {
+  width: 44px;
+  height: 44px;
+  background: #e8f0fe;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #2d6cdf;
+}
+
+.receipt-summary {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.items-list {
+  border-top: 1px solid #e9ecef;
+  padding-top: 0.5rem;
+}
+
+.item-row {
+  border-bottom: 1px solid #e9ecef;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.your-share-panel {
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0f7ff 100%);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.share-amount {
+  font-size: 1.6rem;
+  color: #2d6cdf;
+}
+
+.share-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  &.status-pending          { background: #fff3cd; color: #856404; }
+  &.status-accepted         { background: #d1e7dd; color: #0a3622; }
+  &.status-denied           { background: #f8d7da; color: #58151c; }
+  &.status-change-requested { background: #ffe0b2; color: #6d3600; }
+  &.status-change-approved  { background: #d4edda; color: #155724; }
+  &.status-change-rejected  { background: #e2e3e5; color: #41464b; }
+}
+
+.login-prompt {
+  border: 2px dashed #c9d6e3;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.change-form {
+  background: #fffbf0;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
