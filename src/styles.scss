@@ -18,9 +18,9 @@ body {
   margin: 0;
 }
 
-/* Mobile header (visible only on small screens) */
+/* Mobile header — visible by default; hidden on desktop via min-width query below */
 .mobile-header {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   padding: .65rem 1rem;
@@ -60,18 +60,21 @@ body {
   &.open { display: block; }
 }
 
-/* Sidebar */
+/* Sidebar — hidden on mobile by default; shown as overlay when .open */
 .sidebar {
-  width: 240px;
-  min-height: 100vh;
+  width: min(280px, 85vw);
   background: #1e1b4b;
   color: #c7d2fe;
-  display: flex;
+  display: none;
   flex-direction: column;
   position: fixed;
-  top: 0; left: 0;
+  top: var(--mobile-header-height);
+  left: 0;
+  bottom: 0;
   z-index: 1050;
-  transition: transform .25s ease;
+  overflow-y: auto;
+
+  &.open { display: flex; }
 
   .sidebar-brand {
     padding: 1.5rem 1.25rem 1rem;
@@ -105,39 +108,38 @@ body {
   }
 }
 
+/* Mobile default: full-width content, no sidebar offset */
 .main-content {
-  margin-left: 240px;
-  padding: 2rem;
+  padding: 1rem;
   min-height: 100vh;
 }
 
-/* Prevent background scroll when sidebar is open on mobile */
+/* Prevent background scroll when sidebar overlay is open */
 body.sidebar-open { overflow: hidden; }
 
-/* ── Mobile breakpoints ──────────────────────────────────────────────────── */
-@media (max-width: 767.98px) {
-  .mobile-header { display: flex; }
+/* ── Desktop layout (≥ 768px) ───────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .mobile-header { display: none; }
 
   .sidebar {
-    transform: translateX(-100%);
-    /* Start below the sticky header so the header stays accessible */
-    top: var(--mobile-header-height);
-    min-height: calc(100vh - var(--mobile-header-height));
-    &.open { transform: translateX(0); }
+    display: flex;
+    position: fixed;
+    top: 0;
+    bottom: auto;
+    min-height: 100vh;
+    width: 240px;
   }
 
   .main-content {
-    margin-left: 0;
-    padding: 1rem;
+    margin-left: 240px;
+    padding: 2rem;
   }
+}
 
-  /* Stack stat cards on one column */
+/* ── Mobile-only component tweaks ───────────────────────────────────────── */
+@media (max-width: 767.98px) {
   .stat-card { padding: 1rem; }
-
-  /* Make receipt cards full-width list */
   .receipt-card { margin-bottom: .5rem; }
-
-  /* Tighter page title on mobile */
   .page-title { font-size: 1.15rem; }
 }
 
