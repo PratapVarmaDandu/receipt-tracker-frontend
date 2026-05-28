@@ -38,7 +38,12 @@ export class ShareDialogComponent implements OnInit {
 
   get equalAmount(): number {
     if (!this.receipt?.total || this.rows.length === 0) return 0;
-    return Math.round((this.receipt.total / this.rows.length) * 100) / 100;
+    return Math.round((this.receipt.total / (this.rows.length + 1)) * 100) / 100;
+  }
+
+  get equalPct(): number {
+    if (this.rows.length === 0) return 0;
+    return 100 / (this.rows.length + 1);
   }
 
   get customTotal(): number {

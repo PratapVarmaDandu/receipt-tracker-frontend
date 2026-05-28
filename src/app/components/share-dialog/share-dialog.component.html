@@ -35,9 +35,27 @@
 
     <div class="mb-3">
       <label class="form-label fw-medium">Invite by email</label>
-      <textarea class="form-control" rows="4" [(ngModel)]="emailInput"
+      <textarea class="form-control" rows="4" [(ngModel)]="emailInput" (input)="parseEmails()"
                 placeholder="Enter emails separated by comma, semicolon, or new line&#10;e.g. alice@example.com, bob@example.com"></textarea>
       <div class="form-text">Each person will receive an email with a link to view and respond.</div>
+    </div>
+
+    <!-- Live equal-split preview — updates as emails are typed -->
+    <div *ngIf="splitType === 'EQUAL' && rows.length > 0" class="split-preview mt-3 p-3">
+      <div class="split-preview-header d-flex justify-content-between mb-2">
+        <span class="small fw-semibold">Split preview</span>
+        <span class="small text-muted">{{ rows.length + 1 }} people · ${{ equalAmount | number:'1.2-2' }} each ({{ equalPct | number:'1.0-0' }}%)</span>
+      </div>
+      <div class="split-row d-flex justify-content-between align-items-center small py-1">
+        <span><i class="bi bi-person-circle me-1 text-primary"></i>You (owner)</span>
+        <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
+      </div>
+      <div *ngFor="let row of rows" class="split-row d-flex justify-content-between align-items-center small py-1">
+        <span class="text-truncate me-2" style="max-width:270px">
+          <i class="bi bi-person me-1 text-secondary"></i>{{ row.email }}
+        </span>
+        <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
+      </div>
     </div>
 
     <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
