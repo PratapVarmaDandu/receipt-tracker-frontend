@@ -93,12 +93,12 @@
           <div class="text-muted small">You can submit a new counter-offer below.</div>
         </div>
 
-        <!-- Login prompt for unauthenticated users -->
+        <!-- Login prompt for unauthenticated users (auto-redirect handles this, but shown as fallback) -->
         <div *ngIf="!currentUser && (data.status === 'PENDING' || data.status === 'CHANGE_REJECTED')"
              class="login-prompt text-center py-3">
-          <i class="bi bi-shield-lock text-primary" style="font-size:2rem"></i>
-          <p class="mt-2 mb-3 text-muted small">Log in with Google to accept, decline, or request a change.</p>
-          <button class="btn btn-primary" (click)="onLoginClick()">
+          <div class="spinner-border text-primary mb-3"></div>
+          <p class="text-muted small">Redirecting to login…</p>
+          <button class="btn btn-outline-primary btn-sm mt-2" (click)="onLoginClick()">
             <i class="bi bi-google me-2"></i>Login with Google
           </button>
         </div>

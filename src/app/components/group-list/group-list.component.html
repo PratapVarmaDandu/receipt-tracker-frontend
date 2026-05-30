@@ -1,0 +1,45 @@
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 px-4">
+    <h6 class="mb-0 fw-semibold"><i class="bi bi-people-fill me-2 text-primary"></i>My Groups</h6>
+    <button class="btn btn-sm btn-primary" (click)="showCreate = !showCreate">
+      <i class="bi bi-plus me-1"></i>New Group
+    </button>
+  </div>
+
+  <!-- Create form -->
+  <div *ngIf="showCreate" class="px-4 pt-3 pb-2 border-bottom">
+    <div class="d-flex gap-2">
+      <input class="form-control form-control-sm" [(ngModel)]="newGroupName"
+             placeholder="Group name (e.g. Family, Roommates)"
+             (keyup.enter)="create()" maxlength="60">
+      <button class="btn btn-sm btn-success" (click)="create()" [disabled]="creating">
+        <span *ngIf="!creating"><i class="bi bi-check2"></i></span>
+        <span *ngIf="creating"><span class="spinner-border spinner-border-sm"></span></span>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" (click)="showCreate = false">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div *ngIf="createError" class="text-danger small mt-1">{{ createError }}</div>
+  </div>
+
+  <div class="card-body p-0">
+    <div *ngIf="loading" class="text-center py-4">
+      <div class="spinner-border spinner-border-sm text-primary"></div>
+    </div>
+
+    <div *ngIf="!loading && groups.length === 0" class="text-center text-muted small py-4">
+      No groups yet. Create one to start sharing expenses.
+    </div>
+
+    <div *ngFor="let g of groups" class="group-row d-flex align-items-center px-4 py-3"
+         [routerLink]="['/groups', g.id]" style="cursor:pointer">
+      <div class="group-avatar me-3">{{ g.name[0].toUpperCase() }}</div>
+      <div class="flex-fill">
+        <div class="fw-medium small">{{ g.name }}</div>
+        <div class="text-muted" style="font-size:11px">{{ g.memberCount }} member{{ g.memberCount !== 1 ? 's' : '' }} · {{ g.currentUserRole === 'OWNER' ? 'Owner' : 'Member' }}</div>
+      </div>
+      <i class="bi bi-chevron-right text-muted small"></i>
+    </div>
+  </div>
+</div>

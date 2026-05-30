@@ -61,10 +61,18 @@ npm run watch      # dev build with --watch
 No `test` script is wired up (Karma devDeps are present but unused).
 
 ## Expense sharing components
-- `share-dialog/` — modal launched from receipt-detail; step 1: emails + split type, step 2: custom amounts, step 3: copy links
+- `share-dialog/` — modal launched from receipt-detail; step 1: emails + split type + live equal-split preview, step 2: custom amounts, step 3: copy links
 - `share-manager/` — embedded panel in receipt-detail; shows per-receipt share rows with status badges and owner approve/reject
 - `share-response/` — public route `/share/:token` (no `AuthGuard`); handles login redirect via `localStorage.setItem('postLoginRedirect', …)`
-- `ShareResponseComponent` is treated as a full-screen page (same as `/login`) so `AppComponent.isLoginPage()` returns true for `/share/` paths
+- `ShareResponseComponent` is treated as a full-screen page so `AppComponent.isLoginPage()` returns true for `/share/` and `/group/join/` paths
+- Error surfacing: `submitInviteeAction` re-throws errors (does NOT swallow to `of(null)`) so the component error handler shows the real backend message
+
+## Groups components
+- `group-list/` — card widget on dashboard; shows joined/owned groups; button to create new group
+- `group-detail/` — route `/groups/:id`; shows members, QR code, shareable invite link; WhatsApp/email share buttons
+- `join-group/` — route `/group/join/:token`; public, no AuthGuard; shows group info + login/join prompt
+- QR code: uses `qrcode` npm package (`npm install qrcode @types/qrcode`); generate data URL via `QRCode.toDataURL(joinUrl)`
+- `JoinGroupComponent` is full-screen (added to `AppComponent.isLoginPage()`)
 
 ## Don't
 - Don't convert components to standalone — everything is NgModule-based
@@ -73,5 +81,6 @@ No `test` script is wired up (Karma devDeps are present but unused).
 - Don't remove `withCredentials: true` from `CredentialsInterceptor` — breaks session auth
 - Don't declare new components without adding them to `AppModule.declarations`
 - Don't create Angular enums for `StoreType`/`ReceiptDocType` — they're string unions by design (match backend strings directly)
-- Don't add `AuthGuard` to `/share/:token` — invitees visit this before logging in
+- Don't add `AuthGuard` to `/share/:token` or `/group/join/:token` — users visit before logging in
 - Don't use the `replace` pipe in templates — it doesn't exist in Angular; use a component method instead
+- Don't swallow errors in `submitInviteeAction` — re-throw so the real backend message (e.g. "This invite is not for your account") surfaces in the UI

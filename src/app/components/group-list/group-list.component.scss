@@ -1,0 +1,20 @@
+.group-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+  &:last-child { border-bottom: none; }
+  &:hover { background: #f8faff; }
+}
+
+.group-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}

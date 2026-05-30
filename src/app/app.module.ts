@@ -20,6 +20,9 @@ import { WelcomeBannerComponent } from './components/welcome-banner/welcome-bann
 import { ShareDialogComponent } from './components/share-dialog/share-dialog.component';
 import { ShareManagerComponent } from './components/share-manager/share-manager.component';
 import { ShareResponseComponent } from './components/share-response/share-response.component';
+import { GroupListComponent } from './components/group-list/group-list.component';
+import { GroupDetailComponent } from './components/group-detail/group-detail.component';
+import { JoinGroupComponent } from './components/join-group/join-group.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -37,7 +40,10 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     WelcomeBannerComponent,
     ShareDialogComponent,
     ShareManagerComponent,
-    ShareResponseComponent
+    ShareResponseComponent,
+    GroupListComponent,
+    GroupDetailComponent,
+    JoinGroupComponent
   ],
   imports: [
     BrowserModule,

@@ -1,0 +1,102 @@
+<div class="container py-4" style="max-width:700px">
+
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div *ngIf="!loading && notFound" class="text-center py-5">
+    <i class="bi bi-exclamation-circle text-warning" style="font-size:2.5rem"></i>
+    <h5 class="mt-3">Group Not Found</h5>
+  </div>
+
+  <ng-container *ngIf="!loading && group">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a routerLink="/groups" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div class="group-avatar-lg">{{ group.name[0].toUpperCase() }}</div>
+      <div>
+        <h3 class="mb-0 fw-bold">{{ group.name }}</h3>
+        <div class="text-muted small">{{ group.memberCount }} member{{ group.memberCount !== 1 ? 's' : '' }} · Created by {{ group.ownerName }}</div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+
+      <!-- Invite card -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-qr-code me-2 text-primary"></i>Invite Members</h6>
+
+            <div class="d-flex flex-column flex-sm-row gap-4 align-items-center">
+              <!-- QR Code -->
+              <div class="qr-wrapper text-center">
+                <img *ngIf="qrDataUrl" [src]="qrDataUrl" alt="QR Code" class="qr-img">
+                <div *ngIf="!qrDataUrl" class="qr-placeholder d-flex align-items-center justify-content-center">
+                  <span class="spinner-border spinner-border-sm text-muted"></span>
+                </div>
+                <div class="text-muted small mt-1">Scan to join</div>
+              </div>
+
+              <!-- Link + share buttons -->
+              <div class="flex-fill">
+                <div class="mb-2">
+                  <label class="form-label small fw-medium mb-1">Invite link</label>
+                  <div class="input-group input-group-sm">
+                    <input class="form-control form-control-sm text-truncate" [value]="joinUrl" readonly>
+                    <button class="btn btn-outline-secondary" (click)="copyLink()" title="Copy link">
+                      <i class="bi bi-clipboard"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="small fw-medium mb-2 text-muted">Share via</div>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-sm btn-success" (click)="shareViaWhatsApp()">
+                    <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                  </button>
+                  <button class="btn btn-sm btn-outline-primary" (click)="shareViaEmail()">
+                    <i class="bi bi-envelope me-1"></i>Email
+                  </button>
+                  <button class="btn btn-sm btn-outline-info" (click)="shareViaTelegram()">
+                    <i class="bi bi-telegram me-1"></i>Telegram
+                  </button>
+                  <button *ngIf="hasNativeShare" class="btn btn-sm btn-outline-secondary" (click)="shareNative()">
+                    <i class="bi bi-share me-1"></i>More
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Members card -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white py-3 px-4">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-people me-2"></i>Members</h6>
+          </div>
+          <div class="list-group list-group-flush" *ngIf="group.members">
+            <div *ngFor="let m of group.members" class="list-group-item d-flex align-items-center gap-3 py-3">
+              <img *ngIf="m.picture" [src]="m.picture" class="member-avatar" alt="">
+              <div *ngIf="!m.picture" class="member-avatar-placeholder">{{ m.name[0].toUpperCase() }}</div>
+              <div class="flex-fill">
+                <div class="fw-medium small">{{ m.name }}</div>
+                <div class="text-muted" style="font-size:11px">{{ m.email }}</div>
+              </div>
+              <span class="badge" [class.bg-primary]="m.role === 'OWNER'" [class.bg-light]="m.role !== 'OWNER'"
+                    [class.text-dark]="m.role !== 'OWNER'">
+                {{ m.role === 'OWNER' ? 'Owner' : 'Member' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+</div>

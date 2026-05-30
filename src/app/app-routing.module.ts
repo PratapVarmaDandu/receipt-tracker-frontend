@@ -7,18 +7,24 @@ import { ReceiptDetailComponent } from './components/receipt-detail/receipt-deta
 import { LoginComponent } from './components/login/login.component';
 import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
 import { ShareResponseComponent } from './components/share-response/share-response.component';
+import { GroupListComponent } from './components/group-list/group-list.component';
+import { GroupDetailComponent } from './components/group-detail/group-detail.component';
+import { JoinGroupComponent } from './components/join-group/join-group.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
-  { path: 'login',        component: LoginComponent },
-  { path: '',             redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'share/:token', component: ShareResponseComponent },
-  { path: 'dashboard',    component: DashboardComponent,    canActivate: [AuthGuard] },
-  { path: 'upload',       component: UploadComponent,       canActivate: [AuthGuard] },
-  { path: 'receipts',     component: ReceiptListComponent,  canActivate: [AuthGuard] },
-  { path: 'receipts/:id', component: ReceiptDetailComponent, canActivate: [AuthGuard] },
-  { path: 'settings',     component: StorageSettingsComponent, canActivate: [AuthGuard] },
-  { path: '**',           redirectTo: 'dashboard' }
+  { path: 'login',              component: LoginComponent },
+  { path: '',                   redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: 'share/:token',       component: ShareResponseComponent },
+  { path: 'group/join/:token',  component: JoinGroupComponent },
+  { path: 'dashboard',          component: DashboardComponent,       canActivate: [AuthGuard] },
+  { path: 'upload',             component: UploadComponent,          canActivate: [AuthGuard] },
+  { path: 'receipts',           component: ReceiptListComponent,     canActivate: [AuthGuard] },
+  { path: 'receipts/:id',       component: ReceiptDetailComponent,   canActivate: [AuthGuard] },
+  { path: 'settings',           component: StorageSettingsComponent, canActivate: [AuthGuard] },
+  { path: 'groups',             component: GroupListComponent,       canActivate: [AuthGuard] },
+  { path: 'groups/:id',         component: GroupDetailComponent,     canActivate: [AuthGuard] },
+  { path: '**',                 redirectTo: 'dashboard' }
 ];
 
 @NgModule({

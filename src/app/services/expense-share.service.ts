@@ -72,7 +72,7 @@ export class ExpenseShareService {
       tap(() => this.logger.apiCall(this.source, 'POST', `/shares/token/${token}/action`, startTime)),
       catchError(err => {
         this.logger.apiError(this.source, 'POST', `/shares/token/${token}/action`, err, startTime);
-        return of(null);
+        throw err;
       })
     );
   }

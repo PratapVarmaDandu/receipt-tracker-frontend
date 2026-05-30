@@ -48,9 +48,17 @@ export class ShareResponseComponent implements OnInit {
         this.notFound = true;
       } else {
         this.data = data;
+        // Auto-redirect unauthenticated invitees to login immediately
+        if (!this.currentUser && this.isActionable(data.status)) {
+          this.onLoginClick();
+        }
       }
       this.loading = false;
     });
+  }
+
+  private isActionable(status: string): boolean {
+    return status === 'PENDING' || status === 'CHANGE_REJECTED';
   }
 
   get canAct(): boolean {
@@ -81,17 +89,18 @@ export class ShareResponseComponent implements OnInit {
     this.error = null;
     this.shareService.submitInviteeAction(this.token, action, counterAmount, counterNote).subscribe({
       next: updated => {
-        if (updated) {
-          this.data = { ...this.data!, status: updated.status as any };
-          this.actionDone = true;
-          this.showChangeForm = false;
-        } else {
-          this.error = 'Something went wrong. Please try again.';
-        }
+        this.data = { ...this.data!, status: updated!.status as any };
+        this.actionDone = true;
+        this.showChangeForm = false;
         this.submitting = false;
       },
       error: err => {
-        this.error = err?.error?.error ?? 'Action failed. Please try again.';
+        const msg = err?.error?.error ?? 'Action failed. Please try again.';
+        if (msg.includes('not for your account')) {
+          this.error = 'This invite was sent to a different email address. Please log in with the correct Google account.';
+        } else {
+          this.error = msg;
+        }
         this.submitting = false;
       }
     });

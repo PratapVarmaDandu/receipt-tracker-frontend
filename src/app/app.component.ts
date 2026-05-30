@@ -47,7 +47,7 @@ export class AppComponent implements OnInit {
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
         const url: string = e.urlAfterRedirects || e.url;
-        this.isLoginPage = url === '/login' || url.startsWith('/share/');
+        this.isLoginPage = url === '/login' || url.startsWith('/share/') || url.startsWith('/group/join/');
         this.sidebarOpen = false;
         document.body.classList.remove('sidebar-open');
       });
