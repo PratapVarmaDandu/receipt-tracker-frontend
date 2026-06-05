@@ -1,8 +1,12 @@
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { AnalyticsData, CashbackSuggestion } from '../../models/receipt.model';
+import { Vehicle } from '../../models/vehicle.model';
 import { AnalyticsService } from '../../services/analytics.service';
 import { ExpenseShareService } from '../../services/expense-share.service';
 import { ExpenseShare } from '../../models/expense-share.model';
+import { DocumentService } from '../../services/document.service';
+import { DocumentSummary } from '../../models/document.model';
+import { VehicleService } from '../../services/vehicle.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -16,22 +20,33 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('spendingByCategory') catCanvas!: ElementRef;
   @ViewChild('spendingByMonth')    monthCanvas!: ElementRef;
   @ViewChild('cashbackByCard')     cardCanvas!: ElementRef;
+  @ViewChild('momChart')           momCanvas!: ElementRef;
 
   analytics: AnalyticsData | null = null;
   loading = true;
   selectedRange = '12';
   pendingShares: ExpenseShare[] = [];
+  docSummary: DocumentSummary | null = null;
+  vehicles: Vehicle[] = [];
 
   private charts: Chart[] = [];
 
   constructor(
     private analyticsService: AnalyticsService,
-    private shareService: ExpenseShareService
+    private shareService: ExpenseShareService,
+    private docService: DocumentService,
+    private vehicleService: VehicleService
   ) {}
 
   ngOnInit() {
     this.load();
     this.loadPendingShares();
+    this.loadDocSummary();
+    this.loadVehicles();
+  }
+
+  loadDocSummary(): void {
+    this.docService.getSummary().subscribe(s => { this.docSummary = s; });
   }
 
   loadPendingShares(): void {
@@ -40,6 +55,18 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         s.status === 'PENDING' || s.status === 'CHANGE_APPROVED' || s.status === 'CHANGE_REJECTED'
       );
     });
+  }
+
+  loadVehicles(): void {
+    this.vehicleService.list().subscribe(v => { this.vehicles = v; });
+  }
+
+  get vehiclesWithTagIssues(): Vehicle[] {
+    return this.vehicles.filter(v => v.tagStatus === 'EXPIRING_SOON' || v.tagStatus === 'EXPIRED');
+  }
+
+  get vehiclesWithInsuranceIssues(): Vehicle[] {
+    return this.vehicles.filter(v => v.insuranceStatus === 'EXPIRING_SOON' || v.insuranceStatus === 'EXPIRED');
   }
 
   ngAfterViewInit() {
@@ -124,6 +151,42 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: { x: { beginAtZero: true } }
+        }
+      }));
+    }
+
+    // Month-over-month by category (grouped bar — last 6 months)
+    if (this.momCanvas && this.analytics.spendingByCategoryPerMonth) {
+      const perMonth = this.analytics.spendingByCategoryPerMonth;
+      const allMonths = Object.keys(perMonth).sort().slice(-6);
+      const allCats = new Set<string>();
+      allMonths.forEach(m => Object.keys(perMonth[m] || {}).forEach(c => allCats.add(c)));
+      const topCats = Array.from(allCats)
+        .sort((a, b) => {
+          const sumA = allMonths.reduce((s, m) => s + (perMonth[m]?.[a] || 0), 0);
+          const sumB = allMonths.reduce((s, m) => s + (perMonth[m]?.[b] || 0), 0);
+          return sumB - sumA;
+        })
+        .slice(0, 5);
+
+      this.charts.push(new Chart(this.momCanvas.nativeElement, {
+        type: 'bar',
+        data: {
+          labels: allMonths,
+          datasets: topCats.map((cat, i) => ({
+            label: this.friendly(cat),
+            data: allMonths.map(m => Number(perMonth[m]?.[cat] || 0)),
+            backgroundColor: PALETTE[i % PALETTE.length] + 'cc',
+            borderRadius: 4
+          }))
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+          scales: {
+            x: { stacked: false },
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' } }
+          }
         }
       }));
     }

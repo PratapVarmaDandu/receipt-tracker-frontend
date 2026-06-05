@@ -1,48 +1,73 @@
-<!-- Login page: full-screen, no sidebar -->
+<!-- Login / share / group-join: full-screen, no shell -->
 <ng-container *ngIf="isLoginPage">
   <router-outlet></router-outlet>
 </ng-container>
 
-<!-- App shell: sidebar + main -->
+<!-- App shell: sidebar + main content -->
 <ng-container *ngIf="!isLoginPage">
-  <!-- Mobile header -->
-  <header class="mobile-header">
+
+  <!--
+    Mobile header — position: fixed (see styles.scss).
+    Brand on the LEFT, hamburger on the RIGHT.
+    padding-top: max(0.6rem, env(safe-area-inset-top)) absorbs
+    the iPhone 14 Pro Dynamic Island / notch so neither element
+    is hidden behind the hardware.
+  -->
+  <header class="mobile-header" role="banner">
     <span class="mobile-brand">
-      <i class="bi bi-receipt-cutoff"></i>Receipt Tracker
+      <span class="brand-icon"><i class="bi bi-gem"></i></span>
+      Steward
     </span>
-    <button class="mobile-hamburger" (click)="toggleSidebar()" aria-label="Open menu">
+    <button class="mobile-hamburger"
+            (click)="toggleSidebar()"
+            [attr.aria-expanded]="sidebarOpen"
+            aria-label="Toggle navigation menu">
       <i class="bi" [class.bi-list]="!sidebarOpen" [class.bi-x-lg]="sidebarOpen"></i>
     </button>
   </header>
 
-  <!-- Backdrop overlay on mobile -->
+  <!-- Backdrop (mobile only) -->
   <div class="sidebar-overlay" [class.open]="sidebarOpen" (click)="closeSidebar()"></div>
 
   <div class="d-flex">
-    <aside class="sidebar" [class.open]="sidebarOpen">
+    <aside class="sidebar" [class.open]="sidebarOpen" role="navigation" aria-label="Main navigation">
+
+      <!-- Desktop-only brand (hidden on mobile — the header shows it there) -->
       <div class="sidebar-brand">
-        <i class="bi bi-receipt-cutoff"></i>
-        Receipt Tracker
+        <span class="brand-icon"><i class="bi bi-gem"></i></span>
+        Steward
       </div>
-      <nav class="pt-2">
+
+      <nav class="pt-1">
+        <div class="nav-section">Menu</div>
+
         <a routerLink="/dashboard" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-speedometer2"></i> Dashboard
         </a>
         <a routerLink="/upload" routerLinkActive="active" (click)="closeSidebar()">
-          <i class="bi bi-cloud-upload"></i> Upload
+          <i class="bi bi-cloud-upload"></i> Upload Receipt
         </a>
         <a routerLink="/receipts" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-collection"></i> All Receipts
         </a>
-        <a routerLink="/settings" routerLinkActive="active" (click)="closeSidebar()">
-          <i class="bi bi-hdd-network"></i> Storage Settings
+
+        <div class="nav-section">Manage</div>
+
+        <a routerLink="/garage" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-speedometer2"></i> My Garage
+        </a>
+        <a routerLink="/documents" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-folder2-open"></i> Document Vault
         </a>
         <a routerLink="/groups" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-people"></i> Groups
         </a>
+        <a routerLink="/settings" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-hdd-network"></i> Storage
+        </a>
       </nav>
 
-      <!-- User profile + logout -->
+      <!-- User profile section -->
       <div class="sidebar-user" *ngIf="currentUser">
         <img *ngIf="currentUser.picture"
              [src]="currentUser.picture"
@@ -53,14 +78,15 @@
           <span class="user-name">{{ currentUser.name }}</span>
           <span class="user-email">{{ currentUser.email }}</span>
         </div>
-        <button class="btn-logout" (click)="logout()" title="Sign out">
+        <button class="btn-logout" (click)="logout()" title="Sign out" aria-label="Sign out">
           <i class="bi bi-box-arrow-right"></i>
         </button>
       </div>
 
+      <!-- Footer links -->
       <div class="sidebar-bottom">
-        <button class="sidebar-info-btn" (click)="openWelcomeBanner()" title="Privacy & legal notice">
-          <i class="bi bi-info-circle me-1"></i>Privacy &amp; Legal
+        <button class="sidebar-info-btn" (click)="openWelcomeBanner()">
+          <i class="bi bi-shield-lock me-1"></i>Privacy &amp; Legal
         </button>
         <div class="sidebar-cashback">
           <i class="bi bi-lightning-charge-fill me-1"></i>Cashback Optimizer
@@ -74,7 +100,7 @@
   </div>
 </ng-container>
 
-<!-- Welcome / privacy banner (shown on first login or via sidebar link) -->
+<!-- Welcome / privacy banner -->
 <app-welcome-banner
   *ngIf="showWelcomeBanner && !isLoginPage"
   (closed)="onBannerClosed()">

@@ -6,6 +6,16 @@ import { User } from '../models/user.model';
 import { environment } from '../../environments/environment';
 import { LoggerService } from './logger.service';
 
+const LOCAL_DEV_USER: User = {
+  id: 0,
+  name: 'Local Dev User',
+  email: 'dev@localhost.local',
+  picture: '',
+  authenticated: true,
+  welcomeDismissed: true,
+  storageConfigured: false
+};
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly apiUrl = `${environment.apiUrl}/auth`;
@@ -16,9 +26,14 @@ export class AuthService {
 
   /** Called once at app startup via APP_INITIALIZER */
   checkAuth(): Observable<User | null> {
+    if (environment.localDev) {
+      this.user$.next(LOCAL_DEV_USER);
+      return of(LOCAL_DEV_USER);
+    }
+
     const startTime = Date.now();
     this.logger.trace(this.source, '>>> checkAuth() - Checking authentication status');
-    
+
     return this.http.get<any>(`${this.apiUrl}/me`).pipe(
       map(res => res.authenticated ? res as User : null),
       tap(user => {

@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Receipt, STORE_TYPE_ICONS, STORE_TYPE_LABELS, STORE_TYPE_CSS } from '../../models/receipt.model';
+import { Group } from '../../models/group.model';
+import { Vehicle } from '../../models/vehicle.model';
 import { ReceiptService } from '../../services/receipt.service';
+import { GroupService } from '../../services/group.service';
+import { VehicleService } from '../../services/vehicle.service';
 import { ExpenseShare } from '../../models/expense-share.model';
 
 @Component({
@@ -27,18 +31,48 @@ export class ReceiptDetailComponent implements OnInit {
   storeCss = STORE_TYPE_CSS;
   showShareDialog = false;
 
+  // Group assignment
+  myGroups: Group[] = [];
+  selectedGroupId: number | null = null;
+  groupSaving = false;
+  groupError = '';
+
+  // Vehicle linking
+  myVehicles: Vehicle[] = [];
+  selectedVehicleId: number | null = null;
+  vehicleSaving = false;
+  vehicleError = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private receiptService: ReceiptService,
+    private groupService: GroupService,
+    private vehicleService: VehicleService,
     private fb: FormBuilder
   ) {}
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
     this.receiptService.getById(id).subscribe({
-      next: (r) => { this.receipt = r; this.buildForm(r); this.loading = false; },
+      next: (r) => {
+        this.receipt = r;
+        this.selectedGroupId = r.groupId ?? null;
+        this.selectedVehicleId = r.vehicleId ?? null;
+        this.buildForm(r);
+        this.loading = false;
+      },
       error: () => { this.loading = false; this.error = 'Receipt not found.'; }
+    });
+
+    this.groupService.getMyGroups().subscribe({
+      next: (groups) => { this.myGroups = groups; },
+      error: () => {}
+    });
+
+    this.vehicleService.list().subscribe({
+      next: (vehicles) => { this.myVehicles = vehicles; },
+      error: () => {}
     });
   }
 
@@ -93,6 +127,46 @@ export class ReceiptDetailComponent implements OnInit {
   delete() {
     if (!this.receipt?.id || !confirm('Delete this receipt permanently?')) return;
     this.receiptService.delete(this.receipt.id).subscribe(() => this.router.navigate(['/receipts']));
+  }
+
+  saveGroup() {
+    if (!this.receipt?.id) return;
+    this.groupSaving = true;
+    this.groupError = '';
+    this.receiptService.addToGroup(this.receipt.id, this.selectedGroupId).subscribe({
+      next: (r) => {
+        this.receipt = r;
+        this.selectedGroupId = r.groupId ?? null;
+        this.groupSaving = false;
+      },
+      error: (err) => {
+        this.groupError = err?.error?.error ?? 'Failed to update group.';
+        this.groupSaving = false;
+      }
+    });
+  }
+
+  get groupMembers(): string[] {
+    if (!this.receipt?.groupId) return [];
+    const g = this.myGroups.find(g => g.id === this.receipt!.groupId);
+    return g?.members?.map(m => m.email) ?? [];
+  }
+
+  saveVehicle() {
+    if (!this.receipt?.id) return;
+    this.vehicleSaving = true;
+    this.vehicleError = '';
+    this.receiptService.linkToVehicle(this.receipt.id, this.selectedVehicleId).subscribe({
+      next: (r) => {
+        this.receipt = r;
+        this.selectedVehicleId = r.vehicleId ?? null;
+        this.vehicleSaving = false;
+      },
+      error: (err) => {
+        this.vehicleError = err?.error?.error ?? 'Failed to link vehicle.';
+        this.vehicleSaving = false;
+      }
+    });
   }
 
   cashbackGap(): number {

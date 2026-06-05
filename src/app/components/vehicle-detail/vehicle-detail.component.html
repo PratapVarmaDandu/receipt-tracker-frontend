@@ -1,0 +1,526 @@
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary"></div>
+</div>
+
+<ng-container *ngIf="!loading && vehicle">
+  <!-- Header -->
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a routerLink="/garage" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="flex-fill">
+      <h1 class="page-title mb-0">{{ vehicle.modelYear }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+      <div class="text-muted small mt-1">
+        <span *ngIf="vehicle.licensePlate"><i class="bi bi-car-front-fill me-1"></i>{{ vehicle.licensePlate }}</span>
+        <span *ngIf="vehicle.currentMileage" class="ms-2"><i class="bi bi-speedometer2 me-1"></i>{{ vehicle.currentMileage | number }} mi</span>
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-primary" (click)="downloadReport()">
+        <i class="bi bi-file-pdf me-1"></i>Sale Report
+      </button>
+      <button class="btn btn-sm btn-danger" (click)="deleteVehicle()">
+        <i class="bi bi-trash me-1"></i>Delete
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="nav nav-tabs mb-4">
+    <button class="nav-link" [class.active]="tab==='overview'" (click)="tab='overview'">Overview</button>
+    <button class="nav-link" [class.active]="tab==='maintenance'" (click)="tab='maintenance'">
+      Maintenance <span class="badge bg-secondary ms-1">{{ maintenance.length }}</span>
+    </button>
+    <button class="nav-link" [class.active]="tab==='fuel'" (click)="tab='fuel'">
+      Fuel <span class="badge bg-secondary ms-1">{{ fuel.length }}</span>
+    </button>
+    <button class="nav-link" [class.active]="tab==='schedule'" (click)="tab='schedule'">Schedule</button>
+    <button class="nav-link" [class.active]="tab==='recalls'" (click)="tab='recalls'">
+      Recalls <span *ngIf="recalls.length > 0" class="badge bg-danger ms-1">{{ recalls.length }}</span>
+    </button>
+    <button *ngIf="!vehicle.isShared" class="nav-link" [class.active]="tab==='sharing'" (click)="tab='sharing'">
+      <i class="bi bi-people me-1"></i>Sharing
+      <span *ngIf="activeShares.length > 0" class="badge bg-primary ms-1">{{ activeShares.length }}</span>
+    </button>
+  </div>
+
+  <!-- Shared-by banner -->
+  <div *ngIf="vehicle.isShared" class="alert alert-warning d-flex align-items-center gap-2 mb-4 py-2">
+    <i class="bi bi-people-fill flex-shrink-0"></i>
+    <span>Shared with you by <strong>{{ vehicle.ownerName }}</strong> — you can add maintenance and fuel records.</span>
+  </div>
+
+  <!-- ── Overview ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'overview'" class="tab-content">
+
+    <!-- Edit details form -->
+    <div *ngIf="editingDetails" class="card border-primary mb-4">
+      <div class="card-header fw-600 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-pencil me-2 text-primary"></i>Edit Vehicle Details</span>
+        <button class="btn-close" (click)="cancelEditDetails()"></button>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">VIN</label>
+            <input class="form-control form-control-sm" placeholder="17-char VIN" [(ngModel)]="detailsForm.vin">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Trim</label>
+            <input class="form-control form-control-sm" placeholder="e.g. SE, XLT, Limited" [(ngModel)]="detailsForm.trim">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Color</label>
+            <input class="form-control form-control-sm" placeholder="e.g. Silver" [(ngModel)]="detailsForm.color">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">License Plate</label>
+            <input class="form-control form-control-sm" placeholder="ABC 1234" [(ngModel)]="detailsForm.licensePlate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">State</label>
+            <input class="form-control form-control-sm" placeholder="e.g. TX, CA" maxlength="2" [(ngModel)]="detailsForm.registrationState">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Current Mileage</label>
+            <input class="form-control form-control-sm" type="number" min="0" placeholder="e.g. 45000" [(ngModel)]="detailsForm.currentMileage">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Tag Expires</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="detailsForm.tagExpirationDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Insurance Provider</label>
+            <input class="form-control form-control-sm" placeholder="e.g. GEICO" [(ngModel)]="detailsForm.insuranceProvider">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Insurance Policy #</label>
+            <input class="form-control form-control-sm" placeholder="Policy number" [(ngModel)]="detailsForm.insurancePolicyNumber">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Insurance Expires</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="detailsForm.insuranceExpiryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Purchase Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="detailsForm.purchaseDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Purchase Price ($)</label>
+            <input class="form-control form-control-sm" type="number" min="0" step="0.01" placeholder="0.00" [(ngModel)]="detailsForm.purchasePrice">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Dealer Name</label>
+            <input class="form-control form-control-sm" placeholder="Dealership name" [(ngModel)]="detailsForm.dealerName">
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="checkbox" id="fromDealer" [(ngModel)]="detailsForm.purchasedFromDealer">
+              <label class="form-check-label small fw-500" for="fromDealer">Purchased from dealer</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm fw-500">Notes</label>
+            <textarea class="form-control form-control-sm" rows="2" placeholder="Optional notes" [(ngModel)]="detailsForm.notes"></textarea>
+          </div>
+        </div>
+        <div *ngIf="detailsError" class="alert alert-danger py-2 small mt-3">{{ detailsError }}</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-outline-secondary btn-sm" (click)="cancelEditDetails()">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveDetails()" [disabled]="savingDetails">
+            <span *ngIf="!savingDetails"><i class="bi bi-check2 me-1"></i>Save Details</span>
+            <span *ngIf="savingDetails"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Read-only view -->
+    <div *ngIf="!editingDetails" class="row g-3">
+      <div class="col-12 d-flex justify-content-end mb-1">
+        <button class="btn btn-sm btn-outline-primary" (click)="openEditDetails()">
+          <i class="bi bi-pencil me-1"></i>Edit Details
+        </button>
+      </div>
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header fw-600">Vehicle Details</div>
+          <div class="card-body">
+            <div class="meta-row"><span class="meta-label">VIN</span><span class="meta-value">{{ vehicle.vin ?? '—' }}</span></div>
+            <div class="meta-row"><span class="meta-label">Color</span><span class="meta-value">{{ vehicle.color ?? '—' }}</span></div>
+            <div class="meta-row"><span class="meta-label">Trim</span><span class="meta-value">{{ vehicle.trim ?? '—' }}</span></div>
+            <div class="meta-row"><span class="meta-label">License Plate</span><span class="meta-value">{{ vehicle.licensePlate ?? '—' }}</span></div>
+            <div class="meta-row"><span class="meta-label">State</span><span class="meta-value">{{ vehicle.registrationState ?? '—' }}</span></div>
+            <div class="meta-row" *ngIf="vehicle.purchaseDate">
+              <span class="meta-label">Purchase Date</span><span class="meta-value">{{ vehicle.purchaseDate | date:'MMM d, y' }}</span>
+            </div>
+            <div class="meta-row" *ngIf="vehicle.purchasePrice">
+              <span class="meta-label">Purchase Price</span><span class="meta-value">{{ vehicle.purchasePrice | currency }}</span>
+            </div>
+            <div class="meta-row" *ngIf="vehicle.dealerName">
+              <span class="meta-label">Dealer</span><span class="meta-value">{{ vehicle.dealerName }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header fw-600">Registration &amp; Insurance</div>
+          <div class="card-body">
+            <div class="meta-row">
+              <span class="meta-label">Tag Expires</span>
+              <span class="meta-value" [class.text-danger]="vehicle.tagStatus==='EXPIRED'" [class.text-warning]="vehicle.tagStatus==='EXPIRING_SOON'">
+                {{ vehicle.tagExpirationDate ? (vehicle.tagExpirationDate | date:'MMM d, y') : '—' }}
+                <span *ngIf="vehicle.tagStatus==='EXPIRED'" class="badge bg-danger ms-1 small">EXPIRED</span>
+                <span *ngIf="vehicle.tagStatus==='EXPIRING_SOON'" class="badge bg-warning text-dark ms-1 small">EXPIRING</span>
+              </span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Insurance</span>
+              <span class="meta-value">{{ vehicle.insuranceProvider ?? '—' }}</span>
+            </div>
+            <div class="meta-row" *ngIf="vehicle.insurancePolicyNumber">
+              <span class="meta-label">Policy #</span><span class="meta-value">{{ vehicle.insurancePolicyNumber }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Insurance Expires</span>
+              <span class="meta-value" [class.text-danger]="vehicle.insuranceStatus==='EXPIRED'" [class.text-warning]="vehicle.insuranceStatus==='EXPIRING_SOON'">
+                {{ vehicle.insuranceExpiryDate ? (vehicle.insuranceExpiryDate | date:'MMM d, y') : '—' }}
+                <span *ngIf="vehicle.insuranceStatus==='EXPIRED'" class="badge bg-danger ms-1 small">EXPIRED</span>
+                <span *ngIf="vehicle.insuranceStatus==='EXPIRING_SOON'" class="badge bg-warning text-dark ms-1 small">EXPIRING</span>
+              </span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Avg MPG</span>
+              <span class="meta-value">{{ vehicle.averageMpg != null ? (vehicle.averageMpg | number:'1.1-1') + ' mpg' : '—' }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Total Maint. Cost</span>
+              <span class="meta-value">${{ vehicle.totalMaintenanceCost | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Maintenance ───────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'maintenance'" class="tab-content">
+
+    <!-- Add / Edit form -->
+    <div *ngIf="showMaintForm" class="card mb-4 border-primary">
+      <div class="card-header fw-600 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wrench me-2 text-primary"></i>{{ editingMaintId ? 'Edit' : 'Add' }} Service Record</span>
+        <button class="btn-close" (click)="cancelMaint()"></button>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Service Type *</label>
+            <select class="form-select form-select-sm" [(ngModel)]="maintForm.maintenanceType">
+              <option *ngFor="let t of maintenanceTypes" [value]="t">{{ MAINTENANCE_TYPE_LABELS[t] }}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Date *</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="maintForm.serviceDate">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label form-label-sm fw-500">Mileage</label>
+            <input class="form-control form-control-sm" type="number" min="0" placeholder="e.g. 45000" [(ngModel)]="maintForm.mileage">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Cost ($)</label>
+            <input class="form-control form-control-sm" type="number" min="0" step="0.01" placeholder="0.00" [(ngModel)]="maintForm.cost">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label form-label-sm fw-500">Shop / Provider</label>
+            <input class="form-control form-control-sm" type="text" placeholder="e.g. Jiffy Lube" [(ngModel)]="maintForm.provider">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm fw-500">Receipt Photo <span class="text-muted">(optional)</span></label>
+            <input class="form-control form-control-sm" type="file" accept="image/*,.pdf" (change)="onReceiptFile($event)">
+            <div *ngIf="receiptFile" class="text-muted small mt-1"><i class="bi bi-paperclip me-1"></i>{{ receiptFile.name }}</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm fw-500">Notes</label>
+            <textarea class="form-control form-control-sm" rows="2" placeholder="Optional notes" [(ngModel)]="maintForm.notes"></textarea>
+          </div>
+        </div>
+        <div *ngIf="maintError" class="alert alert-danger py-2 small mt-3">{{ maintError }}</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-outline-secondary btn-sm" (click)="cancelMaint()">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveMaint()" [disabled]="savingMaint">
+            <span *ngIf="!savingMaint"><i class="bi bi-check2 me-1"></i>{{ editingMaintId ? 'Update' : 'Save' }} Record</span>
+            <span *ngIf="savingMaint"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="text-muted small">{{ maintenance.length }} record{{ maintenance.length !== 1 ? 's' : '' }} · most recent first</span>
+      <button class="btn btn-sm btn-primary" (click)="openAddMaint()" *ngIf="!showMaintForm">
+        <i class="bi bi-plus-lg me-1"></i>Add Service Record
+      </button>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="maintenance.length === 0" class="text-center py-5 text-muted">
+      <i class="bi bi-wrench" style="font-size:2.5rem;opacity:.3"></i>
+      <p class="mt-2 small">No service records yet. Add your first one above.</p>
+    </div>
+
+    <!-- Record list -->
+    <div class="list-group">
+      <div *ngFor="let m of maintenance" class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-fill">
+            <div class="fw-600">{{ m.displayLabel }}</div>
+            <div class="text-muted small">
+              {{ m.serviceDate | date:'MMM d, y' }}
+              <span *ngIf="m.mileage" class="ms-2">· {{ m.mileage | number }} mi</span>
+              <span *ngIf="m.provider" class="ms-2">· {{ m.provider }}</span>
+            </div>
+            <div *ngIf="m.cost" class="text-muted small">${{ m.cost | number:'1.2-2' }}</div>
+            <div *ngIf="m.notes" class="text-muted small fst-italic mt-1">{{ m.notes }}</div>
+            <a *ngIf="m.receiptFileName" [href]="maintenanceReceiptUrl(m.id, m.receiptFileName)" target="_blank" class="small text-primary mt-1 d-inline-block">
+              <i class="bi bi-paperclip me-1"></i>View Receipt
+            </a>
+          </div>
+          <div class="d-flex gap-2 ms-3 flex-shrink-0">
+            <button *ngIf="canEdit(m.createdAt)" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                    title="Edit (within 30 days)" (click)="openEditMaint(m)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-danger p-0" (click)="deleteMaintenance(m.id)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Fuel ──────────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'fuel'" class="tab-content">
+
+    <!-- Add / Edit form -->
+    <div *ngIf="showFuelForm" class="card mb-4 border-primary">
+      <div class="card-header fw-600 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-fuel-pump me-2 text-primary"></i>{{ editingFuelId ? 'Edit' : 'Add' }} Fill-Up</span>
+        <button class="btn-close" (click)="cancelFuel()"></button>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Date *</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="fuelForm.fillDate">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Odometer (mi) *</label>
+            <input class="form-control form-control-sm" type="number" min="0" placeholder="e.g. 47500" [(ngModel)]="fuelForm.odometer">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label form-label-sm fw-500">Gallons *</label>
+            <input class="form-control form-control-sm" type="number" min="0" step="0.001" placeholder="e.g. 12.5" [(ngModel)]="fuelForm.gallons">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label form-label-sm fw-500">Price / Gal ($)</label>
+            <input class="form-control form-control-sm" type="number" min="0" step="0.001" placeholder="e.g. 3.499" [(ngModel)]="fuelForm.pricePerGallon">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label form-label-sm fw-500">Total Cost</label>
+            <div class="form-control form-control-sm bg-light text-muted">
+              {{ computedTotalCost != null ? ('$' + (computedTotalCost | number:'1.2-2')) : '—' }}
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Fuel Type</label>
+            <select class="form-select form-select-sm" [(ngModel)]="fuelForm.fuelType">
+              <option *ngFor="let ft of fuelTypes" [value]="ft">{{ FUEL_TYPE_LABELS[ft] }}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label form-label-sm fw-500">Station Name</label>
+            <input class="form-control form-control-sm" type="text" placeholder="e.g. Shell, Costco" [(ngModel)]="fuelForm.stationName">
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check mb-1">
+              <input class="form-check-input" type="checkbox" id="fullTank" [(ngModel)]="fuelForm.fullTank">
+              <label class="form-check-label small fw-500" for="fullTank">
+                Full tank <span class="text-muted">(used for MPG calc)</span>
+              </label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label form-label-sm fw-500">Notes</label>
+            <textarea class="form-control form-control-sm" rows="2" placeholder="Optional notes" [(ngModel)]="fuelForm.notes"></textarea>
+          </div>
+        </div>
+        <div *ngIf="fuelError" class="alert alert-danger py-2 small mt-3">{{ fuelError }}</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <button class="btn btn-outline-secondary btn-sm" (click)="cancelFuel()">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="saveFuel()" [disabled]="savingFuel">
+            <span *ngIf="!savingFuel"><i class="bi bi-check2 me-1"></i>{{ editingFuelId ? 'Update' : 'Save' }} Fill-Up</span>
+            <span *ngIf="savingFuel"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="text-muted small">{{ fuel.length }} fill-up{{ fuel.length !== 1 ? 's' : '' }} · most recent first</span>
+      <button class="btn btn-sm btn-primary" (click)="openAddFuel()" *ngIf="!showFuelForm">
+        <i class="bi bi-plus-lg me-1"></i>Add Fill-Up
+      </button>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="fuel.length === 0" class="text-center py-5 text-muted">
+      <i class="bi bi-fuel-pump" style="font-size:2.5rem;opacity:.3"></i>
+      <p class="mt-2 small">No fuel records yet. Add your first fill-up above.</p>
+    </div>
+
+    <!-- Fuel list -->
+    <div class="list-group">
+      <div *ngFor="let f of fuel" class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-fill">
+            <div class="fw-600 d-flex align-items-center gap-2">
+              {{ f.fillDate | date:'MMM d, y' }}
+              <span class="badge bg-secondary">{{ FUEL_TYPE_LABELS[f.fuelType] }}</span>
+              <span *ngIf="!f.fullTank" class="badge bg-outline-secondary text-muted border">Partial</span>
+              <span *ngIf="f.mpg != null" class="badge bg-success">{{ f.mpg | number:'1.1-1' }} MPG</span>
+            </div>
+            <div class="text-muted small">
+              {{ f.odometer | number }} mi ·
+              {{ f.gallons | number:'1.2-3' }} gal
+              <span *ngIf="f.pricePerGallon" class="ms-1">· ${{ f.pricePerGallon | number:'1.3-3' }}/gal</span>
+              <span *ngIf="f.stationName" class="ms-1">· {{ f.stationName }}</span>
+            </div>
+            <div *ngIf="f.notes" class="text-muted small fst-italic">{{ f.notes }}</div>
+          </div>
+          <div class="d-flex gap-2 ms-3 flex-shrink-0 align-items-start">
+            <span *ngIf="f.totalCost" class="fw-600 text-nowrap">${{ f.totalCost | number:'1.2-2' }}</span>
+            <button *ngIf="canEdit(f.createdAt)" class="btn btn-sm btn-outline-secondary py-0 px-2"
+                    title="Edit (within 30 days)" (click)="openEditFuel(f)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-link text-danger p-0" (click)="deleteFuel(f.id)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Schedule ──────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'schedule'" class="tab-content">
+    <div class="text-muted small mb-2">Overdue items shown first</div>
+    <div class="list-group">
+      <div *ngFor="let s of schedule" class="list-group-item"
+           [class.list-group-item-danger]="s.overdue && s.critical"
+           [class.list-group-item-warning]="!s.critical && (s.overdue || s.dueSoon)">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-600">{{ s.displayName }} <span *ngIf="s.critical" class="badge bg-danger ms-1">Critical</span></div>
+            <div class="text-muted small">{{ s.note }}</div>
+            <div *ngIf="s.lastPerformed" class="text-muted small">
+              Last: {{ s.lastPerformed | date:'MMM d, y' }}
+              <span *ngIf="s.lastMileage"> ({{ s.lastMileage | number }} mi)</span>
+            </div>
+          </div>
+          <div class="text-end ms-3">
+            <div class="badge" [class.bg-danger]="s.overdue" [class.bg-warning]="!s.overdue && s.dueSoon" [class.bg-secondary]="!s.overdue && !s.dueSoon">
+              {{ s.overdue ? 'OVERDUE' : s.dueSoon ? 'DUE SOON' : 'UPCOMING' }}
+            </div>
+            <div class="text-muted small mt-1">{{ s.dueByDate | date:'MMM d' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recalls ───────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'recalls'" class="tab-content">
+    <div *ngIf="recalls.length === 0" class="alert alert-success">
+      <i class="bi bi-check-circle me-2"></i>No open recalls for this vehicle.
+    </div>
+    <div *ngFor="let r of recalls" class="alert alert-danger mb-3">
+      <div class="fw-600">{{ r.campaignNumber }} — {{ r.component }}</div>
+      <div *ngIf="r.summary" class="small mt-1">{{ r.summary }}</div>
+      <div *ngIf="r.consequence" class="small mt-1 text-danger"><strong>Consequence:</strong> {{ r.consequence }}</div>
+      <div *ngIf="r.remedy" class="small mt-1"><strong>Remedy:</strong> {{ r.remedy }}</div>
+    </div>
+  </div>
+
+  <!-- ── Sharing ──────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'sharing' && !vehicle.isShared" class="tab-content">
+
+    <!-- Invite form -->
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header fw-600">
+        <i class="bi bi-person-plus me-2 text-primary"></i>Invite Someone
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          They'll receive an email invite and can view details, add maintenance records, and log fuel fill-ups.
+          You can revoke access at any time.
+        </p>
+        <div class="d-flex gap-2">
+          <input class="form-control form-control-sm flex-fill"
+                 type="email" placeholder="Email address"
+                 [(ngModel)]="inviteEmail"
+                 (keyup.enter)="sendInvite()">
+          <button class="btn btn-sm btn-primary flex-shrink-0" (click)="sendInvite()" [disabled]="inviting || !inviteEmail.trim()">
+            <span *ngIf="!inviting"><i class="bi bi-send me-1"></i>Send Invite</span>
+            <span *ngIf="inviting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
+          </button>
+        </div>
+        <div *ngIf="inviteError" class="alert alert-danger py-1 small mt-2 mb-0">{{ inviteError }}</div>
+        <div *ngIf="inviteSuccess" class="alert alert-success py-1 small mt-2 mb-0">
+          <i class="bi bi-check-circle me-1"></i>{{ inviteSuccess }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Access list -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header fw-600">
+        <i class="bi bi-people me-2"></i>People with Access
+      </div>
+      <div *ngIf="!vehicle.sharedWith?.length" class="card-body text-muted small py-4 text-center">
+        No one has access yet. Use the form above to invite someone.
+      </div>
+      <div class="list-group list-group-flush" *ngIf="vehicle.sharedWith?.length">
+        <div *ngFor="let a of vehicle.sharedWith" class="list-group-item d-flex align-items-center gap-3 py-3">
+          <div class="flex-fill">
+            <div class="fw-500">{{ a.inviteeName || a.inviteeEmail }}</div>
+            <div class="text-muted small">{{ a.inviteeEmail }}</div>
+            <div class="text-muted small">Invited {{ a.grantedAt | date:'MMM d, y' }}</div>
+          </div>
+          <span class="badge"
+                [class.bg-warning]="a.status === 'PENDING'"
+                [class.text-dark]="a.status === 'PENDING'"
+                [class.bg-success]="a.status === 'ACCEPTED'"
+                [class.bg-secondary]="a.status === 'REVOKED'">
+            {{ a.status }}
+          </span>
+          <button *ngIf="a.status !== 'REVOKED'"
+                  class="btn btn-sm btn-outline-danger flex-shrink-0"
+                  (click)="revoke(a)" [disabled]="revoking === a.id">
+            <span *ngIf="revoking !== a.id"><i class="bi bi-x-circle me-1"></i>Revoke</span>
+            <span *ngIf="revoking === a.id"><span class="spinner-border spinner-border-sm"></span></span>
+          </button>
+          <span *ngIf="a.status === 'REVOKED'" class="text-muted small fst-italic">Revoked</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</ng-container>

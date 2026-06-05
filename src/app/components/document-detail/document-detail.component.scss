@@ -1,0 +1,85 @@
+:host { display: block; }
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+
+  &.status-active        { background: var(--success-light); color: #166534; }
+  &.status-expiring_soon { background: var(--warning-light); color: #92400e; }
+  &.status-expired       { background: var(--danger-light);  color: #991b1b; }
+}
+
+/* Metadata table */
+.meta-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.meta-row {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.meta-value { font-size: 0.875rem; color: var(--text-primary); }
+
+/* Next steps */
+.step-item {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; }
+
+  &.step-overdue  { background: rgba(239,68,68,0.04); }
+  &.step-due-soon { background: rgba(245,158,11,0.04); }
+  &.step-done     { opacity: 0.55; }
+}
+
+.step-check {
+  background: none;
+  border: 1.5px solid var(--border-color);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  font-size: 0.6rem;
+  margin-top: 2px;
+
+  &:hover {
+    border-color: var(--success);
+    color: var(--success);
+  }
+}
+
+.step-check-done {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 1rem;
+}
+
+.step-title { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+.step-desc  { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.step-due   { font-size: 0.72rem; margin-top: 0.25rem; }

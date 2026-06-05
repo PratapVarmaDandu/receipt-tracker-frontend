@@ -23,6 +23,13 @@ import { ShareResponseComponent } from './components/share-response/share-respon
 import { GroupListComponent } from './components/group-list/group-list.component';
 import { GroupDetailComponent } from './components/group-detail/group-detail.component';
 import { JoinGroupComponent } from './components/join-group/join-group.component';
+import { DocumentsComponent } from './components/documents/documents.component';
+import { DocumentDetailComponent } from './components/document-detail/document-detail.component';
+import { DocumentShareDialogComponent } from './components/document-share-dialog/document-share-dialog.component';
+import { DocumentAccessComponent } from './components/document-access/document-access.component';
+import { GarageComponent } from './components/garage/garage.component';
+import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-detail.component';
+import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -43,7 +50,14 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     ShareResponseComponent,
     GroupListComponent,
     GroupDetailComponent,
-    JoinGroupComponent
+    JoinGroupComponent,
+    DocumentsComponent,
+    DocumentDetailComponent,
+    DocumentShareDialogComponent,
+    DocumentAccessComponent,
+    GarageComponent,
+    VehicleDetailComponent,
+    VehicleJoinComponent
   ],
   imports: [
     BrowserModule,

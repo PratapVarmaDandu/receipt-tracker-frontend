@@ -1,0 +1,230 @@
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary"></div>
+</div>
+<div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+<div *ngIf="!loading && doc">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <a routerLink="/documents" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="flex-fill min-w-0">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h1 class="page-title mb-0 text-truncate">{{ doc.title }}</h1>
+        <span class="status-badge" [class]="'status-' + doc.status.toLowerCase()">
+          {{ doc.status === 'EXPIRING_SOON' ? (doc.daysUntilExpiry + ' days left') : doc.status.replace('_', ' ') }}
+        </span>
+      </div>
+      <span class="text-muted small">
+        <i class="bi me-1" [class]="CATEGORY_ICONS[doc.category]"
+           [style.color]="CATEGORY_COLORS[doc.category]"></i>
+        {{ CATEGORY_LABELS[doc.category] }}
+        <span *ngIf="doc.documentYear"> · {{ doc.documentYear }}</span>
+      </span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a [href]="downloadUrl" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-download me-1"></i>Download
+      </a>
+      <button class="btn btn-sm btn-primary" (click)="showShareDialog=true">
+        <i class="bi bi-send me-1"></i>Share
+      </button>
+      <button *ngIf="!editing" class="btn btn-sm btn-outline-secondary" (click)="editing=true">
+        <i class="bi bi-pencil me-1"></i>Edit
+      </button>
+      <button *ngIf="editing" class="btn btn-sm btn-primary" (click)="save()" [disabled]="saving">
+        <span *ngIf="!saving"><i class="bi bi-check2 me-1"></i>Save</span>
+        <span *ngIf="saving"><span class="spinner-border spinner-border-sm"></span></span>
+      </button>
+      <button *ngIf="editing" class="btn btn-sm btn-outline-secondary" (click)="editing=false">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Share dialog -->
+  <app-document-share-dialog
+    *ngIf="showShareDialog"
+    [preselectedDocIds]="[doc.id]"
+    (closed)="showShareDialog=false">
+  </app-document-share-dialog>
+
+  <div class="row g-3">
+    <!-- Left: metadata -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-600" style="font-weight:600">
+          <i class="bi me-2" [class]="fileIcon(doc.contentType)"></i>Document Details
+        </div>
+        <div class="card-body">
+
+          <!-- View mode -->
+          <div *ngIf="!editing">
+            <div class="meta-grid">
+              <div class="meta-row">
+                <span class="meta-label">File</span>
+                <span class="meta-value">{{ doc.originalFileName }}</span>
+              </div>
+              <div class="meta-row" *ngIf="doc.subcategory">
+                <span class="meta-label">Type</span>
+                <span class="meta-value">{{ formatSubcat(doc.subcategory) }}</span>
+              </div>
+              <div class="meta-row" *ngIf="doc.expiryDate">
+                <span class="meta-label">Expires</span>
+                <span class="meta-value" [class.text-danger]="doc.status==='EXPIRED'"
+                      [class.text-warning]="doc.status==='EXPIRING_SOON'">
+                  {{ doc.expiryDate | date:'MMMM d, y' }}
+                  <span *ngIf="doc.daysUntilExpiry !== null" class="small ms-1">
+                    ({{ doc.daysUntilExpiry >= 0 ? doc.daysUntilExpiry + ' days left' : 'Expired' }})
+                  </span>
+                </span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Uploaded</span>
+                <span class="meta-value">{{ doc.uploadedAt | date:'MMMM d, y · h:mm a' }}</span>
+              </div>
+              <div class="meta-row" *ngIf="doc.notes">
+                <span class="meta-label">Notes</span>
+                <span class="meta-value" style="white-space:pre-line">{{ doc.notes }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit mode -->
+          <div *ngIf="editing" class="row g-3">
+            <div class="col-12">
+              <label class="form-label form-label-sm fw-500">Title</label>
+              <input class="form-control form-control-sm" [(ngModel)]="editTitle">
+            </div>
+            <div class="col-md-6" *ngIf="doc.category !== 'IMMIGRATION' && subcategoryOptions.length">
+              <label class="form-label form-label-sm fw-500">Type</label>
+              <select class="form-select form-select-sm" [(ngModel)]="editSubcategory">
+                <option value="">— none —</option>
+                <option *ngFor="let o of subcategoryOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div class="col-md-6" *ngIf="doc.category === 'IMMIGRATION'">
+              <label class="form-label form-label-sm fw-500">Visa / Doc Type</label>
+              <select class="form-select form-select-sm" [(ngModel)]="editSubcategory">
+                <option value="">— none —</option>
+                <optgroup *ngFor="let grp of subcategoryGroups" [label]="grp.label">
+                  <option *ngFor="let o of grp.options" [value]="o.value">{{ o.label }}</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm fw-500">Year</label>
+              <select class="form-select form-select-sm" [(ngModel)]="editDocumentYear">
+                <option [ngValue]="null">— any —</option>
+                <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label form-label-sm fw-500">Expiry Date</label>
+              <input class="form-control form-control-sm" type="date" [(ngModel)]="editExpiryDate">
+            </div>
+            <div class="col-12">
+              <label class="form-label form-label-sm fw-500">Notes</label>
+              <textarea class="form-control form-control-sm" rows="3" [(ngModel)]="editNotes"></textarea>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="editing" class="card-footer bg-white d-flex justify-content-between">
+          <button class="btn btn-sm btn-outline-danger" (click)="archive()">
+            <i class="bi bi-archive me-1"></i>Archive
+          </button>
+          <button class="btn btn-sm btn-danger" (click)="delete()">
+            <i class="bi bi-trash me-1"></i>Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Tax retention callout -->
+      <div *ngIf="doc.category === 'TAX'" class="alert alert-info small d-flex gap-2 align-items-start">
+        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+        <div>
+          <strong>IRS 7-Year Retention Rule</strong> — Keep this document until
+          <strong>{{ retentionYear(doc) }}</strong>.
+          Set the expiry date above to get an automatic reminder.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: next steps -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <span class="fw-600" style="font-weight:600">
+            <i class="bi bi-list-check me-2 text-primary"></i>Next Steps
+            <span *ngIf="pendingSteps.length" class="badge bg-primary ms-1">{{ pendingSteps.length }}</span>
+          </span>
+          <button class="btn btn-sm btn-outline-primary py-0" (click)="showStepForm=!showStepForm">
+            <i class="bi bi-plus me-1"></i>Add
+          </button>
+        </div>
+
+        <!-- Add step form -->
+        <div *ngIf="showStepForm" class="card-body border-bottom pb-3 pt-3">
+          <div class="mb-2">
+            <input class="form-control form-control-sm" [(ngModel)]="newStepTitle"
+                   placeholder="Action title (e.g. File I-485, Renew EAD)">
+          </div>
+          <div class="mb-2">
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="newStepDescription"
+                      placeholder="Description (optional)"></textarea>
+          </div>
+          <div class="mb-2">
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="newStepDueDate">
+          </div>
+          <div *ngIf="stepError" class="text-danger small">{{ stepError }}</div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" (click)="showStepForm=false">Cancel</button>
+            <button class="btn btn-sm btn-primary" (click)="addStep()" [disabled]="addingStep">
+              <span *ngIf="!addingStep">Add Step</span>
+              <span *ngIf="addingStep"><span class="spinner-border spinner-border-sm"></span></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Steps list -->
+        <div class="card-body p-0">
+          <div *ngIf="!doc.nextSteps.length" class="text-center text-muted py-4 small">
+            No action items. Click "Add" to track next steps.
+          </div>
+
+          <div *ngFor="let step of pendingSteps" class="step-item" [class]="urgencyClass(step)">
+            <div class="d-flex align-items-start gap-2">
+              <button class="step-check" (click)="completeStep(step)" title="Mark complete">
+                <i class="bi bi-circle"></i>
+              </button>
+              <div class="flex-fill min-w-0">
+                <div class="step-title">{{ step.title }}</div>
+                <div *ngIf="step.description" class="step-desc">{{ step.description }}</div>
+                <div *ngIf="step.dueDate" class="step-due"
+                     [class.text-danger]="step.urgency==='OVERDUE'"
+                     [class.text-warning]="step.urgency==='DUE_SOON'">
+                  <i class="bi bi-calendar3 me-1"></i>{{ step.dueDate | date:'MMM d, y' }}
+                  <span *ngIf="step.urgency==='OVERDUE'" class="ms-1 fw-600">OVERDUE</span>
+                  <span *ngIf="step.urgency==='DUE_SOON'" class="ms-1 fw-600">Due soon</span>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-link text-danger p-0" (click)="deleteStep(step)">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+
+          <div *ngFor="let step of completedSteps" class="step-item step-done">
+            <div class="d-flex align-items-start gap-2">
+              <span class="step-check-done"><i class="bi bi-check-circle-fill text-success"></i></span>
+              <div class="flex-fill min-w-0">
+                <div class="step-title">{{ step.title }}</div>
+                <div class="step-due text-muted">Done {{ step.completedAt | date:'MMM d' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

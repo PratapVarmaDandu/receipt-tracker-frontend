@@ -13,135 +13,297 @@
     <button class="btn-close" (click)="close()"></button>
   </div>
 
-  <!-- Step 1: Emails + split type -->
-  <div class="card-body px-4 py-4" *ngIf="step === 1">
-    <div class="mb-4">
-      <label class="form-label fw-medium">Split type</label>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm flex-fill"
-                [class.btn-primary]="splitType === 'EQUAL'"
-                [class.btn-outline-secondary]="splitType !== 'EQUAL'"
-                (click)="splitType = 'EQUAL'">
-          <i class="bi bi-slash-circle me-1"></i>Equal split
-        </button>
-        <button class="btn btn-sm flex-fill"
-                [class.btn-primary]="splitType === 'CUSTOM'"
-                [class.btn-outline-secondary]="splitType !== 'CUSTOM'"
-                (click)="splitType = 'CUSTOM'">
-          <i class="bi bi-input-cursor-text me-1"></i>Custom amounts
-        </button>
-      </div>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label fw-medium">Invite by email</label>
-      <textarea class="form-control" rows="4" [(ngModel)]="emailInput" (input)="parseEmails()"
-                placeholder="Enter emails separated by comma, semicolon, or new line&#10;e.g. alice@example.com, bob@example.com"></textarea>
-      <div class="form-text">Each person will receive an email with a link to view and respond.</div>
-    </div>
-
-    <!-- Live equal-split preview — updates as emails are typed -->
-    <div *ngIf="splitType === 'EQUAL' && rows.length > 0" class="split-preview mt-3 p-3">
-      <div class="split-preview-header d-flex justify-content-between mb-2">
-        <span class="small fw-semibold">Split preview</span>
-        <span class="small text-muted">{{ rows.length + 1 }} people · ${{ equalAmount | number:'1.2-2' }} each ({{ equalPct | number:'1.0-0' }}%)</span>
-      </div>
-      <div class="split-row d-flex justify-content-between align-items-center small py-1">
-        <span><i class="bi bi-person-circle me-1 text-primary"></i>You (owner)</span>
-        <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
-      </div>
-      <div *ngFor="let row of rows" class="split-row d-flex justify-content-between align-items-center small py-1">
-        <span class="text-truncate me-2" style="max-width:270px">
-          <i class="bi bi-person me-1 text-secondary"></i>{{ row.email }}
-        </span>
-        <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
-      </div>
-    </div>
-
-    <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
-
-    <div class="d-flex justify-content-end gap-2 mt-3">
-      <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
-      <button class="btn btn-primary" (click)="goToStep2()" [disabled]="submitting">
-        <span *ngIf="!submitting">
-          {{ splitType === 'EQUAL' ? 'Send Invites' : 'Set Amounts →' }}
-        </span>
-        <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
+  <!-- Mode toggle (shown before success) -->
+  <div class="px-4 pt-3 pb-0" *ngIf="(mode === 'amount' && step < 3) || (mode === 'items' && itemStep < 3)">
+    <div class="d-flex gap-2 mb-3">
+      <button class="btn btn-sm flex-fill"
+              [class.btn-primary]="mode === 'amount'"
+              [class.btn-outline-secondary]="mode !== 'amount'"
+              (click)="switchMode('amount')">
+        <i class="bi bi-cash-stack me-1"></i>By Amount
+      </button>
+      <button class="btn btn-sm flex-fill"
+              [class.btn-primary]="mode === 'items'"
+              [class.btn-outline-secondary]="mode !== 'items'"
+              (click)="switchMode('items')">
+        <i class="bi bi-list-check me-1"></i>By Items
       </button>
     </div>
   </div>
 
-  <!-- Step 2: Custom amounts -->
-  <div class="card-body px-4 py-4" *ngIf="step === 2">
-    <p class="text-muted small mb-3">
-      Receipt total: <strong>${{ receipt.total | number:'1.2-2' }}</strong>.
-      Assign how much each person owes.
-    </p>
+  <!-- ══════════════════ AMOUNT MODE ══════════════════ -->
+  <ng-container *ngIf="mode === 'amount'">
 
-    <div class="table-responsive mb-3">
-      <table class="table table-sm">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th style="width:140px">Amount ($)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of rows">
-            <td class="align-middle small">{{ row.email }}</td>
-            <td>
-              <input type="number" class="form-control form-control-sm"
-                     [(ngModel)]="row.amount" min="0.01" step="0.01" placeholder="0.00">
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr>
-            <td class="fw-medium small">Total assigned</td>
-            <td class="fw-semibold" [class.text-danger]="customTotalOver">
-              ${{ customTotal | number:'1.2-2' }}
-              <span *ngIf="customTotalOver" class="text-danger small ms-1">(over budget)</span>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
-
-    <div class="d-flex justify-content-between mt-3">
-      <button class="btn btn-outline-secondary btn-sm" (click)="step = 1">← Back</button>
-      <button class="btn btn-primary btn-sm" (click)="submit()" [disabled]="submitting">
-        <span *ngIf="!submitting"><i class="bi bi-send me-1"></i>Send Invites</span>
-        <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Step 3: Success -->
-  <div class="card-body px-4 py-4" *ngIf="step === 3">
-    <div class="text-center mb-4">
-      <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
-      <h6 class="mt-3 fw-semibold">Invitations sent!</h6>
-      <p class="text-muted small">
-        Each person will receive an email. You can also share these links directly.
-      </p>
-    </div>
-
-    <div class="share-links">
-      <div *ngFor="let share of createdShares" class="share-link-row d-flex align-items-center gap-2 mb-2">
-        <div class="flex-fill small">
-          <span class="fw-medium">{{ share.inviteeEmail }}</span>
-          <div class="text-muted text-truncate" style="max-width:260px">{{ shareLink(share.inviteToken) }}</div>
+    <!-- Step 1: Emails + split type -->
+    <div class="card-body px-4 py-3" *ngIf="step === 1">
+      <div class="mb-4">
+        <label class="form-label fw-medium">Split type</label>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm flex-fill"
+                  [class.btn-primary]="splitType === 'EQUAL'"
+                  [class.btn-outline-secondary]="splitType !== 'EQUAL'"
+                  (click)="splitType = 'EQUAL'">
+            <i class="bi bi-slash-circle me-1"></i>Equal split
+          </button>
+          <button class="btn btn-sm flex-fill"
+                  [class.btn-primary]="splitType === 'CUSTOM'"
+                  [class.btn-outline-secondary]="splitType !== 'CUSTOM'"
+                  (click)="splitType = 'CUSTOM'">
+            <i class="bi bi-input-cursor-text me-1"></i>Custom amounts
+          </button>
         </div>
-        <button class="btn btn-sm btn-outline-secondary" (click)="copyLink(share.inviteToken)" title="Copy link">
-          <i class="bi bi-clipboard"></i>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label fw-medium mb-0">Invite by email</label>
+          <button *ngIf="groupMembers.length > 0" class="btn btn-sm btn-outline-primary py-0"
+                  (click)="emailInput = groupMembers.join(', '); parseEmails()" title="Fill in group members">
+            <i class="bi bi-people me-1"></i>From group
+          </button>
+        </div>
+        <textarea class="form-control" rows="4" [(ngModel)]="emailInput" (input)="parseEmails()"
+                  placeholder="Enter emails separated by comma, semicolon, or new line&#10;e.g. alice@example.com, bob@example.com"></textarea>
+        <div class="form-text">Each person will receive an email with a link to view and respond.</div>
+      </div>
+
+      <div *ngIf="splitType === 'EQUAL' && rows.length > 0" class="split-preview mt-3 p-3">
+        <div class="split-preview-header d-flex justify-content-between mb-2">
+          <span class="small fw-semibold">Split preview</span>
+          <span class="small text-muted">{{ rows.length + 1 }} people · ${{ equalAmount | number:'1.2-2' }} each ({{ equalPct | number:'1.0-0' }}%)</span>
+        </div>
+        <div class="split-row d-flex justify-content-between align-items-center small py-1">
+          <span><i class="bi bi-person-circle me-1 text-primary"></i>You (owner)</span>
+          <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
+        </div>
+        <div *ngFor="let row of rows" class="split-row d-flex justify-content-between align-items-center small py-1">
+          <span class="text-truncate me-2" style="max-width:270px">
+            <i class="bi bi-person me-1 text-secondary"></i>{{ row.email }}
+          </span>
+          <span class="fw-semibold">${{ equalAmount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
+        <button class="btn btn-primary" (click)="goToStep2()" [disabled]="submitting">
+          <span *ngIf="!submitting">
+            {{ splitType === 'EQUAL' ? 'Send Invites' : 'Set Amounts →' }}
+          </span>
+          <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
         </button>
       </div>
     </div>
 
-    <div class="d-flex justify-content-end mt-4">
-      <button class="btn btn-primary" (click)="close()">Done</button>
+    <!-- Step 2: Custom amounts -->
+    <div class="card-body px-4 py-3" *ngIf="step === 2">
+      <p class="text-muted small mb-3">
+        Receipt total: <strong>${{ receipt.total | number:'1.2-2' }}</strong>.
+        Assign how much each person owes.
+      </p>
+      <div class="table-responsive mb-3">
+        <table class="table table-sm">
+          <thead><tr><th>Email</th><th style="width:140px">Amount ($)</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let row of rows">
+              <td class="align-middle small">{{ row.email }}</td>
+              <td>
+                <input type="number" class="form-control form-control-sm"
+                       [(ngModel)]="row.amount" min="0.01" step="0.01" placeholder="0.00">
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td class="fw-medium small">Total assigned</td>
+              <td class="fw-semibold" [class.text-danger]="customTotalOver">
+                ${{ customTotal | number:'1.2-2' }}
+                <span *ngIf="customTotalOver" class="text-danger small ms-1">(over budget)</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
+      <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-outline-secondary btn-sm" (click)="step = 1">← Back</button>
+        <button class="btn btn-primary btn-sm" (click)="submitAmount()" [disabled]="submitting">
+          <span *ngIf="!submitting"><i class="bi bi-send me-1"></i>Send Invites</span>
+          <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
+        </button>
+      </div>
     </div>
-  </div>
+
+    <!-- Step 3: Success (amount mode) -->
+    <div class="card-body px-4 py-4" *ngIf="step === 3">
+      <div class="text-center mb-4">
+        <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
+        <h6 class="mt-3 fw-semibold">Invitations sent!</h6>
+        <p class="text-muted small">Each person will receive an email. You can also share these links directly.</p>
+      </div>
+      <div class="share-links">
+        <div *ngFor="let share of createdShares" class="share-link-row d-flex align-items-center gap-2 mb-2">
+          <div class="flex-fill small">
+            <span class="fw-medium">{{ share.inviteeEmail }}</span>
+            <div class="text-muted text-truncate" style="max-width:260px">{{ shareLink(share.inviteToken) }}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" (click)="copyLink(share.inviteToken)" title="Copy link">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-primary" (click)="close()">Done</button>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ══════════════════ ITEM MODE ══════════════════ -->
+  <ng-container *ngIf="mode === 'items'">
+
+    <!-- Item Step 1: Add invitees -->
+    <div class="card-body px-4 py-3" *ngIf="itemStep === 1">
+      <p class="text-muted small mb-3">
+        Select which items each person is responsible for. Tax is applied automatically to taxable items
+        <span *ngIf="effectiveTaxRate > 0">(effective rate: {{ effectiveTaxPct | number:'1.2-2' }}%)</span>.
+      </p>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <label class="form-label fw-medium mb-0">Invite by email</label>
+          <button *ngIf="groupMembers.length > 0" class="btn btn-sm btn-outline-primary py-0"
+                  (click)="prefillFromGroup()" title="Pre-fill from group members">
+            <i class="bi bi-people me-1"></i>From group ({{ groupMembers.length }})
+          </button>
+        </div>
+        <div class="input-group">
+          <input class="form-control form-control-sm" [(ngModel)]="itemEmailInput"
+                 placeholder="email@example.com, ..."
+                 (keydown.enter)="parseItemEmails()">
+          <button class="btn btn-sm btn-outline-primary" (click)="parseItemEmails()">Add</button>
+        </div>
+      </div>
+
+      <div *ngIf="itemInvitees.length > 0" class="mb-3">
+        <div *ngFor="let email of itemInvitees"
+             class="d-flex align-items-center gap-2 mb-1 p-2 rounded bg-light">
+          <i class="bi bi-person-circle text-secondary"></i>
+          <span class="small flex-fill">{{ email }}</span>
+          <button class="btn btn-sm btn-link text-danger p-0" (click)="removeItemInvitee(email)">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="!receipt.items?.length" class="alert alert-warning small py-2">
+        This receipt has no line items. Edit the receipt first to add items.
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
+
+      <div class="d-flex justify-content-end gap-2 mt-3">
+        <button class="btn btn-outline-secondary" (click)="close()">Cancel</button>
+        <button class="btn btn-primary" (click)="goToItemAssign()" [disabled]="itemInvitees.length === 0">
+          Assign Items →
+        </button>
+      </div>
+    </div>
+
+    <!-- Item Step 2: Assign items to invitees -->
+    <div class="card-body px-4 py-3" *ngIf="itemStep === 2">
+      <p class="text-muted small mb-3">
+        Check the box for each person who should pay for that item.
+        <span *ngIf="effectiveTaxRate > 0" class="text-info">
+          <i class="bi bi-info-circle me-1"></i>Taxable items (T) include {{ effectiveTaxPct | number:'1.2-2' }}% tax.
+        </span>
+      </p>
+
+      <div class="table-responsive mb-3" style="max-height:320px;overflow-y:auto;">
+        <table class="table table-sm table-bordered align-middle mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="min-width:160px">Item</th>
+              <th class="text-end" style="width:80px">Price</th>
+              <th class="text-center" style="width:32px" title="Taxable">T</th>
+              <th class="text-center" *ngFor="let email of itemInvitees"
+                  style="min-width:90px;font-size:0.75rem">
+                {{ email.split('@')[0] }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of receipt.items">
+              <td class="small">{{ item.name }}</td>
+              <td class="text-end small">${{ item.totalPrice | number:'1.2-2' }}</td>
+              <td class="text-center">
+                <i *ngIf="item.taxable" class="bi bi-check-circle-fill text-warning small" title="Taxable"></i>
+                <i *ngIf="!item.taxable" class="bi bi-dash text-muted small"></i>
+              </td>
+              <td class="text-center" *ngFor="let email of itemInvitees">
+                <input type="checkbox"
+                       [checked]="isItemAssigned(email, item.id!)"
+                       (change)="toggleItemAssignment(email, item.id!)"
+                       class="form-check-input">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Per-invitee totals -->
+      <div class="mb-3">
+        <div class="small fw-semibold mb-2">Share breakdown</div>
+        <div *ngFor="let email of itemInvitees" class="d-flex justify-content-between align-items-center small mb-1">
+          <span class="text-truncate me-2" style="max-width:200px">
+            <i class="bi bi-person me-1 text-secondary"></i>{{ email }}
+          </span>
+          <span>
+            ${{ inviteeSubtotal(email) | number:'1.2-2' }}
+            <span *ngIf="inviteeTax(email) > 0" class="text-warning ms-1">
+              + ${{ inviteeTax(email) | number:'1.2-2' }} tax
+            </span>
+            = <strong>${{ inviteeTotal(email) | number:'1.2-2' }}</strong>
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger py-2 small">{{ error }}</div>
+
+      <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-outline-secondary btn-sm" (click)="itemStep = 1">← Back</button>
+        <button class="btn btn-primary btn-sm" (click)="submitItems()" [disabled]="submitting || !itemAssignmentsValid">
+          <span *ngIf="!submitting"><i class="bi bi-send me-1"></i>Send Invites</span>
+          <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-1"></span>Sending…</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Item Step 3: Success -->
+    <div class="card-body px-4 py-4" *ngIf="itemStep === 3">
+      <div class="text-center mb-4">
+        <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
+        <h6 class="mt-3 fw-semibold">Invitations sent!</h6>
+        <p class="text-muted small">Each person received a personalised link showing their assigned items.</p>
+      </div>
+      <div class="share-links">
+        <div *ngFor="let share of createdShares" class="share-link-row d-flex align-items-center gap-2 mb-2">
+          <div class="flex-fill small">
+            <span class="fw-medium">{{ share.inviteeEmail }}</span>
+            <span class="text-muted ms-2">${{ share.shareAmount | number:'1.2-2' }}</span>
+            <div class="text-muted text-truncate" style="max-width:260px">{{ shareLink(share.inviteToken) }}</div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" (click)="copyLink(share.inviteToken)" title="Copy link">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-4">
+        <button class="btn btn-primary" (click)="close()">Done</button>
+      </div>
+    </div>
+
+  </ng-container>
 </div>

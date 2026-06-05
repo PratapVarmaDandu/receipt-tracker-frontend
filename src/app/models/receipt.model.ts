@@ -35,6 +35,10 @@ export interface Receipt {
   potentialCashback?: number;
   bestCard?: string;
   bestCardRate?: string;
+  groupId?: number;
+  groupName?: string;
+  vehicleId?: number;
+  vehicleName?: string;
 }
 
 export interface AnalyticsData {
@@ -46,6 +50,7 @@ export interface AnalyticsData {
   spendingByCard: Record<string, number>;
   cashbackByCard: Record<string, number>;
   spendingByMonth: Record<string, number>;
+  spendingByCategoryPerMonth: Record<string, Record<string, number>>;
   suggestions: CashbackSuggestion[];
   categoryBreakdown: CategoryBreakdown[];
   totalReceipts: number;

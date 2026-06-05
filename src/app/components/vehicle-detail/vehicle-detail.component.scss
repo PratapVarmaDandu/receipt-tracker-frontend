@@ -1,0 +1,20 @@
+:host { display: block; }
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; }
+}
+
+.meta-label { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
+.meta-value { font-size: 0.9rem; color: var(--text-primary); }
+
+.tab-content { animation: fadeIn var(--t-base); }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

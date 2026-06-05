@@ -1,22 +1,26 @@
 :host { display: block; }
 
+/* ── Sidebar user card ──────────────────────────────────── */
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.875rem;
   margin: 0.5rem 0.5rem 0;
-  border-radius: 0.75rem;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 0.625rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  transition: background 200ms ease;
+
+  &:hover { background: rgba(99, 102, 241, 0.15); }
 }
 
 .user-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(99, 102, 241, 0.4);
+  border: 2px solid rgba(99, 102, 241, 0.45);
   flex-shrink: 0;
 }
 
@@ -25,6 +29,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 0.05rem;
 }
 
 .user-name {
@@ -34,61 +39,74 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .user-email {
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   color: #64748b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* ── Sidebar bottom strip ───────────────────────────────── */
 .sidebar-bottom {
   margin-top: auto;
-  padding: 0.5rem 0.75rem 0.75rem;
-  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 0.625rem 0.625rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .sidebar-info-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.72rem;
-  padding: 0.35rem 0.5rem;
+  font-weight: 500;
+  padding: 0.35rem 0.625rem;
   border-radius: 0.375rem;
   cursor: pointer;
   text-align: left;
   width: 100%;
   transition: color 0.15s, background 0.15s;
+  letter-spacing: 0.01em;
 
   &:hover {
-    color: #e2e8f0;
-    background: rgba(99, 102, 241, 0.12);
+    color: #c7d2fe;
+    background: rgba(99, 102, 241, 0.1);
   }
 }
 
 .sidebar-cashback {
-  font-size: 0.72rem;
-  color: #6366f1;
-  padding: 0.25rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(99, 102, 241, 0.7);
+  padding: 0.2rem 0.625rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
+/* ── Logout button ──────────────────────────────────────── */
 .btn-logout {
   background: none;
   border: none;
-  color: #64748b;
-  padding: 0.25rem;
-  cursor: pointer;
-  font-size: 1rem;
+  color: #475569;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.9rem;
   flex-shrink: 0;
-  transition: color 0.2s;
+  transition: color 0.15s, background 0.15s;
 
   &:hover {
     color: #f87171;
+    background: rgba(239, 68, 68, 0.12);
   }
 }

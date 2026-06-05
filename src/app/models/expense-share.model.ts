@@ -34,8 +34,12 @@ export interface ShareViewData {
   shareNote: string | null;
   counterNote: string | null;
   changeResponseNote: string | null;
+  splitType: string | null;
   items: ShareReceiptItem[];
   inviteeLinkNeeded: boolean;
+  assignedItems?: ExpenseShareItemDTO[];
+  itemSubtotal?: number;
+  itemTax?: number;
 }
 
 export interface ShareReceiptItem {
@@ -49,9 +53,24 @@ export interface ShareReceiptItem {
   taxable: boolean;
 }
 
+export interface ExpenseShareItemDTO {
+  receiptItemId: number;
+  itemName: string;
+  itemTotal: number;
+  taxAmount: number;
+  taxRate: number;
+  taxable: boolean;
+}
+
+export interface ItemAssignment {
+  email: string;
+  itemIds: number[];
+}
+
 export interface CreateShareRequest {
-  splitType: 'EQUAL' | 'CUSTOM';
-  invitees: ShareInviteeInput[];
+  splitType: 'EQUAL' | 'CUSTOM' | 'ITEM_BASED';
+  invitees?: ShareInviteeInput[];
+  itemAssignments?: ItemAssignment[];
 }
 
 export interface ShareInviteeInput {

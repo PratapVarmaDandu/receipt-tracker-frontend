@@ -102,7 +102,7 @@ export class ReceiptService {
   delete(id: number): Observable<void> {
     const startTime = Date.now();
     this.logger.info(this.source, `>>> delete(${id})`);
-    
+
     return this.http.delete<void>(`${this.base}/${id}`).pipe(
       tap(() => {
         this.logger.apiCall(this.source, 'DELETE', `/receipts/${id}`, startTime);
@@ -110,6 +110,36 @@ export class ReceiptService {
       }),
       catchError(error => {
         this.logger.apiError(this.source, 'DELETE', `/receipts/${id}`, error, startTime);
+        throw error;
+      })
+    );
+  }
+
+  addToGroup(id: number, groupId: number | null): Observable<Receipt> {
+    const startTime = Date.now();
+    this.logger.info(this.source, `>>> addToGroup(receiptId=${id}, groupId=${groupId})`);
+    return this.http.put<Receipt>(`${this.base}/${id}/group`, { groupId }).pipe(
+      tap(result => {
+        this.logger.apiCall(this.source, 'PUT', `/receipts/${id}/group`, startTime);
+        this.logger.info(this.source, `<<< addToGroup - groupId=${result.groupId}`);
+      }),
+      catchError(error => {
+        this.logger.apiError(this.source, 'PUT', `/receipts/${id}/group`, error, startTime);
+        throw error;
+      })
+    );
+  }
+
+  linkToVehicle(id: number, vehicleId: number | null): Observable<Receipt> {
+    const startTime = Date.now();
+    this.logger.info(this.source, `>>> linkToVehicle(receiptId=${id}, vehicleId=${vehicleId})`);
+    return this.http.put<Receipt>(`${this.base}/${id}/vehicle`, { vehicleId }).pipe(
+      tap(result => {
+        this.logger.apiCall(this.source, 'PUT', `/receipts/${id}/vehicle`, startTime);
+        this.logger.info(this.source, `<<< linkToVehicle - vehicleId=${result.vehicleId}`);
+      }),
+      catchError(error => {
+        this.logger.apiError(this.source, 'PUT', `/receipts/${id}/vehicle`, error, startTime);
         throw error;
       })
     );

@@ -38,6 +38,7 @@
   <app-share-dialog
     *ngIf="showShareDialog && receipt"
     [receipt]="receipt"
+    [groupMembers]="groupMembers"
     (closed)="showShareDialog = false">
   </app-share-dialog>
 
@@ -154,6 +155,57 @@
               <i class="bi bi-check-circle-fill me-1"></i>
               You're using the best card for this category!
             </div>
+          </div>
+        </div>
+
+        <!-- Group assignment card -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-white">
+            <span class="fw-600" style="font-weight:600;"><i class="bi bi-people-fill me-2"></i>Group</span>
+          </div>
+          <div class="card-body">
+            <div *ngIf="receipt.groupId" class="mb-2">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                <i class="bi bi-people me-1"></i>{{ receipt.groupName }}
+              </span>
+            </div>
+            <div *ngIf="!receipt.groupId" class="text-muted small mb-2">Not assigned to any group.</div>
+            <select class="form-select form-select-sm mb-2" [(ngModel)]="selectedGroupId">
+              <option [ngValue]="null">— No group —</option>
+              <option *ngFor="let g of myGroups" [ngValue]="g.id">{{ g.name }} ({{ g.memberCount }} members)</option>
+            </select>
+            <div *ngIf="groupError" class="alert alert-danger py-1 small mb-2">{{ groupError }}</div>
+            <button class="btn btn-sm btn-primary w-100" (click)="saveGroup()" [disabled]="groupSaving">
+              <span *ngIf="!groupSaving"><i class="bi bi-check2 me-1"></i>Save Group</span>
+              <span *ngIf="groupSaving"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Vehicle link card (shown for all receipts when vehicles exist, highlighted for GAS_STATION) -->
+        <div class="card border-0 shadow-sm mb-3" *ngIf="myVehicles.length > 0 || receipt.vehicleId">
+          <div class="card-header bg-white">
+            <span class="fw-600" style="font-weight:600;">
+              <i class="bi bi-speedometer2 me-2" style="color:#f59e0b;"></i>Vehicle
+              <span *ngIf="receipt.storeType === 'GAS_STATION'" class="badge bg-warning text-dark ms-2 small">Gas Station</span>
+            </span>
+          </div>
+          <div class="card-body">
+            <div *ngIf="receipt.vehicleId" class="mb-2">
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                <i class="bi bi-speedometer2 me-1"></i>{{ receipt.vehicleName }}
+              </span>
+            </div>
+            <div *ngIf="!receipt.vehicleId" class="text-muted small mb-2">Not linked to a vehicle.</div>
+            <select class="form-select form-select-sm mb-2" [(ngModel)]="selectedVehicleId">
+              <option [ngValue]="null">— No vehicle —</option>
+              <option *ngFor="let v of myVehicles" [ngValue]="v.id">{{ v.modelYear }} {{ v.make }} {{ v.model }}</option>
+            </select>
+            <div *ngIf="vehicleError" class="alert alert-danger py-1 small mb-2">{{ vehicleError }}</div>
+            <button class="btn btn-sm btn-warning w-100 text-dark" (click)="saveVehicle()" [disabled]="vehicleSaving">
+              <span *ngIf="!vehicleSaving"><i class="bi bi-check2 me-1"></i>Save Vehicle</span>
+              <span *ngIf="vehicleSaving"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+            </button>
           </div>
         </div>
 
