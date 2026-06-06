@@ -8,11 +8,11 @@
   padding: 0.75rem 0.875rem;
   margin: 0.5rem 0.5rem 0;
   border-radius: 0.625rem;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(0, 195, 137, 0.08);
+  border: 1px solid rgba(0, 195, 137, 0.18);
   transition: background 200ms ease;
 
-  &:hover { background: rgba(99, 102, 241, 0.15); }
+  &:hover { background: rgba(0, 195, 137, 0.14); }
 }
 
 .user-avatar {
@@ -20,7 +20,7 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(99, 102, 241, 0.45);
+  border: 2px solid rgba(0, 195, 137, 0.45);
   flex-shrink: 0;
 }
 
@@ -75,15 +75,15 @@
   letter-spacing: 0.01em;
 
   &:hover {
-    color: #c7d2fe;
-    background: rgba(99, 102, 241, 0.1);
+    color: #7DDFC3;
+    background: rgba(0, 195, 137, 0.08);
   }
 }
 
 .sidebar-cashback {
   font-size: 0.68rem;
   font-weight: 600;
-  color: rgba(99, 102, 241, 0.7);
+  color: rgba(0, 195, 137, 0.7);
   padding: 0.2rem 0.625rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;

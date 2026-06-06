@@ -16,19 +16,19 @@
   background: #fff;
 
   &:hover {
-    border-color: #a5b4fc;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+    border-color: #A0AEC0;
+    box-shadow: 0 2px 8px rgba(26, 35, 50, 0.1);
   }
 
   &.active {
-    border-color: var(--primary, #4f46e5);
-    background: #eef2ff;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.12);
+    border-color: var(--primary, #1A2332);
+    background: #E8EDF5;
+    box-shadow: 0 2px 8px rgba(26, 35, 50, 0.14);
   }
 
   .storage-option-icon {
     font-size: 1.75rem;
-    color: var(--primary, #4f46e5);
+    color: var(--primary, #00C389);
     display: block;
     margin-bottom: 0.5rem;
   }
@@ -38,7 +38,7 @@
     margin-top: 0.6rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--primary, #4f46e5);
+    color: var(--primary, #00C389);
   }
 }
 

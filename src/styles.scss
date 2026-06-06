@@ -3,39 +3,42 @@
    ============================================================ */
 
 :root {
-  /* ── Brand ───────────────────────────────────────────── */
-  --primary:        #4f46e5;
-  --primary-dark:   #3730a3;
-  --primary-light:  #eef2ff;
-  --primary-glow:   rgba(79, 70, 229, 0.18);
+  /* ── Brand — Plaid dark navy (matches Plaid's CTA buttons) ── */
+  --primary:        #1A2332;
+  --primary-dark:   #0D1624;
+  --primary-light:  #E8EDF5;
+  --primary-glow:   rgba(26, 35, 50, 0.12);
 
   /* ── Semantic ────────────────────────────────────────── */
-  --success:        #10b981;
-  --success-light:  #d1fae5;
-  --warning:        #f59e0b;
-  --warning-light:  #fef3c7;
-  --danger:         #ef4444;
-  --danger-light:   #fee2e2;
-  --info:           #06b6d4;
-  --info-light:     #cffafe;
+  --success:        #10D99C;
+  --success-light:  #E0FAF4;
+  --warning:        #F5A623;
+  --warning-light:  #FEF3DC;
+  --danger:         #E03E3E;
+  --danger-light:   #FCEAEA;
+  --info:           #1473E6;
+  --info-light:     #E8F2FD;
 
-  /* ── Surface / neutral ───────────────────────────────── */
-  --surface:        #f8fafc;
-  --surface-2:      #f1f5f9;
-  --surface-3:      #e2e8f0;
+  /* ── Surface / neutral — Plaid light blue-lavender ───── */
+  --surface:        #EEF2F8;
+  --surface-2:      #E5EBF5;
+  --surface-3:      #D8E0EF;
   --card-bg:        #ffffff;
-  --border-color:   #e2e8f0;
+  --border-color:   #DDE5F0;
 
   /* ── Text ────────────────────────────────────────────── */
-  --text-primary:   #0f172a;
-  --text-secondary: #475569;
-  --text-muted:     #94a3b8;
+  --text-primary:   #1A2332;
+  --text-secondary: #4A5568;
+  --text-muted:     #8FA0AD;
 
-  /* ── Sidebar ─────────────────────────────────────────── */
-  --sidebar-bg:     #0f0d2e;
+  /* ── Sidebar — deeper blue-navy ─────────────────────── */
+  --sidebar-bg:     #0D1F3C;
   --sidebar-width:  240px;
-  --sidebar-text:   #a5b4fc;
+  --sidebar-text:   #7EC8B0;
   --sidebar-border: rgba(255, 255, 255, 0.06);
+
+  /* ── Plaid signature gradient (rainbow card borders) ─── */
+  --gradient-border: linear-gradient(135deg, #FF6B9D 0%, #A78BFA 33%, #38BDF8 66%, #34D399 100%);
 
   /* ── Layout ──────────────────────────────────────────── */
   /* env() fallback to 0 when not in a notched device */
@@ -47,11 +50,11 @@
   --header-base-height: 56px;
   --mobile-header-height: calc(var(--header-base-height) + var(--safe-top));
 
-  /* ── Radius ──────────────────────────────────────────── */
-  --radius-sm:  0.375rem;
-  --radius:     0.75rem;
-  --radius-lg:  1rem;
-  --radius-xl:  1.25rem;
+  /* ── Radius — more generous like Plaid ──────────────── */
+  --radius-sm:  0.5rem;
+  --radius:     0.875rem;
+  --radius-lg:  1.25rem;
+  --radius-xl:  1.5rem;
 
   /* ── Shadows ─────────────────────────────────────────── */
   --shadow-xs:  0 1px 2px rgba(0,0,0,.05);
@@ -109,7 +112,7 @@ body {
   z-index: 1060;
   border-bottom: 1px solid var(--sidebar-border);
   /* Subtle gradient shine along the bottom edge */
-  box-shadow: 0 1px 0 rgba(129, 140, 248, 0.15), 0 4px 12px rgba(0,0,0,.3);
+  box-shadow: 0 1px 0 rgba(0, 195, 137, 0.15), 0 4px 12px rgba(0,0,0,.3);
 
   .mobile-brand {
     display: flex;
@@ -119,7 +122,7 @@ body {
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #e0e7ff 0%, #c4b5fd 50%, #e879f9 100%);
+    background: linear-gradient(135deg, #D4F5EC 0%, #7DDFC3 50%, #00C389 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -128,7 +131,7 @@ body {
     .brand-icon {
       width: 28px;
       height: 28px;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      background: linear-gradient(135deg, #00A67E 0%, #00C389 50%, #4DD9AC 100%);
       border-radius: 7px;
       display: flex;
       align-items: center;
@@ -136,7 +139,7 @@ body {
       font-size: 0.85rem;
       color: #fff;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.55);
+      box-shadow: 0 2px 8px rgba(0, 166, 126, 0.55);
     }
   }
 
@@ -158,8 +161,8 @@ body {
     transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
 
     &:hover, &:focus-visible {
-      background: rgba(99, 102, 241, 0.25);
-      border-color: rgba(99, 102, 241, 0.4);
+      background: rgba(0, 195, 137, 0.2);
+      border-color: rgba(0, 195, 137, 0.4);
       color: #fff;
       outline: none;
     }
@@ -213,7 +216,7 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(99,102,241,0.06) 0%, transparent 40%);
+    background: linear-gradient(180deg, rgba(0,195,137,0.04) 0%, transparent 40%);
     pointer-events: none;
   }
 
@@ -231,7 +234,7 @@ body {
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #e0e7ff 0%, #c4b5fd 50%, #e879f9 100%);
+    background: linear-gradient(135deg, #D4F5EC 0%, #7DDFC3 50%, #00C389 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -240,7 +243,7 @@ body {
     .brand-icon {
       width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+      background: linear-gradient(135deg, #00A67E 0%, #00C389 50%, #4DD9AC 100%);
       border-radius: 9px;
       display: flex;
       align-items: center;
@@ -248,7 +251,7 @@ body {
       font-size: 0.95rem;
       color: #fff;
       flex-shrink: 0;
-      box-shadow: 0 2px 10px rgba(124, 58, 237, 0.6), 0 0 0 1px rgba(255,255,255,0.08) inset;
+      box-shadow: 0 2px 10px rgba(0, 166, 126, 0.6), 0 0 0 1px rgba(255,255,255,0.08) inset;
     }
   }
 
@@ -279,12 +282,12 @@ body {
       }
 
       &:hover {
-        background: rgba(129, 140, 248, 0.1);
-        color: #c7d2fe;
+        background: rgba(0, 195, 137, 0.08);
+        color: #7DDFC3;
       }
 
       &.active {
-        background: rgba(99, 102, 241, 0.18);
+        background: rgba(0, 195, 137, 0.15);
         color: #fff;
         font-weight: 600;
 
@@ -296,7 +299,7 @@ body {
           top: 20%;
           bottom: 20%;
           width: 3px;
-          background: linear-gradient(180deg, #818cf8, #6366f1);
+          background: linear-gradient(180deg, #4DD9AC, #00C389);
           border-radius: 0 2px 2px 0;
         }
       }
@@ -420,7 +423,7 @@ body.sidebar-open { overflow: hidden; }
 
   &:hover {
     box-shadow: var(--shadow-md);
-    border-color: rgba(99, 102, 241, 0.25);
+    border-color: rgba(0, 195, 137, 0.25);
     transform: translateY(-2px);
   }
 
@@ -444,7 +447,7 @@ body.sidebar-open { overflow: hidden; }
     padding: 0.2rem 0.55rem;
     border-radius: 9999px;
     background: var(--success-light);
-    color: #15803d;
+    color: #0A9E7A;
     font-weight: 600;
   }
 }
@@ -471,7 +474,7 @@ body.sidebar-open { overflow: hidden; }
 
 /* ── Upload zone ──────────────────────────────────────────── */
 .upload-zone {
-  border: 2px dashed #c7d2fe;
+  border: 2px dashed #7DDFC3;
   border-radius: var(--radius);
   background: linear-gradient(145deg, #fafbff, #f5f7ff);
   padding: 3rem 2rem;
@@ -498,7 +501,7 @@ body.sidebar-open { overflow: hidden; }
 
   > * { position: relative; z-index: 1; }
 
-  i { font-size: 2.75rem; color: #a5b4fc; }
+  i { font-size: 2.75rem; color: #56C9A5; }
 }
 
 /* ── Chart containers ─────────────────────────────────────── */
@@ -546,20 +549,20 @@ body.sidebar-open { overflow: hidden; }
   margin-bottom: 0.75rem;
 }
 
-/* ── Button primary custom ────────────────────────────────── */
+/* ── Button primary custom — Plaid pill style ─────────────── */
 .btn-primary-custom {
   background: var(--primary);
   color: #fff;
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  padding: 0.6rem 1.5rem;
   font-weight: 600;
   font-size: 0.875rem;
   cursor: pointer;
   transition: background var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
   letter-spacing: -0.01em;
 
-  &:hover  { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(79,70,229,.35); }
+  &:hover  { background: var(--primary-dark); box-shadow: 0 4px 14px rgba(26,35,50,.28); }
   &:active { transform: scale(0.97); }
 }
 
@@ -571,14 +574,18 @@ body.sidebar-open { overflow: hidden; }
   letter-spacing: -0.01em;
   transition: background var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
 
-  &:hover  { background: var(--primary-dark); border-color: var(--primary-dark); }
+  &:hover  { background: var(--primary-dark); border-color: var(--primary-dark); box-shadow: 0 4px 14px rgba(26,35,50,.25); }
   &:active { transform: scale(0.97); }
 }
 
 .btn {
-  border-radius: var(--radius-sm);
+  border-radius: 9999px;
   transition: all var(--t-fast);
   &:active { transform: scale(0.96); }
+}
+
+.btn-outline-secondary, .btn-outline-primary, .btn-outline-danger {
+  border-radius: 9999px;
 }
 
 .form-control, .form-select {
@@ -669,6 +676,33 @@ body.sidebar-open { overflow: hidden; }
 @keyframes slideUp {
   from { opacity: 0; transform: translate(-50%, calc(-50% + 16px)); }
   to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ── Gradient border card — Plaid signature rainbow ───────── */
+.gradient-border-card {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+    var(--gradient-border) border-box !important;
+}
+
+/* ── Plaid-style stat accent (purple large numbers) ──────── */
+.stat-value-accent { color: #7B5EA7; }
+
+/* ── Plaid-style outlined pill button (like "Log in") ─────── */
+.btn-outline-plaid {
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: 9999px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background var(--t-fast), box-shadow var(--t-fast);
+  letter-spacing: -0.01em;
+
+  &:hover { background: var(--primary-light); }
 }
 
 /* share-dialog inner styles */

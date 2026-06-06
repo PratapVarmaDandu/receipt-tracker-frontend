@@ -17,6 +17,7 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
+    "@newrelic/browser-agent": "^1.275.0",
     "@types/qrcode": "^1.5.6",
     "chart.js": "^4.4.0",
     "qrcode": "^1.5.4",
