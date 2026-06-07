@@ -69,13 +69,13 @@
             </div>
           </div>
           <div class="col-4">
-            <div class="doc-mini-stat" [class.doc-mini-warn]="vehiclesWithTagIssues.length > 0" [class.doc-mini-danger]="vehiclesWithTagIssues.length > 0 && vehiclesWithTagIssues[0]?.tagStatus === 'EXPIRED'">
+            <div class="doc-mini-stat" [class.doc-mini-warn]="vehiclesWithTagIssues.length > 0" [class.doc-mini-danger]="vehiclesWithTagIssues.length > 0 && vehiclesWithTagIssues[0].tagStatus === 'EXPIRED'">
               <div class="doc-mini-value">{{ vehiclesWithTagIssues.length }}</div>
               <div class="doc-mini-label">Tag Issues</div>
             </div>
           </div>
           <div class="col-4">
-            <div class="doc-mini-stat" [class.doc-mini-warn]="vehiclesWithInsuranceIssues.length > 0" [class.doc-mini-danger]="vehiclesWithInsuranceIssues.length > 0 && vehiclesWithInsuranceIssues[0]?.insuranceStatus === 'EXPIRED'">
+            <div class="doc-mini-stat" [class.doc-mini-warn]="vehiclesWithInsuranceIssues.length > 0" [class.doc-mini-danger]="vehiclesWithInsuranceIssues.length > 0 && vehiclesWithInsuranceIssues[0].insuranceStatus === 'EXPIRED'">
               <div class="doc-mini-value">{{ vehiclesWithInsuranceIssues.length }}</div>
               <div class="doc-mini-label">Insurance Issues</div>
             </div>
