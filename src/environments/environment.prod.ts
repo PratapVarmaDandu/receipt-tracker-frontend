@@ -1,6 +1,9 @@
+// NR config is injected at container start via window.__NR_CONFIG__ (see nr-config.js.template).
+// These values are only used as a local-dev fallback — leave licenseKey empty so the agent
+// stays disabled unless the key is explicitly provided.
 const nrBrowser = {
   accountId: '8142327',
-  licenseKey: '__NR_LICENSE_KEY__',  // injected at Docker build time via ARG — never commit the real key
+  licenseKey: '',
   applicationId: '653421046',
   agentId: '653421046',
   trustKey: '8142327'

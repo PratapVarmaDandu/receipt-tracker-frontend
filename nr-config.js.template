@@ -1,0 +1,9 @@
+// New Relic Browser runtime config — generated at container start by docker-entrypoint.sh.
+// NR_LICENSE_KEY is injected from the host .env file and never stored in the image or git.
+window.__NR_CONFIG__ = {
+  licenseKey: "__NR_LICENSE_KEY__",
+  applicationId: "653421046",
+  accountId: "8142327",
+  agentId: "653421046",
+  trustKey: "8142327"
+};

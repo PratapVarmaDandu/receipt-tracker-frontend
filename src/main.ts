@@ -2,9 +2,11 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 
-// Initialize New Relic Browser Agent before Angular bootstraps.
-// Uses dynamic import so the NR bundle is excluded from the main chunk when disabled.
-if (environment.newrelic.enabled) {
+// New Relic Browser Agent init.
+// In production the config is injected at container start via /nr-config.js → window.__NR_CONFIG__.
+// In local dev, falls back to environment.newrelic (disabled by default).
+const nrCfg = (window as any).__NR_CONFIG__ || (environment.newrelic.enabled ? environment.newrelic : null);
+if (nrCfg?.licenseKey) {
   import('@newrelic/browser-agent/loaders/browser-agent').then(({ BrowserAgent }) => {
     new BrowserAgent({
       init: {
@@ -17,16 +19,16 @@ if (environment.newrelic.enabled) {
       info: {
         beacon: 'bam.nr-data.net',
         errorBeacon: 'bam.nr-data.net',
-        licenseKey: environment.newrelic.licenseKey,
-        applicationID: environment.newrelic.applicationId,
+        licenseKey: nrCfg.licenseKey,
+        applicationID: nrCfg.applicationId,
         sa: 1
       },
       loader_config: {
-        accountID: environment.newrelic.accountId,
-        trustKey: environment.newrelic.trustKey,
-        agentID: environment.newrelic.agentId,
-        licenseKey: environment.newrelic.licenseKey,
-        applicationID: environment.newrelic.applicationId
+        accountID: nrCfg.accountId,
+        trustKey: nrCfg.trustKey,
+        agentID: nrCfg.agentId,
+        licenseKey: nrCfg.licenseKey,
+        applicationID: nrCfg.applicationId
       }
     });
   });
