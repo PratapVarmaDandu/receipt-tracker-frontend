@@ -1,13 +1,9 @@
-// New Relic Browser Agent config — fill in values from:
-//   New Relic UI → Add Data → Browser → (your app) → Application settings
-// Set these before running  npm run build  for production, or inject via
-// your CI/CD pipeline. Agent is automatically disabled when licenseKey is empty.
 const nrBrowser = {
-  accountId: '',       // NR account ID (numeric, from URL or app settings)
-  licenseKey: '',      // Browser ingest key (starts with "NRBR-...")
-  applicationId: '',   // Browser application ID (numeric)
-  agentId: '',         // Same as applicationId in most setups
-  trustKey: ''         // Same as accountId for single-account orgs
+  accountId: '8142327',
+  licenseKey: '__NR_LICENSE_KEY__',  // injected at Docker build time via ARG — never commit the real key
+  applicationId: '653421046',
+  agentId: '653421046',
+  trustKey: '8142327'
 };
 
 export const environment = {

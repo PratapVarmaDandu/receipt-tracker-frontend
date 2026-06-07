@@ -25,9 +25,20 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser().subscribe(user => {
       this.currentUser = user;
-      // Show banner for authenticated users who haven't dismissed it
       if (user && !user.welcomeDismissed) {
         this.showWelcomeBanner = true;
+      }
+      // Tag New Relic session with the logged-in user so sessions are filterable by email
+      const nr = (window as any).newrelic;
+      if (nr) {
+        if (user) {
+          nr.setCustomAttribute('userId', String(user.id));
+          nr.setCustomAttribute('userEmail', user.email);
+          nr.setCustomAttribute('userName', user.name);
+        } else {
+          nr.setCustomAttribute('userId', null);
+          nr.setCustomAttribute('userEmail', null);
+        }
       }
     });
 
@@ -54,6 +65,11 @@ export class AppComponent implements OnInit {
           || url.startsWith('/garage/join/');
         this.sidebarOpen = false;
         document.body.classList.remove('sidebar-open');
+        // Tell New Relic which SPA route the user navigated to
+        const nr = (window as any).newrelic;
+        if (nr) {
+          nr.setCurrentRouteName(url);
+        }
       });
 
     this.uiEvents.openWelcomeBanner$.subscribe(() => {

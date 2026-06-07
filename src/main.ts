@@ -10,10 +10,9 @@ if (environment.newrelic.enabled) {
       init: {
         distributed_tracing: { enabled: true },
         privacy: { cookies_enabled: true },
-        ajax: {
-          // Don't create NR traces for NR's own data-collection requests
-          deny_list: ['bam.nr-data.net']
-        }
+        ajax: { deny_list: ['bam.nr-data.net'] },
+        browser_consent_mode: { enabled: false },
+        performance: { capture_detail: false, capture_marks: false, capture_measures: true }
       },
       info: {
         beacon: 'bam.nr-data.net',
