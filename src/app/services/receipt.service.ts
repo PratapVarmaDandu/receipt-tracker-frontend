@@ -130,10 +130,10 @@ export class ReceiptService {
     );
   }
 
-  linkToVehicle(id: number, vehicleId: number | null): Observable<Receipt> {
+  linkToVehicle(id: number, vehicleId: number | null, vehicleCategory?: string | null): Observable<Receipt> {
     const startTime = Date.now();
-    this.logger.info(this.source, `>>> linkToVehicle(receiptId=${id}, vehicleId=${vehicleId})`);
-    return this.http.put<Receipt>(`${this.base}/${id}/vehicle`, { vehicleId }).pipe(
+    this.logger.info(this.source, `>>> linkToVehicle(receiptId=${id}, vehicleId=${vehicleId}, category=${vehicleCategory})`);
+    return this.http.put<Receipt>(`${this.base}/${id}/vehicle`, { vehicleId, vehicleCategory: vehicleCategory ?? null }).pipe(
       tap(result => {
         this.logger.apiCall(this.source, 'PUT', `/receipts/${id}/vehicle`, startTime);
         this.logger.info(this.source, `<<< linkToVehicle - vehicleId=${result.vehicleId}`);

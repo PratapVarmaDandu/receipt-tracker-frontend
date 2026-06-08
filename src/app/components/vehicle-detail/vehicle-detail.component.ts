@@ -6,6 +6,8 @@ import {
   MAINTENANCE_TYPE_LABELS, FUEL_TYPE_LABELS, MaintenanceType, FuelType
 } from '../../models/vehicle.model';
 import { VehicleService } from '../../services/vehicle.service';
+import { ReceiptService } from '../../services/receipt.service';
+import { Receipt } from '../../models/receipt.model';
 
 interface VehicleEditForm {
   trim: string;
@@ -56,8 +58,29 @@ export class VehicleDetailComponent implements OnInit {
   fuel: FuelRecord[] = [];
   schedule: MaintenanceScheduleItem[] = [];
   recalls: Recall[] = [];
+  linkedReceipts: any[] = [];
   loading = true;
-  tab: 'overview' | 'maintenance' | 'fuel' | 'schedule' | 'recalls' | 'sharing' = 'overview';
+
+  // ── Add receipt to vehicle ─────────────────────────────────────────────────
+  showAddReceipt = false;
+  allReceipts: Receipt[] = [];
+  allReceiptsLoading = false;
+  addReceiptId: number | null = null;
+  addReceiptCategory: string | null = null;
+  addingReceipt = false;
+  addReceiptError: string | null = null;
+
+  readonly vehicleCategories = [
+    { value: 'FUEL',         label: 'Fuel / Gas' },
+    { value: 'MAINTENANCE',  label: 'Maintenance' },
+    { value: 'REPAIR',       label: 'Repair' },
+    { value: 'INSURANCE',    label: 'Insurance' },
+    { value: 'REGISTRATION', label: 'Registration / Tags' },
+    { value: 'PARKING',      label: 'Parking / Tolls' },
+    { value: 'WASH',         label: 'Car Wash' },
+    { value: 'OTHER',        label: 'Other' },
+  ];
+  tab: 'overview' | 'maintenance' | 'fuel' | 'schedule' | 'recalls' | 'sharing' | 'receipts' = 'overview';
 
   // ── Sharing ────────────────────────────────────────────────────────────────
   inviteEmail = '';
@@ -95,7 +118,8 @@ export class VehicleDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private vehicleService: VehicleService
+    private vehicleService: VehicleService,
+    private receiptService: ReceiptService
   ) {}
 
   ngOnInit(): void {
@@ -112,8 +136,59 @@ export class VehicleDetailComponent implements OnInit {
         this.vehicleService.getFuel(id).subscribe(f => { this.fuel = f; });
         this.vehicleService.getSchedule(id).subscribe(s => { this.schedule = s; });
         this.vehicleService.getRecalls(id).subscribe(r => { this.recalls = r; this.loading = false; });
+        this.vehicleService.getVehicleReceipts(id).subscribe(rs => { this.linkedReceipts = rs; });
       },
       error: () => { this.loading = false; this.router.navigate(['/garage']); }
+    });
+  }
+
+  // ── Add receipt helpers ────────────────────────────────────────────────────
+
+  openAddReceipt(): void {
+    this.showAddReceipt = true;
+    this.addReceiptId = null;
+    this.addReceiptCategory = null;
+    this.addReceiptError = null;
+    if (this.allReceipts.length === 0) {
+      this.allReceiptsLoading = true;
+      this.receiptService.getAll().subscribe(rs => {
+        this.allReceipts = rs;
+        this.allReceiptsLoading = false;
+      });
+    }
+  }
+
+  get unlinkedReceipts(): Receipt[] {
+    const alreadyLinked = new Set(this.linkedReceipts.map((r: any) => r.id));
+    return this.allReceipts.filter(r => !alreadyLinked.has(r.id));
+  }
+
+  onAddReceiptSelected(receiptId: number | null): void {
+    this.addReceiptId = receiptId;
+    if (receiptId) {
+      const r = this.allReceipts.find(x => x.id === receiptId);
+      this.addReceiptCategory = r?.storeType === 'GAS_STATION' ? 'FUEL' : null;
+    } else {
+      this.addReceiptCategory = null;
+    }
+  }
+
+  addReceiptToVehicle(): void {
+    if (!this.addReceiptId || !this.vehicle) return;
+    this.addingReceipt = true;
+    this.addReceiptError = null;
+    this.receiptService.linkToVehicle(this.addReceiptId, this.vehicle.id, this.addReceiptCategory).subscribe({
+      next: () => {
+        this.showAddReceipt = false;
+        this.addReceiptId = null;
+        this.addReceiptCategory = null;
+        this.vehicleService.getVehicleReceipts(this.vehicle!.id).subscribe(rs => { this.linkedReceipts = rs; });
+        this.addingReceipt = false;
+      },
+      error: err => {
+        this.addReceiptError = err?.error?.error ?? 'Failed to link receipt.';
+        this.addingReceipt = false;
+      }
     });
   }
 

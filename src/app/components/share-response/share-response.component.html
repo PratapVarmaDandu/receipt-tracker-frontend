@@ -17,14 +17,28 @@
     <!-- Loaded -->
     <div *ngIf="!loading && data">
       <!-- Header -->
-      <div class="card-header bg-white border-bottom px-4 py-3">
+      <div class="card-header border-bottom px-4 py-3"
+           [class.bg-white]="!data.paidForOwner"
+           [class.bg-warning]="data.paidForOwner"
+           [style.--bs-bg-opacity]="data.paidForOwner ? '0.15' : '1'">
         <div class="d-flex align-items-center gap-3">
           <div class="share-icon">
-            <i class="bi bi-people-fill"></i>
+            <i class="bi bi-arrow-left-right" *ngIf="data.paidForOwner"></i>
+            <i class="bi bi-people-fill" *ngIf="!data.paidForOwner"></i>
           </div>
           <div>
-            <h5 class="mb-0 fw-semibold">Expense Share Invite</h5>
-            <div class="text-muted small">from <strong>{{ data.ownerName }}</strong></div>
+            <h5 class="mb-0 fw-semibold">
+              <ng-container *ngIf="data.paidForOwner">Debt Confirmation</ng-container>
+              <ng-container *ngIf="!data.paidForOwner">Expense Share Invite</ng-container>
+            </h5>
+            <div class="text-muted small">
+              <ng-container *ngIf="data.paidForOwner">
+                <strong>{{ data.ownerName }}</strong> says you paid their bill
+              </ng-container>
+              <ng-container *ngIf="!data.paidForOwner">
+                from <strong>{{ data.ownerName }}</strong>
+              </ng-container>
+            </div>
           </div>
         </div>
       </div>
@@ -54,12 +68,19 @@
           </div>
         </div>
 
-        <!-- Your share -->
+        <!-- Your share / debt owed to you -->
         <div class="your-share-panel mb-4">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small">Your share</div>
+              <div class="text-muted small">
+                <ng-container *ngIf="data.paidForOwner">Amount owed to you</ng-container>
+                <ng-container *ngIf="!data.paidForOwner">Your share</ng-container>
+              </div>
               <div class="share-amount fw-bold">${{ data.shareAmount | number:'1.2-2' }}</div>
+              <div *ngIf="data.paidForOwner" class="small text-warning fw-medium mt-1">
+                <i class="bi bi-arrow-left-right me-1"></i>
+                {{ data.ownerName }} owes you this amount
+              </div>
             </div>
             <div class="share-status-pill" [ngClass]="statusCssKey(data.status)">
               {{ statusLabel(data.status) }}
@@ -109,14 +130,22 @@
 
           <div *ngIf="!showChangeForm" class="d-flex gap-2 flex-wrap">
             <button class="btn btn-success flex-fill" (click)="accept()" [disabled]="submitting">
-              <span *ngIf="!submitting"><i class="bi bi-check2 me-1"></i>Accept ${{ data.shareAmount | number:'1.2-2' }}</span>
+              <span *ngIf="!submitting">
+                <i class="bi bi-check2 me-1"></i>
+                <ng-container *ngIf="data.paidForOwner">Confirm — you are owed ${{ data.shareAmount | number:'1.2-2' }}</ng-container>
+                <ng-container *ngIf="!data.paidForOwner">Accept ${{ data.shareAmount | number:'1.2-2' }}</ng-container>
+              </span>
               <span *ngIf="submitting"><span class="spinner-border spinner-border-sm"></span></span>
             </button>
             <button class="btn btn-outline-warning flex-fill" (click)="showChangeForm = true" [disabled]="submitting">
-              <i class="bi bi-pencil me-1"></i>Request Change
+              <i class="bi bi-pencil me-1"></i>
+              <ng-container *ngIf="data.paidForOwner">Dispute Amount</ng-container>
+              <ng-container *ngIf="!data.paidForOwner">Request Change</ng-container>
             </button>
             <button class="btn btn-outline-danger flex-fill" (click)="deny()" [disabled]="submitting">
-              <i class="bi bi-x me-1"></i>Deny
+              <i class="bi bi-x me-1"></i>
+              <ng-container *ngIf="data.paidForOwner">Decline</ng-container>
+              <ng-container *ngIf="!data.paidForOwner">Deny</ng-container>
             </button>
           </div>
 

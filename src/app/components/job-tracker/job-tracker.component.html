@@ -1,0 +1,350 @@
+<div class="page-container">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1><i class="bi bi-briefcase"></i> Job Tracker</h1>
+      <span class="subtitle" *ngIf="summary">{{ summary.total }} applications</span>
+    </div>
+    <div class="header-actions">
+      <div class="view-toggle">
+        <button class="toggle-btn" [class.active]="viewMode === 'kanban'" (click)="setView('kanban')" title="Kanban view">
+          <i class="bi bi-kanban"></i> Board
+        </button>
+        <button class="toggle-btn" [class.active]="viewMode === 'table'" (click)="setView('table')" title="Table view">
+          <i class="bi bi-table"></i> Table
+        </button>
+      </div>
+      <button class="btn-add" (click)="toggleAddPanel()">
+        <i class="bi bi-plus-lg"></i><span class="btn-add-text"> Add Application</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Summary strip ──────────────────────────────────────────────────── -->
+  <div class="summary-strip" *ngIf="summary">
+    <div class="stat-card">
+      <span class="stat-value">{{ summary.active }}</span>
+      <span class="stat-label">Active</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ summary.thisMonth }}</span>
+      <span class="stat-label">This month</span>
+    </div>
+    <div class="stat-card" [class.alert]="summary.upcomingInterviews > 0">
+      <span class="stat-value">{{ summary.upcomingInterviews }}</span>
+      <span class="stat-label">Upcoming interviews</span>
+    </div>
+    <div class="stat-card" [class.alert]="summary.followUpsDue > 0">
+      <span class="stat-value">{{ summary.followUpsDue }}</span>
+      <span class="stat-label">Follow-ups due</span>
+    </div>
+    <div class="stat-card highlight" *ngIf="summary.offersReceived > 0">
+      <span class="stat-value">{{ summary.offersReceived }}</span>
+      <span class="stat-label">Offers <i class="bi bi-trophy-fill"></i></span>
+    </div>
+  </div>
+
+  <!-- ── Add application panel ──────────────────────────────────────────── -->
+  <div class="add-panel" *ngIf="showAddPanel">
+    <div class="add-panel-header">
+      <h3><i class="bi bi-plus-circle"></i> New Application</h3>
+      <button class="btn-icon-close" (click)="toggleAddPanel()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="add-panel-body">
+      <div class="form-row">
+        <div class="form-group required">
+          <label>Company</label>
+          <input type="text" [(ngModel)]="addForm.companyName" placeholder="e.g. Google" autocomplete="off">
+        </div>
+        <div class="form-group required">
+          <label>Job Title</label>
+          <input type="text" [(ngModel)]="addForm.jobTitle" placeholder="e.g. Software Engineer" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="addForm.status">
+            <option *ngFor="let s of ALL_STATUSES" [value]="s">{{ STATUS_LABELS[s] }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Applied Date</label>
+          <input type="date" [(ngModel)]="addForm.appliedDate">
+        </div>
+        <div class="form-group">
+          <label>Follow-up Date</label>
+          <input type="date" [(ngModel)]="addForm.followUpDate">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" [(ngModel)]="addForm.location" placeholder="Remote / San Francisco, CA">
+        </div>
+        <div class="form-group">
+          <label>Salary Range</label>
+          <input type="text" [(ngModel)]="addForm.salaryRange" placeholder="$120k – $150k">
+        </div>
+        <div class="form-group">
+          <label>Job URL</label>
+          <input type="url" [(ngModel)]="addForm.jobUrl" placeholder="https://...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Resume Version <span class="hint">(from vault)</span></label>
+          <select [(ngModel)]="addForm.resumeDocumentId" (ngModelChange)="onResumeDocChange()">
+            <option [ngValue]="null">— not linked —</option>
+            <option *ngFor="let doc of resumeDocs" [ngValue]="doc.id">{{ doc.title }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Version Label <span class="hint">(friendly name)</span></label>
+          <input type="text" [(ngModel)]="addForm.resumeVersion" placeholder="e.g. v3 – tailored for fintech">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>HR Name</label>
+          <input type="text" [(ngModel)]="addForm.hrName" placeholder="Contact name">
+        </div>
+        <div class="form-group">
+          <label>HR Email</label>
+          <input type="email" [(ngModel)]="addForm.hrEmail" placeholder="hr@company.com">
+        </div>
+      </div>
+    </div>
+    <div class="add-panel-footer">
+      <span class="save-error" *ngIf="saveError">{{ saveError }}</span>
+      <button class="btn-cancel" (click)="toggleAddPanel()">Cancel</button>
+      <button class="btn-save" (click)="submitAdd()" [disabled]="saving">
+        <span *ngIf="saving"><i class="bi bi-arrow-repeat spin"></i> Saving…</span>
+        <span *ngIf="!saving">Save Application</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Loading ─────────────────────────────────────────────────────────── -->
+  <div class="loading-state" *ngIf="loading">
+    <i class="bi bi-arrow-repeat spin"></i> Loading applications…
+  </div>
+
+  <!-- ── Empty state ─────────────────────────────────────────────────────── -->
+  <div class="empty-state" *ngIf="!loading && apps.length === 0 && !showAddPanel">
+    <i class="bi bi-briefcase"></i>
+    <h3>No applications yet</h3>
+    <p>Start tracking your job search — add your first application above.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- KANBAN VIEW                                                             -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="kanban-board" *ngIf="!loading && viewMode === 'kanban' && apps.length > 0">
+    <div class="kanban-col" *ngFor="let col of KANBAN_COLUMNS"
+         [style.--col-color]="STATUS_COLORS[col]"
+         [style.--col-light]="STATUS_LIGHT_COLORS[col]">
+
+      <div class="col-header">
+        <span class="col-icon"><i class="bi" [ngClass]="STATUS_ICONS[col]"></i></span>
+        <span class="col-title">{{ STATUS_LABELS[col] }}</span>
+        <span class="col-count" [class.zero]="columnApps(col).length === 0">
+          {{ columnApps(col).length }}
+        </span>
+      </div>
+
+      <div class="col-cards">
+        <!-- Empty column placeholder -->
+        <div class="col-empty" *ngIf="columnApps(col).length === 0">
+          <i class="bi bi-inbox"></i>
+        </div>
+
+        <div class="kanban-card" *ngFor="let app of columnApps(col); trackBy: trackById"
+             (click)="openApp(app.id)">
+
+          <div class="card-company">{{ app.companyName }}</div>
+          <div class="card-title">{{ app.jobTitle }}</div>
+
+          <div class="card-meta" *ngIf="app.location || app.salaryRange">
+            <span *ngIf="app.location"><i class="bi bi-geo-alt"></i> {{ app.location }}</span>
+            <span *ngIf="app.salaryRange"><i class="bi bi-currency-dollar"></i> {{ app.salaryRange }}</span>
+          </div>
+
+          <div class="card-date">
+            <i class="bi bi-calendar3"></i> {{ formatShortDate(app.appliedDate) }}
+          </div>
+
+          <div class="card-badges">
+            <span class="badge badge-resume" *ngIf="app.resumeVersion" [title]="app.resumeDocumentTitle || ''">
+              <i class="bi bi-file-earmark-text"></i> {{ app.resumeVersion }}
+            </span>
+            <span class="badge badge-interview" *ngIf="app.nextInterviewAt">
+              <i class="bi bi-calendar-event"></i> {{ formatInterviewDate(app.nextInterviewAt) }}
+            </span>
+            <span class="badge badge-followup" *ngIf="app.followUpDue">
+              <i class="bi bi-bell"></i> Follow up
+            </span>
+          </div>
+
+          <div class="card-contact" *ngIf="app.hrName || app.hrEmail">
+            <i class="bi bi-person"></i>
+            <span>{{ app.hrName || app.hrEmail }}</span>
+          </div>
+
+          <button class="card-delete" (click)="confirmDelete(app, $event)" title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- TABLE VIEW                                                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div class="table-section" *ngIf="!loading && viewMode === 'table' && apps.length > 0">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" [(ngModel)]="searchText" placeholder="Search company, title, location…">
+        <button *ngIf="searchText" class="clear-search" (click)="searchText = ''">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+      <div class="status-filters">
+        <button class="filter-chip" [class.active]="statusFilter === ''" (click)="statusFilter = ''">
+          All <span class="chip-count">{{ apps.length }}</span>
+        </button>
+        <ng-container *ngFor="let s of ALL_STATUSES">
+          <button class="filter-chip"
+                  [class.active]="statusFilter === s"
+                  [style.--chip-color]="STATUS_COLORS[s]"
+                  (click)="statusFilter = statusFilter === s ? '' : s">
+            {{ STATUS_LABELS[s] }}
+            <span class="chip-count">{{ summary?.byStatus?.[s] ?? 0 }}</span>
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <table class="jobs-table">
+        <thead>
+          <tr>
+            <th class="sortable" (click)="sort('companyName')">
+              Company <i class="bi" [ngClass]="sortIcon('companyName')"></i>
+            </th>
+            <th class="sortable" (click)="sort('jobTitle')">
+              Title <i class="bi" [ngClass]="sortIcon('jobTitle')"></i>
+            </th>
+            <th class="sortable" (click)="sort('status')">
+              Status <i class="bi" [ngClass]="sortIcon('status')"></i>
+            </th>
+            <th class="sortable" (click)="sort('appliedDate')">
+              Applied <i class="bi" [ngClass]="sortIcon('appliedDate')"></i>
+            </th>
+            <th class="sortable" (click)="sort('followUpDate')">
+              Follow-up <i class="bi" [ngClass]="sortIcon('followUpDate')"></i>
+            </th>
+            <th class="sortable" (click)="sort('nextInterviewAt')">
+              Next Interview <i class="bi" [ngClass]="sortIcon('nextInterviewAt')"></i>
+            </th>
+            <th class="sortable" (click)="sort('salaryRange')">
+              Salary <i class="bi" [ngClass]="sortIcon('salaryRange')"></i>
+            </th>
+            <th>Resume</th>
+            <th class="col-actions"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="sorted.length === 0">
+            <td colspan="9" class="no-results">No applications match your filters.</td>
+          </tr>
+          <tr *ngFor="let app of sorted; trackBy: trackById"
+              class="table-row" (click)="openApp(app.id)">
+
+            <td class="cell-company">
+              <span class="company-name">{{ app.companyName }}</span>
+              <span class="location-sub" *ngIf="app.location">{{ app.location }}</span>
+            </td>
+
+            <td class="cell-title">{{ app.jobTitle }}</td>
+
+            <td class="cell-status">
+              <span class="status-pill"
+                    [style.background]="STATUS_LIGHT_COLORS[app.status]"
+                    [style.color]="STATUS_COLORS[app.status]"
+                    [style.border-color]="STATUS_COLORS[app.status] + '44'">
+                <i class="bi" [ngClass]="STATUS_ICONS[app.status]"></i>
+                {{ STATUS_LABELS[app.status] }}
+              </span>
+            </td>
+
+            <td class="cell-date">{{ formatShortDate(app.appliedDate) }}</td>
+
+            <td class="cell-date" [class.overdue]="app.followUpDue">
+              <span *ngIf="app.followUpDate">
+                <i class="bi bi-bell" *ngIf="app.followUpDue"></i>
+                {{ formatShortDate(app.followUpDate) }}
+              </span>
+              <span *ngIf="!app.followUpDate" class="muted">—</span>
+            </td>
+
+            <td class="cell-date">
+              <span *ngIf="app.nextInterviewAt" class="interview-chip">
+                <i class="bi bi-calendar-event"></i>
+                {{ formatInterviewDate(app.nextInterviewAt) }}
+              </span>
+              <span *ngIf="!app.nextInterviewAt" class="muted">—</span>
+            </td>
+
+            <td class="cell-salary">
+              <span *ngIf="app.salaryRange">{{ app.salaryRange }}</span>
+              <span *ngIf="!app.salaryRange" class="muted">—</span>
+            </td>
+
+            <td class="cell-resume">
+              <span class="resume-tag" *ngIf="app.resumeVersion" [title]="app.resumeDocumentTitle || ''">
+                <i class="bi bi-file-earmark-text"></i> {{ app.resumeVersion }}
+              </span>
+              <span *ngIf="!app.resumeVersion" class="muted">—</span>
+            </td>
+
+            <td class="cell-actions" (click)="$event.stopPropagation()">
+              <button class="btn-row-action" (click)="openApp(app.id)" title="View details">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button class="btn-row-action danger" (click)="confirmDelete(app, $event)" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Delete confirm modal ────────────────────────────────────────────── -->
+  <div class="modal-backdrop" *ngIf="deleteTarget" (click)="cancelDelete()">
+    <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <h3>Delete Application?</h3>
+      <p>
+        Remove <strong>{{ deleteTarget.companyName }}</strong> — {{ deleteTarget.jobTitle }}?
+        This cannot be undone.
+      </p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+        <button class="btn-danger" (click)="executeDelete()" [disabled]="deleting">
+          <span *ngIf="deleting"><i class="bi bi-arrow-repeat spin"></i> Deleting…</span>
+          <span *ngIf="!deleting">Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -49,6 +49,24 @@ export class GroupService {
     );
   }
 
+  deleteGroup(id: number): Observable<void> {
+    const startTime = Date.now();
+    this.logger.trace(this.source, `>>> deleteGroup(${id})`);
+    return this.http.delete<void>(`${this.api}/groups/${id}`).pipe(
+      tap(() => { this.logger.apiCall(this.source, 'DELETE', `/groups/${id}`, startTime); this.logger.info(this.source, `<<< deleteGroup id=${id}`); }),
+      catchError(err => { this.logger.apiError(this.source, 'DELETE', `/groups/${id}`, err, startTime); throw err; })
+    );
+  }
+
+  getGroupReceipts(id: number): Observable<any[]> {
+    const startTime = Date.now();
+    this.logger.trace(this.source, `>>> getGroupReceipts(${id})`);
+    return this.http.get<any[]>(`${this.api}/groups/${id}/receipts`).pipe(
+      tap(rs => { this.logger.apiCall(this.source, 'GET', `/groups/${id}/receipts`, startTime); this.logger.debug(this.source, `<<< getGroupReceipts count=${rs.length}`); }),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/groups/${id}/receipts`, err, startTime); return of([]); })
+    );
+  }
+
   joinGroup(token: string): Observable<Group | null> {
     const startTime = Date.now();
     this.logger.trace(this.source, '>>> joinGroup()');

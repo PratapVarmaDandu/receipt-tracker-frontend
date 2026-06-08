@@ -17,11 +17,17 @@
         <i class="bi bi-arrow-left"></i>
       </a>
       <div class="group-avatar-lg">{{ group.name[0].toUpperCase() }}</div>
-      <div>
+      <div class="flex-fill">
         <h3 class="mb-0 fw-bold">{{ group.name }}</h3>
         <div class="text-muted small">{{ group.memberCount }} member{{ group.memberCount !== 1 ? 's' : '' }} · Created by {{ group.ownerName }}</div>
       </div>
+      <button *ngIf="group.currentUserRole === 'OWNER'" class="btn btn-sm btn-outline-danger"
+              (click)="confirmDelete()" [disabled]="deleting">
+        <span *ngIf="!deleting"><i class="bi bi-trash me-1"></i>Delete</span>
+        <span *ngIf="deleting"><span class="spinner-border spinner-border-sm me-1"></span>Deleting…</span>
+      </button>
     </div>
+    <div *ngIf="deleteError" class="alert alert-danger py-2 small mb-3">{{ deleteError }}</div>
 
     <div class="row g-3">
 
@@ -93,6 +99,80 @@
                 {{ m.role === 'OWNER' ? 'Owner' : 'Member' }}
               </span>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receipts card -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-semibold"><i class="bi bi-receipt me-2"></i>Group Receipts
+              <span class="badge bg-secondary ms-2">{{ receipts.length }}</span>
+            </h6>
+            <div *ngIf="!showAddReceipt" class="d-flex gap-2">
+              <a routerLink="/receipts" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-camera me-1"></i>Scan New
+              </a>
+              <button class="btn btn-sm btn-outline-primary" (click)="openAddReceipt()">
+                <i class="bi bi-plus-lg me-1"></i>Add Existing
+              </button>
+            </div>
+          </div>
+
+          <!-- Add receipt inline panel -->
+          <div *ngIf="showAddReceipt" class="card border-primary mx-3 my-3">
+            <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
+              <span class="fw-semibold small"><i class="bi bi-receipt me-2 text-primary"></i>Link a receipt to this group</span>
+              <button class="btn-close btn-sm" (click)="showAddReceipt = false"></button>
+            </div>
+            <div class="card-body py-3 px-3">
+              <div *ngIf="allReceiptsLoading" class="text-muted small mb-2">
+                <span class="spinner-border spinner-border-sm me-1"></span>Loading your receipts…
+              </div>
+              <ng-container *ngIf="!allReceiptsLoading">
+                <label class="form-label small fw-medium mb-1">Receipt</label>
+                <select class="form-select form-select-sm mb-3" [(ngModel)]="selectedReceiptId">
+                  <option [ngValue]="null">— choose a receipt —</option>
+                  <option *ngFor="let r of unassignedReceipts" [ngValue]="r.id">
+                    {{ r.storeName || 'Unknown store' }} · ${{ r.total | number:'1.2-2' }} · {{ r.purchaseDateTime | slice:0:10 }}
+                  </option>
+                  <option *ngIf="unassignedReceipts.length === 0" [ngValue]="null" disabled>
+                    All your receipts are already in this group
+                  </option>
+                </select>
+                <div *ngIf="addReceiptError" class="alert alert-danger py-1 small mb-2">{{ addReceiptError }}</div>
+                <div class="d-flex gap-2 justify-content-end">
+                  <button class="btn btn-sm btn-outline-secondary" (click)="showAddReceipt = false">Cancel</button>
+                  <button class="btn btn-sm btn-primary" (click)="addReceiptToGroup()"
+                          [disabled]="!selectedReceiptId || addingReceipt">
+                    <span *ngIf="!addingReceipt"><i class="bi bi-check2 me-1"></i>Add to Group</span>
+                    <span *ngIf="addingReceipt"><span class="spinner-border spinner-border-sm"></span></span>
+                  </button>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+
+          <div *ngIf="receiptsLoading" class="text-center py-3">
+            <span class="spinner-border spinner-border-sm text-muted"></span>
+          </div>
+          <div *ngIf="!receiptsLoading && receipts.length === 0" class="card-body text-muted small py-3">
+            No receipts assigned to this group yet.
+          </div>
+          <div class="list-group list-group-flush" *ngIf="!receiptsLoading && receipts.length > 0">
+            <a *ngFor="let r of receipts" [routerLink]="['/receipts', r.id]"
+               class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+              <i class="bi bi-receipt text-secondary"></i>
+              <div class="flex-fill">
+                <div class="fw-medium small">{{ r.storeName || 'Unknown store' }}</div>
+                <div class="text-muted" style="font-size:11px">{{ r.ownerEmail }}</div>
+              </div>
+              <div class="text-end">
+                <div class="fw-semibold small">${{ r.total | number:'1.2-2' }}</div>
+                <div class="text-muted" style="font-size:11px">{{ r.purchaseDateTime | slice:0:10 }}</div>
+              </div>
+            </a>
           </div>
         </div>
       </div>

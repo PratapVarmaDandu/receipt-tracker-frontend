@@ -82,6 +82,14 @@ export class VehicleService {
     );
   }
 
+  // ── Linked Receipts ───────────────────────────────────────────────────────
+
+  getVehicleReceipts(vehicleId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.api}/${vehicleId}/receipts`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   // ── PDF Report ────────────────────────────────────────────────────────────
 
   downloadReport(vehicleId: number): string {

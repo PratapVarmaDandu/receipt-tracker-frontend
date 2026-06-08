@@ -39,6 +39,7 @@ export interface Receipt {
   groupName?: string;
   vehicleId?: number;
   vehicleName?: string;
+  vehicleCategory?: string;
 }
 
 export interface AnalyticsData {

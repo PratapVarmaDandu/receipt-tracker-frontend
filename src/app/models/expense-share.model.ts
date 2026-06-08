@@ -19,6 +19,8 @@ export interface ExpenseShare {
   changeResponseNote: string | null;
   status: ShareStatus;
   inviteToken: string;
+  splitType: string | null;
+  paidForOwner: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +37,7 @@ export interface ShareViewData {
   counterNote: string | null;
   changeResponseNote: string | null;
   splitType: string | null;
+  paidForOwner: boolean;
   items: ShareReceiptItem[];
   inviteeLinkNeeded: boolean;
   assignedItems?: ExpenseShareItemDTO[];
@@ -68,7 +71,7 @@ export interface ItemAssignment {
 }
 
 export interface CreateShareRequest {
-  splitType: 'EQUAL' | 'CUSTOM' | 'ITEM_BASED';
+  splitType: 'EQUAL' | 'CUSTOM' | 'ITEM_BASED' | 'PAID_FOR_ME';
   invitees?: ShareInviteeInput[];
   itemAssignments?: ItemAssignment[];
 }

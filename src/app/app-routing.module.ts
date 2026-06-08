@@ -16,6 +16,8 @@ import { DocumentAccessComponent } from './components/document-access/document-a
 import { GarageComponent } from './components/garage/garage.component';
 import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-detail.component';
 import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
+import { JobTrackerComponent } from './components/job-tracker/job-tracker.component';
+import { JobDetailComponent } from './components/job-detail/job-detail.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
@@ -39,6 +41,8 @@ const routes: Routes = [
   { path: 'documents/:id', component: DocumentDetailComponent,  canActivate: [AuthGuard] },
   { path: 'garage',        component: GarageComponent,          canActivate: [AuthGuard] },
   { path: 'garage/:id',    component: VehicleDetailComponent,   canActivate: [AuthGuard] },
+  { path: 'jobs',          component: JobTrackerComponent,      canActivate: [AuthGuard] },
+  { path: 'jobs/:id',      component: JobDetailComponent,       canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

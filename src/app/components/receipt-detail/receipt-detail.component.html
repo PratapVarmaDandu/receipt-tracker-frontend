@@ -8,9 +8,9 @@
   <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="d-flex align-items-center gap-3">
-      <a routerLink="/receipts" class="btn btn-sm btn-outline-secondary">
+      <button class="btn btn-sm btn-outline-secondary" (click)="goBack()">
         <i class="bi bi-arrow-left"></i>
-      </a>
+      </button>
       <div>
         <h1 class="page-title mb-0">{{ receipt.storeName }}</h1>
         <span class="text-muted small">{{ receipt.purchaseDateTime | date:'EEEE, MMMM d, y · h:mm a' }}</span>
@@ -191,16 +191,31 @@
             </span>
           </div>
           <div class="card-body">
-            <div *ngIf="receipt.vehicleId" class="mb-2">
+            <div *ngIf="receipt.vehicleId" class="mb-2 d-flex align-items-center gap-2 flex-wrap">
               <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
                 <i class="bi bi-speedometer2 me-1"></i>{{ receipt.vehicleName }}
               </span>
+              <span *ngIf="receipt.vehicleCategory" class="badge bg-secondary">
+                <i class="bi bi-tag me-1"></i>{{ receipt.vehicleCategory | titlecase }}
+              </span>
             </div>
             <div *ngIf="!receipt.vehicleId" class="text-muted small mb-2">Not linked to a vehicle.</div>
-            <select class="form-select form-select-sm mb-2" [(ngModel)]="selectedVehicleId">
+
+            <label class="form-label small fw-medium mb-1">Vehicle</label>
+            <select class="form-select form-select-sm mb-2" [(ngModel)]="selectedVehicleId"
+                    (ngModelChange)="selectedVehicleCategory = ($event && receipt.storeType === 'GAS_STATION') ? 'FUEL' : selectedVehicleCategory">
               <option [ngValue]="null">— No vehicle —</option>
               <option *ngFor="let v of myVehicles" [ngValue]="v.id">{{ v.modelYear }} {{ v.make }} {{ v.model }}</option>
             </select>
+
+            <label class="form-label small fw-medium mb-1" *ngIf="selectedVehicleId">Expense type</label>
+            <select class="form-select form-select-sm mb-2" [(ngModel)]="selectedVehicleCategory" *ngIf="selectedVehicleId">
+              <option [ngValue]="null">— Select type —</option>
+              <option *ngFor="let c of vehicleCategories" [ngValue]="c.value">
+                {{ c.label }}
+              </option>
+            </select>
+
             <div *ngIf="vehicleError" class="alert alert-danger py-1 small mb-2">{{ vehicleError }}</div>
             <button class="btn btn-sm btn-warning w-100 text-dark" (click)="saveVehicle()" [disabled]="vehicleSaving">
               <span *ngIf="!vehicleSaving"><i class="bi bi-check2 me-1"></i>Save Vehicle</span>

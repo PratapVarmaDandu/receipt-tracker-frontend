@@ -1,0 +1,409 @@
+<div class="detail-container">
+
+  <!-- ── Nav bar ──────────────────────────────────────────────────────────── -->
+  <div class="detail-nav">
+    <button class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left"></i> Job Tracker
+    </button>
+    <div class="nav-actions" *ngIf="app && !editMode">
+      <button class="btn-edit" (click)="startEdit()">
+        <i class="bi bi-pencil"></i> Edit
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Loading / error ─────────────────────────────────────────────────── -->
+  <div class="loading-state" *ngIf="loading">
+    <i class="bi bi-arrow-repeat spin"></i> Loading…
+  </div>
+  <div class="error-state" *ngIf="error">
+    <i class="bi bi-exclamation-circle"></i> {{ error }}
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- DETAIL CONTENT                                                          -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="app && !loading">
+
+    <!-- ── Hero header ──────────────────────────────────────────────────── -->
+    <div class="detail-hero" *ngIf="!editMode">
+      <div class="hero-main">
+        <h1>{{ app.companyName }}</h1>
+        <h2>{{ app.jobTitle }}</h2>
+        <div class="hero-meta">
+          <span class="status-pill"
+                [style.background]="STATUS_LIGHT_COLORS[app.status]"
+                [style.color]="STATUS_COLORS[app.status]"
+                [style.border-color]="STATUS_COLORS[app.status] + '55'">
+            <i class="bi" [ngClass]="STATUS_ICONS[app.status]"></i>
+            {{ STATUS_LABELS[app.status] }}
+          </span>
+          <span class="meta-item" *ngIf="app.location">
+            <i class="bi bi-geo-alt"></i> {{ app.location }}
+          </span>
+          <span class="meta-item" *ngIf="app.salaryRange">
+            <i class="bi bi-currency-dollar"></i> {{ app.salaryRange }}
+          </span>
+          <button class="btn-url" *ngIf="app.jobUrl" (click)="openJobUrl()">
+            <i class="bi bi-box-arrow-up-right"></i> Job posting
+          </button>
+        </div>
+      </div>
+      <div class="hero-alerts">
+        <div class="alert-chip interview" *ngIf="app.nextInterviewAt">
+          <i class="bi bi-calendar-event"></i>
+          Next: {{ formatInterviewDate(app.nextInterviewAt) }}
+        </div>
+        <div class="alert-chip followup" *ngIf="app.followUpDue">
+          <i class="bi bi-bell-fill"></i> Follow-up due
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Edit form ─────────────────────────────────────────────────────── -->
+    <div class="edit-card" *ngIf="editMode">
+      <div class="edit-card-header">
+        <h3><i class="bi bi-pencil-square"></i> Edit Application</h3>
+      </div>
+      <div class="edit-card-body">
+        <div class="form-row">
+          <div class="form-group required">
+            <label>Company</label>
+            <input type="text" [(ngModel)]="editForm.companyName">
+          </div>
+          <div class="form-group required">
+            <label>Job Title</label>
+            <input type="text" [(ngModel)]="editForm.jobTitle">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="editForm.status">
+              <option *ngFor="let s of ALL_STATUSES" [value]="s">{{ STATUS_LABELS[s] }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Applied Date</label>
+            <input type="date" [(ngModel)]="editForm.appliedDate">
+          </div>
+          <div class="form-group">
+            <label>Follow-up Date</label>
+            <input type="date" [(ngModel)]="editForm.followUpDate">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Location</label>
+            <input type="text" [(ngModel)]="editForm.location">
+          </div>
+          <div class="form-group">
+            <label>Salary Range</label>
+            <input type="text" [(ngModel)]="editForm.salaryRange" placeholder="$120k – $150k">
+          </div>
+          <div class="form-group">
+            <label>Job URL</label>
+            <input type="url" [(ngModel)]="editForm.jobUrl">
+          </div>
+        </div>
+
+        <div class="section-title">Contact</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>HR Name</label>
+            <input type="text" [(ngModel)]="editForm.hrName">
+          </div>
+          <div class="form-group">
+            <label>HR Email</label>
+            <input type="email" [(ngModel)]="editForm.hrEmail">
+          </div>
+          <div class="form-group">
+            <label>HR Phone</label>
+            <input type="text" [(ngModel)]="editForm.hrPhone">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Recruiter Name</label>
+            <input type="text" [(ngModel)]="editForm.recruiterName">
+          </div>
+          <div class="form-group">
+            <label>Recruiter Email</label>
+            <input type="email" [(ngModel)]="editForm.recruiterEmail">
+          </div>
+        </div>
+
+        <div class="section-title">Resume Version</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Resume Document <span class="hint">(from vault)</span></label>
+            <select [(ngModel)]="editForm.resumeDocumentId" (ngModelChange)="onResumeDocChange()">
+              <option [ngValue]="null">— not linked —</option>
+              <option *ngFor="let doc of resumeDocs" [ngValue]="doc.id">{{ doc.title }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Version Label</label>
+            <input type="text" [(ngModel)]="editForm.resumeVersion" placeholder="e.g. v3 – tailored for fintech">
+          </div>
+        </div>
+
+        <div class="section-title">Job Description</div>
+        <div class="form-group full-width">
+          <textarea [(ngModel)]="editForm.jobDescription" rows="8"
+                    placeholder="Paste the job description here…"></textarea>
+        </div>
+
+        <div class="section-title">Prep Notes</div>
+        <div class="form-group full-width">
+          <textarea [(ngModel)]="editForm.prepNotes" rows="6"
+                    placeholder="Interview prep, company research, talking points…"></textarea>
+        </div>
+
+        <div class="section-title">Notes</div>
+        <div class="form-group full-width">
+          <textarea [(ngModel)]="editForm.notes" rows="4"
+                    placeholder="Any other notes…"></textarea>
+        </div>
+      </div>
+      <div class="edit-card-footer">
+        <span class="save-error" *ngIf="saveError">{{ saveError }}</span>
+        <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+        <button class="btn-save" (click)="saveEdit()" [disabled]="saving">
+          <span *ngIf="saving"><i class="bi bi-arrow-repeat spin"></i> Saving…</span>
+          <span *ngIf="!saving"><i class="bi bi-check-lg"></i> Save Changes</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Main content (view mode) ─────────────────────────────────────── -->
+    <div class="detail-grid" *ngIf="!editMode">
+
+      <!-- LEFT COLUMN -->
+      <div class="left-col">
+
+        <!-- Application info card -->
+        <div class="info-card">
+          <div class="card-section">
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-calendar3"></i> Applied</span>
+              <span class="info-value">{{ formatDate(app.appliedDate) }}</span>
+            </div>
+            <div class="info-row" *ngIf="app.followUpDate">
+              <span class="info-label" [class.overdue-label]="app.followUpDue">
+                <i class="bi bi-bell"></i> Follow-up
+              </span>
+              <span class="info-value" [class.overdue-value]="app.followUpDue">
+                {{ formatDate(app.followUpDate) }}
+                <span class="overdue-tag" *ngIf="app.followUpDue">Due</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact card -->
+        <div class="info-card" *ngIf="app.hrName || app.hrEmail || app.hrPhone || app.recruiterName || app.recruiterEmail">
+          <div class="card-header-sm"><i class="bi bi-person-badge"></i> Contact</div>
+          <div class="card-section">
+            <div class="contact-group" *ngIf="app.hrName || app.hrEmail || app.hrPhone">
+              <div class="contact-role">HR</div>
+              <div class="contact-name" *ngIf="app.hrName">{{ app.hrName }}</div>
+              <a class="contact-email" *ngIf="app.hrEmail" [href]="'mailto:' + app.hrEmail">{{ app.hrEmail }}</a>
+              <div class="contact-phone" *ngIf="app.hrPhone">{{ app.hrPhone }}</div>
+            </div>
+            <div class="contact-group" *ngIf="app.recruiterName || app.recruiterEmail">
+              <div class="contact-role">Recruiter</div>
+              <div class="contact-name" *ngIf="app.recruiterName">{{ app.recruiterName }}</div>
+              <a class="contact-email" *ngIf="app.recruiterEmail" [href]="'mailto:' + app.recruiterEmail">{{ app.recruiterEmail }}</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resume version card -->
+        <div class="info-card" *ngIf="app.resumeVersion || app.resumeDocumentId">
+          <div class="card-header-sm"><i class="bi bi-file-earmark-text"></i> Resume Sent</div>
+          <div class="card-section">
+            <div class="resume-block">
+              <span class="resume-version" *ngIf="app.resumeVersion">{{ app.resumeVersion }}</span>
+              <button class="btn-open-doc" *ngIf="app.resumeDocumentId" (click)="openResume()">
+                <i class="bi bi-box-arrow-up-right"></i>
+                {{ app.resumeDocumentTitle || 'Open in Vault' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status pipeline -->
+        <div class="info-card">
+          <div class="card-header-sm"><i class="bi bi-diagram-3"></i> Status Pipeline</div>
+          <div class="pipeline">
+            <div class="pipeline-step"
+                 *ngFor="let s of KANBAN_COLUMNS"
+                 [class.active]="s === app.status"
+                 [class.passed]="isPassed(s, app.status)"
+                 [style.--step-color]="STATUS_COLORS[s]">
+              <div class="step-dot"><i class="bi" [ngClass]="STATUS_ICONS[s]"></i></div>
+              <div class="step-label">{{ STATUS_LABELS[s] }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+
+        <!-- Interview rounds -->
+        <div class="section-card">
+          <div class="section-card-header">
+            <span><i class="bi bi-camera-video"></i> Interview Rounds</span>
+            <button class="btn-add-round" (click)="openRoundForm()">
+              <i class="bi bi-plus-lg"></i> Add Round
+            </button>
+          </div>
+          <div class="rounds-list">
+            <div class="round-empty" *ngIf="app.interviewRounds.length === 0">
+              <i class="bi bi-calendar-x"></i>
+              <span>No interviews scheduled yet.</span>
+            </div>
+            <div class="round-item" *ngFor="let r of app.interviewRounds">
+              <div class="round-header">
+                <div class="round-name">{{ r.roundName }}</div>
+                <div class="round-actions">
+                  <span class="outcome-badge"
+                        [style.background]="OUTCOME_COLORS[r.outcome] + '22'"
+                        [style.color]="OUTCOME_COLORS[r.outcome]">
+                    {{ OUTCOME_LABELS[r.outcome] }}
+                  </span>
+                  <button class="btn-round-edit" (click)="openRoundForm(r)" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn-round-delete" (click)="confirmDeleteRound(r)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="round-meta">
+                <span *ngIf="r.scheduledAt">
+                  <i class="bi bi-calendar-event"></i>
+                  {{ formatDateTime(r.scheduledAt) }}
+                  <span class="relative-date">({{ formatInterviewDate(r.scheduledAt) }})</span>
+                </span>
+                <span *ngIf="r.format">
+                  <i class="bi" [ngClass]="FORMAT_ICONS[r.format]"></i>
+                  {{ FORMAT_LABELS[r.format] }}
+                </span>
+                <span *ngIf="r.interviewerName">
+                  <i class="bi bi-person"></i> {{ r.interviewerName }}
+                </span>
+              </div>
+              <div class="round-notes" *ngIf="r.notes">{{ r.notes }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Job description -->
+        <div class="section-card" *ngIf="app.jobDescription">
+          <div class="section-card-header">
+            <span><i class="bi bi-file-text"></i> Job Description</span>
+          </div>
+          <div class="text-content">{{ app.jobDescription }}</div>
+        </div>
+
+        <!-- Prep notes -->
+        <div class="section-card" *ngIf="app.prepNotes">
+          <div class="section-card-header">
+            <span><i class="bi bi-lightbulb"></i> Prep Notes</span>
+          </div>
+          <div class="text-content">{{ app.prepNotes }}</div>
+        </div>
+
+        <!-- Notes -->
+        <div class="section-card" *ngIf="app.notes">
+          <div class="section-card-header">
+            <span><i class="bi bi-sticky"></i> Notes</span>
+          </div>
+          <div class="text-content">{{ app.notes }}</div>
+        </div>
+
+        <!-- Empty text area hint -->
+        <div class="text-hint" *ngIf="!app.jobDescription && !app.prepNotes && !app.notes">
+          <i class="bi bi-pencil-square"></i>
+          <span>Click <strong>Edit</strong> to add job description, prep notes, and interview notes.</span>
+        </div>
+
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ── Interview round form modal ───────────────────────────────────────── -->
+  <div class="modal-backdrop" *ngIf="showRoundForm" (click)="closeRoundForm()">
+    <div class="round-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ editingRound ? 'Edit Round' : 'Add Interview Round' }}</h3>
+        <button class="btn-modal-close" (click)="closeRoundForm()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group required">
+            <label>Round Name</label>
+            <input type="text" [(ngModel)]="roundForm.roundName" placeholder="e.g. Technical Round 1">
+          </div>
+          <div class="form-group">
+            <label>Format</label>
+            <select [(ngModel)]="roundForm.format">
+              <option value="">— select —</option>
+              <option *ngFor="let f of ALL_FORMATS" [value]="f">{{ FORMAT_LABELS[f] }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Scheduled Date &amp; Time</label>
+            <input type="datetime-local" [(ngModel)]="roundForm.scheduledAt">
+          </div>
+          <div class="form-group">
+            <label>Outcome</label>
+            <select [(ngModel)]="roundForm.outcome">
+              <option *ngFor="let o of ALL_OUTCOMES" [value]="o">{{ OUTCOME_LABELS[o] }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Interviewer Name</label>
+            <input type="text" [(ngModel)]="roundForm.interviewerName" placeholder="Optional">
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Notes</label>
+          <textarea [(ngModel)]="roundForm.notes" rows="4"
+                    placeholder="Questions asked, your responses, feedback received…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="save-error" *ngIf="roundError">{{ roundError }}</span>
+        <button class="btn-cancel" (click)="closeRoundForm()">Cancel</button>
+        <button class="btn-save" (click)="submitRound()" [disabled]="roundSaving">
+          <span *ngIf="roundSaving"><i class="bi bi-arrow-repeat spin"></i> Saving…</span>
+          <span *ngIf="!roundSaving">{{ editingRound ? 'Save Changes' : 'Add Round' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delete round confirm ─────────────────────────────────────────────── -->
+  <div class="modal-backdrop" *ngIf="deleteRoundTarget" (click)="cancelDeleteRound()">
+    <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="confirm-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <h3>Remove Round?</h3>
+      <p>Delete <strong>{{ deleteRoundTarget.roundName }}</strong>? This cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" (click)="cancelDeleteRound()">Cancel</button>
+        <button class="btn-danger" (click)="executeDeleteRound()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+</div>

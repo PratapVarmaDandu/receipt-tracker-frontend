@@ -42,6 +42,10 @@
       <i class="bi bi-people me-1"></i>Sharing
       <span *ngIf="activeShares.length > 0" class="badge bg-primary ms-1">{{ activeShares.length }}</span>
     </button>
+    <button class="nav-link" [class.active]="tab==='receipts'" (click)="tab='receipts'">
+      <i class="bi bi-receipt me-1"></i>Receipts
+      <span *ngIf="linkedReceipts.length > 0" class="badge bg-secondary ms-1">{{ linkedReceipts.length }}</span>
+    </button>
   </div>
 
   <!-- Shared-by banner -->
@@ -521,6 +525,97 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- ── Receipts ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="tab === 'receipts'" class="tab-content">
+
+    <!-- Add receipt panel -->
+    <div class="d-flex justify-content-between align-items-center mb-3" *ngIf="!showAddReceipt">
+      <span class="text-muted small">{{ linkedReceipts.length }} receipt{{ linkedReceipts.length !== 1 ? 's' : '' }} linked</span>
+      <div class="d-flex gap-2">
+        <a routerLink="/receipts" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-camera me-1"></i>Scan New
+        </a>
+        <button class="btn btn-sm btn-outline-primary" (click)="openAddReceipt()">
+          <i class="bi bi-plus-lg me-1"></i>Add Existing
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="showAddReceipt" class="card border-primary mb-3">
+      <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold small"><i class="bi bi-receipt me-2 text-primary"></i>Link a receipt to this vehicle</span>
+        <button class="btn-close btn-sm" (click)="showAddReceipt = false"></button>
+      </div>
+      <div class="card-body py-3 px-3">
+        <div *ngIf="allReceiptsLoading" class="text-muted small mb-2">
+          <span class="spinner-border spinner-border-sm me-1"></span>Loading your receipts…
+        </div>
+        <ng-container *ngIf="!allReceiptsLoading">
+          <div class="mb-2">
+            <label class="form-label small fw-medium mb-1">Receipt</label>
+            <select class="form-select form-select-sm"
+                    [ngModel]="addReceiptId"
+                    (ngModelChange)="onAddReceiptSelected($event)">
+              <option [ngValue]="null">— choose a receipt —</option>
+              <option *ngFor="let r of unlinkedReceipts" [ngValue]="r.id">
+                {{ r.storeName || 'Unknown' }} · ${{ r.total | number:'1.2-2' }} · {{ r.purchaseDateTime | slice:0:10 }}
+              </option>
+              <option *ngIf="unlinkedReceipts.length === 0" [ngValue]="null" disabled>
+                All receipts are already linked to this vehicle
+              </option>
+            </select>
+          </div>
+          <div class="mb-3" *ngIf="addReceiptId">
+            <label class="form-label small fw-medium mb-1">Expense type</label>
+            <select class="form-select form-select-sm" [(ngModel)]="addReceiptCategory">
+              <option [ngValue]="null">— select type —</option>
+              <option *ngFor="let c of vehicleCategories" [ngValue]="c.value">{{ c.label }}</option>
+            </select>
+          </div>
+          <div *ngIf="addReceiptError" class="alert alert-danger py-1 small mb-2">{{ addReceiptError }}</div>
+          <div class="d-flex gap-2 justify-content-end">
+            <button class="btn btn-sm btn-outline-secondary" (click)="showAddReceipt = false">Cancel</button>
+            <button class="btn btn-sm btn-primary" (click)="addReceiptToVehicle()"
+                    [disabled]="!addReceiptId || addingReceipt">
+              <span *ngIf="!addingReceipt"><i class="bi bi-check2 me-1"></i>Link Receipt</span>
+              <span *ngIf="addingReceipt"><span class="spinner-border spinner-border-sm"></span></span>
+            </button>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <div *ngIf="!showAddReceipt && linkedReceipts.length === 0" class="text-muted small py-2">
+      No receipts linked to this vehicle yet.
+    </div>
+    <div class="list-group" *ngIf="linkedReceipts.length > 0">
+      <a *ngFor="let r of linkedReceipts" [routerLink]="['/receipts', r.id]"
+         class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2">
+        <i class="bi bi-fuel-pump text-warning" *ngIf="r.vehicleCategory === 'FUEL'"></i>
+        <i class="bi bi-wrench text-primary" *ngIf="r.vehicleCategory === 'MAINTENANCE'"></i>
+        <i class="bi bi-tools text-danger" *ngIf="r.vehicleCategory === 'REPAIR'"></i>
+        <i class="bi bi-shield-check text-success" *ngIf="r.vehicleCategory === 'INSURANCE'"></i>
+        <i class="bi bi-card-text text-info" *ngIf="r.vehicleCategory === 'REGISTRATION'"></i>
+        <i class="bi bi-p-square text-secondary" *ngIf="r.vehicleCategory === 'PARKING'"></i>
+        <i class="bi bi-droplet text-primary" *ngIf="r.vehicleCategory === 'WASH'"></i>
+        <i class="bi bi-receipt text-secondary" *ngIf="!r.vehicleCategory || r.vehicleCategory === 'OTHER' || r.vehicleCategory === ''"></i>
+        <div class="flex-fill">
+          <div class="fw-medium small">{{ r.storeName || 'Unknown store' }}</div>
+          <div class="d-flex align-items-center gap-1 mt-1">
+            <span *ngIf="r.vehicleCategory && r.vehicleCategory !== ''" class="badge bg-light text-dark border" style="font-size:10px">
+              {{ r.vehicleCategory | titlecase }}
+            </span>
+            <span *ngIf="!r.vehicleCategory || r.vehicleCategory === ''" class="text-muted" style="font-size:11px">Uncategorised</span>
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="fw-semibold small">${{ r.total | number:'1.2-2' }}</div>
+          <div class="text-muted" style="font-size:11px">{{ r.purchaseDateTime | slice:0:10 }}</div>
+        </div>
+      </a>
+    </div>
   </div>
 
 </ng-container>

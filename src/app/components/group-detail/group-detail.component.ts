@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { ReceiptService } from '../../services/receipt.service';
 import { LoggerService } from '../../services/logger.service';
 import { Group } from '../../models/group.model';
+import { Receipt } from '../../models/receipt.model';
 import * as QRCode from 'qrcode';
 
 @Component({
@@ -18,9 +20,24 @@ export class GroupDetailComponent implements OnInit {
   notFound = false;
   qrDataUrl = '';
 
+  receipts: any[] = [];
+  receiptsLoading = false;
+
+  showAddReceipt = false;
+  allReceipts: Receipt[] = [];
+  allReceiptsLoading = false;
+  selectedReceiptId: number | null = null;
+  addingReceipt = false;
+  addReceiptError: string | null = null;
+
+  deleting = false;
+  deleteError: string | null = null;
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private groupService: GroupService,
+    private receiptService: ReceiptService,
     private logger: LoggerService
   ) {}
 
@@ -31,8 +48,70 @@ export class GroupDetailComponent implements OnInit {
       else {
         this.group = group;
         this.generateQr();
+        this.loadReceipts(id);
       }
       this.loading = false;
+    });
+  }
+
+  private loadReceipts(groupId: number): void {
+    this.receiptsLoading = true;
+    this.groupService.getGroupReceipts(groupId).subscribe(rs => {
+      this.receipts = rs;
+      this.receiptsLoading = false;
+    });
+  }
+
+  openAddReceipt(): void {
+    this.showAddReceipt = true;
+    this.selectedReceiptId = null;
+    this.addReceiptError = null;
+    if (this.allReceipts.length === 0) {
+      this.allReceiptsLoading = true;
+      this.receiptService.getAll().subscribe(rs => {
+        this.allReceipts = rs;
+        this.allReceiptsLoading = false;
+      });
+    }
+  }
+
+  get unassignedReceipts(): Receipt[] {
+    const alreadyIn = new Set(this.receipts.map((r: any) => r.id));
+    return this.allReceipts.filter(r => !alreadyIn.has(r.id));
+  }
+
+  addReceiptToGroup(): void {
+    if (!this.selectedReceiptId || !this.group) return;
+    this.addingReceipt = true;
+    this.addReceiptError = null;
+    this.receiptService.addToGroup(this.selectedReceiptId, this.group.id).subscribe({
+      next: () => {
+        this.showAddReceipt = false;
+        this.selectedReceiptId = null;
+        this.loadReceipts(this.group!.id);
+        this.logger.info(this.source, `Added receipt ${this.selectedReceiptId} to group ${this.group!.id}`);
+        this.addingReceipt = false;
+      },
+      error: err => {
+        this.addReceiptError = err?.error?.error ?? 'Failed to add receipt.';
+        this.addingReceipt = false;
+        this.logger.error(this.source, 'addReceiptToGroup failed', err);
+      }
+    });
+  }
+
+  confirmDelete(): void {
+    if (!this.group) return;
+    if (!confirm(`Delete group "${this.group.name}"? All receipts will be unassigned and this cannot be undone.`)) return;
+    this.deleting = true;
+    this.deleteError = null;
+    this.groupService.deleteGroup(this.group.id).subscribe({
+      next: () => this.router.navigate(['/groups']),
+      error: err => {
+        this.deleteError = err?.error?.error ?? 'Failed to delete group.';
+        this.deleting = false;
+        this.logger.error(this.source, 'deleteGroup failed', err);
+      }
     });
   }
 

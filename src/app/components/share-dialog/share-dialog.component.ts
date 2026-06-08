@@ -24,8 +24,8 @@ export class ShareDialogComponent implements OnInit {
   private readonly source = 'ShareDialogComponent';
 
   // ── Mode ─────────────────────────────────────────────────────────────────
-  /** 'amount' = EQUAL/CUSTOM (existing flow); 'items' = ITEM_BASED (new) */
-  mode: 'amount' | 'items' = 'amount';
+  /** 'amount' = EQUAL/CUSTOM; 'items' = ITEM_BASED; 'paid_for_me' = PAID_FOR_ME */
+  mode: 'amount' | 'items' | 'paid_for_me' = 'amount';
 
   // ── Amount mode state ──────────────────────────────────────────────────
   step: 1 | 2 | 3 = 1;
@@ -40,6 +40,11 @@ export class ShareDialogComponent implements OnInit {
   itemInvitees: string[] = [];
   itemEmailInput = '';
   itemStep: 1 | 2 | 3 = 1; // 1=emails, 2=assign items, 3=success
+
+  // ── Paid-for-me mode state ─────────────────────────────────────────────
+  paidForMeEmail = '';
+  paidForMeAmount: number | null = null;
+  paidForMeStep: 1 | 2 = 1;
 
   // ── Shared ────────────────────────────────────────────────────────────
   submitting = false;
@@ -243,13 +248,45 @@ export class ShareDialogComponent implements OnInit {
     });
   }
 
+  // ── Paid-for-me methods ───────────────────────────────────────────────
+
+  submitPaidForMe(): void {
+    const email = this.paidForMeEmail.trim().toLowerCase();
+    if (!email.includes('@')) { this.error = 'Enter a valid email address.'; return; }
+    if (!this.paidForMeAmount || this.paidForMeAmount <= 0) { this.error = 'Enter the amount you owe.'; return; }
+
+    this.submitting = true;
+    this.error = null;
+
+    const payload = {
+      splitType: 'PAID_FOR_ME' as const,
+      invitees: [{ email, amount: this.paidForMeAmount }]
+    };
+
+    this.shareService.createShares(this.receipt.id!, payload).subscribe({
+      next: shares => {
+        this.createdShares = shares;
+        this.paidForMeStep = 2;
+        this.submitting = false;
+        this.sharesCreated.emit(shares);
+        this.logger.info(this.source, `PAID_FOR_ME share created`);
+      },
+      error: err => {
+        this.error = err?.error?.error ?? 'Failed to record the payment. Please try again.';
+        this.submitting = false;
+        this.logger.error(this.source, 'createPaidForMe failed', err);
+      }
+    });
+  }
+
   // ── Mode switch ───────────────────────────────────────────────────────
 
-  switchMode(m: 'amount' | 'items'): void {
+  switchMode(m: 'amount' | 'items' | 'paid_for_me'): void {
     this.mode = m;
     this.error = null;
     this.step = 1;
     this.itemStep = 1;
+    this.paidForMeStep = 1;
   }
 
   // ── Shared ────────────────────────────────────────────────────────────

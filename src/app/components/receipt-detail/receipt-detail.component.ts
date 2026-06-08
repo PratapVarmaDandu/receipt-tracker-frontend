@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Location } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Receipt, STORE_TYPE_ICONS, STORE_TYPE_LABELS, STORE_TYPE_CSS } from '../../models/receipt.model';
 import { Group } from '../../models/group.model';
@@ -40,12 +41,25 @@ export class ReceiptDetailComponent implements OnInit {
   // Vehicle linking
   myVehicles: Vehicle[] = [];
   selectedVehicleId: number | null = null;
+  selectedVehicleCategory: string | null = null;
   vehicleSaving = false;
   vehicleError = '';
+
+  readonly vehicleCategories = [
+    { value: 'FUEL',         label: 'Fuel / Gas',       icon: 'bi-fuel-pump' },
+    { value: 'MAINTENANCE',  label: 'Maintenance',       icon: 'bi-wrench' },
+    { value: 'REPAIR',       label: 'Repair',            icon: 'bi-tools' },
+    { value: 'INSURANCE',    label: 'Insurance',         icon: 'bi-shield-check' },
+    { value: 'REGISTRATION', label: 'Registration / Tags', icon: 'bi-card-text' },
+    { value: 'PARKING',      label: 'Parking / Tolls',  icon: 'bi-p-square' },
+    { value: 'WASH',         label: 'Car Wash',          icon: 'bi-droplet' },
+    { value: 'OTHER',        label: 'Other',             icon: 'bi-three-dots' },
+  ];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private location: Location,
     private receiptService: ReceiptService,
     private groupService: GroupService,
     private vehicleService: VehicleService,
@@ -59,6 +73,7 @@ export class ReceiptDetailComponent implements OnInit {
         this.receipt = r;
         this.selectedGroupId = r.groupId ?? null;
         this.selectedVehicleId = r.vehicleId ?? null;
+        this.selectedVehicleCategory = r.vehicleCategory ?? (r.storeType === 'GAS_STATION' ? 'FUEL' : null);
         this.buildForm(r);
         this.loading = false;
       },
@@ -124,9 +139,13 @@ export class ReceiptDetailComponent implements OnInit {
     });
   }
 
+  goBack() {
+    this.location.back();
+  }
+
   delete() {
     if (!this.receipt?.id || !confirm('Delete this receipt permanently?')) return;
-    this.receiptService.delete(this.receipt.id).subscribe(() => this.router.navigate(['/receipts']));
+    this.receiptService.delete(this.receipt.id).subscribe(() => this.location.back());
   }
 
   saveGroup() {
@@ -156,10 +175,12 @@ export class ReceiptDetailComponent implements OnInit {
     if (!this.receipt?.id) return;
     this.vehicleSaving = true;
     this.vehicleError = '';
-    this.receiptService.linkToVehicle(this.receipt.id, this.selectedVehicleId).subscribe({
+    const cat = this.selectedVehicleId ? this.selectedVehicleCategory : null;
+    this.receiptService.linkToVehicle(this.receipt.id, this.selectedVehicleId, cat).subscribe({
       next: (r) => {
         this.receipt = r;
         this.selectedVehicleId = r.vehicleId ?? null;
+        this.selectedVehicleCategory = r.vehicleCategory ?? null;
         this.vehicleSaving = false;
       },
       error: (err) => {

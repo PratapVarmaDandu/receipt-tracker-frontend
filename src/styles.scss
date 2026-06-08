@@ -320,6 +320,9 @@ body {
 .main-content {
   padding: 1rem;
   min-height: 100vh;
+  min-width: 0;        /* flex items default to min-width:auto; 0 prevents them
+                          from expanding to fit wide children (e.g. kanban board) */
+  overflow-x: hidden;  /* secondary containment for any stray overflow */
 }
 
 /* Prevent background scroll when sidebar overlay is open */

@@ -30,6 +30,8 @@ import { DocumentAccessComponent } from './components/document-access/document-a
 import { GarageComponent } from './components/garage/garage.component';
 import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-detail.component';
 import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
+import { JobTrackerComponent } from './components/job-tracker/job-tracker.component';
+import { JobDetailComponent } from './components/job-detail/job-detail.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -57,7 +59,9 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     DocumentAccessComponent,
     GarageComponent,
     VehicleDetailComponent,
-    VehicleJoinComponent
+    VehicleJoinComponent,
+    JobTrackerComponent,
+    JobDetailComponent
   ],
   imports: [
     BrowserModule,
