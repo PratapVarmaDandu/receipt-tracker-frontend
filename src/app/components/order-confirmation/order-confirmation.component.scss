@@ -1,0 +1,113 @@
+.confirmation-page {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.confirmation-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 2.5rem 2rem;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.1));
+}
+
+.success-icon {
+  font-size: 3.5rem;
+  color: #16a34a;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.confirmation-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.confirmation-sub {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.order-meta {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.meta-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.meta-value {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 500;
+
+  &.mono { font-family: monospace; font-size: 0.8rem; }
+  &.font-bold { font-weight: 700; font-size: 1rem; }
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.btn-primary {
+  padding: 0.75rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: var(--primary-dark, #2563eb); }
+}
+
+.btn-secondary {
+  padding: 0.75rem;
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: var(--primary); color: #fff; }
+}
+
+.btn-ghost {
+  padding: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  &:hover { color: var(--text-primary); }
+}

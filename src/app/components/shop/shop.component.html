@@ -1,0 +1,148 @@
+<div class="shop-page">
+
+  <!-- ── STORE PICKER (shown when no location selected) ──────────────────── -->
+  <ng-container *ngIf="!selectedLocation">
+
+    <div class="store-picker-header">
+      <h2 class="shop-title"><i class="bi bi-shop me-2"></i>Choose a Store</h2>
+      <p class="shop-subtitle">Select where you'd like to order from</p>
+    </div>
+
+    <div class="store-loading" *ngIf="locationsLoading">
+      <div class="spinner-border text-primary spinner-border-sm me-2"></div>
+      <span>Finding stores…</span>
+    </div>
+
+    <div class="store-error" *ngIf="!locationsLoading && locationsError">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ locationsError }}
+    </div>
+
+    <div class="store-empty" *ngIf="!locationsLoading && !locationsError && locations.length === 0">
+      <i class="bi bi-shop-window store-empty-icon"></i>
+      <p>No stores available right now.</p>
+    </div>
+
+    <div class="store-grid" *ngIf="!locationsLoading && locations.length > 0">
+      <button class="store-card" *ngFor="let loc of locations" (click)="selectStore(loc)">
+        <div class="store-logo" *ngIf="loc.logoUrl">
+          <img [src]="loc.logoUrl" [alt]="loc.name" />
+        </div>
+        <div class="store-logo placeholder" *ngIf="!loc.logoUrl">
+          <i class="bi bi-shop"></i>
+        </div>
+        <div class="store-info">
+          <div class="store-name">{{ loc.name }}</div>
+          <div class="store-address" *ngIf="loc.address">
+            <i class="bi bi-geo-alt me-1"></i>{{ loc.address }}
+          </div>
+          <div class="store-phone" *ngIf="loc.phoneNumber">
+            <i class="bi bi-telephone me-1"></i>{{ loc.phoneNumber }}
+          </div>
+          <div class="store-desc" *ngIf="loc.description">{{ loc.description }}</div>
+        </div>
+        <div class="store-arrow"><i class="bi bi-arrow-right-circle"></i></div>
+      </button>
+    </div>
+
+  </ng-container>
+
+  <!-- ── CATALOG (shown once a store is selected) ────────────────────────── -->
+  <ng-container *ngIf="selectedLocation">
+
+    <!-- Store banner -->
+    <div class="active-store-bar">
+      <div class="active-store-left">
+        <div class="active-store-logo" *ngIf="selectedLocation.logoUrl">
+          <img [src]="selectedLocation.logoUrl" [alt]="selectedLocation.name" />
+        </div>
+        <div class="active-store-logo placeholder" *ngIf="!selectedLocation.logoUrl">
+          <i class="bi bi-shop"></i>
+        </div>
+        <div>
+          <div class="active-store-name">{{ selectedLocation.name }}</div>
+          <div class="active-store-addr" *ngIf="selectedLocation.address">
+            <i class="bi bi-geo-alt me-1"></i>{{ selectedLocation.address }}
+          </div>
+        </div>
+      </div>
+      <div class="active-store-right">
+        <button class="btn-change-store" (click)="changeStore()">
+          <i class="bi bi-arrow-left-right me-1"></i>Change Store
+        </button>
+        <button class="btn-cart" (click)="openCart()">
+          <i class="bi bi-cart3"></i>
+          <span class="cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="shop-filters">
+      <div class="search-wrap">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search items…"
+               [(ngModel)]="searchQuery" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="category-chips">
+        <button class="chip" [class.active]="selectedCategory === ''"
+                (click)="onCategoryChange('')">All</button>
+        <button *ngFor="let cat of categories" class="chip"
+                [class.active]="selectedCategory === cat.id"
+                (click)="onCategoryChange(cat.id)">{{ cat.name }}</button>
+      </div>
+    </div>
+
+    <!-- Catalog loading -->
+    <div class="shop-loading" *ngIf="catalogLoading">
+      <div class="spinner-wrap">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span>Loading catalog…</span>
+      </div>
+    </div>
+
+    <!-- Catalog error -->
+    <div class="shop-error" *ngIf="!catalogLoading && catalogError">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ catalogError }}
+    </div>
+
+    <!-- Empty -->
+    <div class="shop-empty" *ngIf="!catalogLoading && !catalogError && filtered.length === 0 && items.length > 0">
+      <i class="bi bi-bag-x shop-empty-icon"></i>
+      <p>No items match<span *ngIf="searchQuery"> "{{ searchQuery }}"</span>.</p>
+    </div>
+
+    <!-- Catalog grid -->
+    <div class="catalog-grid" *ngIf="!catalogLoading && !catalogError && filtered.length > 0">
+      <div class="item-card" *ngFor="let item of filtered">
+        <div class="item-image-wrap">
+          <img *ngIf="item.imageUrl" [src]="item.imageUrl" [alt]="item.name" class="item-image" />
+          <div *ngIf="!item.imageUrl" class="item-image-placeholder">
+            <i class="bi bi-box-seam"></i>
+          </div>
+        </div>
+        <div class="item-body">
+          <div class="item-category" *ngIf="item.categoryName">{{ item.categoryName }}</div>
+          <div class="item-name">{{ item.name }}</div>
+          <div class="item-desc" *ngIf="item.description">{{ item.description }}</div>
+          <div class="item-variations" *ngIf="item.variations && item.variations.length > 1">
+            <button *ngFor="let v of item.variations" class="var-btn"
+                    [class.active]="getSelectedVariation(item)?.id === v.id"
+                    (click)="selectVariation(item, v)">{{ v.name }}</button>
+          </div>
+          <div class="item-footer">
+            <span class="item-price">{{ (getSelectedVariation(item)?.price || 0) | currency }}</span>
+            <button class="btn-add" [class.added]="addedFeedback[item.id]"
+                    (click)="addToCart(item)" [disabled]="!getSelectedVariation(item)">
+              <i class="bi" [class.bi-plus-lg]="!addedFeedback[item.id]"
+                 [class.bi-check-lg]="addedFeedback[item.id]"></i>
+              {{ addedFeedback[item.id] ? 'Added!' : 'Add to Cart' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+<app-cart-sidebar [open]="cartOpen" (closed)="closeCart()"></app-cart-sidebar>

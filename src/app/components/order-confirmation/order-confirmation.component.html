@@ -1,0 +1,58 @@
+<div class="confirmation-page">
+
+  <div class="confirmation-card" *ngIf="order">
+    <div class="success-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <h2 class="confirmation-title">Order Placed!</h2>
+    <p class="confirmation-sub">
+      Your payment has been submitted to Square.<br/>
+      Your purchase has been recorded in your expense history.
+    </p>
+
+    <div class="order-meta">
+      <div class="meta-row">
+        <span class="meta-label">Store</span>
+        <span class="meta-value">{{ order.storeName }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Order ID</span>
+        <span class="meta-value mono">{{ order.squareOrderId }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Total</span>
+        <span class="meta-value font-bold">{{ order.total | currency }}</span>
+      </div>
+    </div>
+
+    <div class="confirmation-actions">
+      <button class="btn-primary" (click)="goToReceipt()">
+        <i class="bi bi-receipt me-2"></i>View Receipt
+      </button>
+      <button class="btn-secondary" (click)="goToShop()">
+        <i class="bi bi-shop me-2"></i>Shop Again
+      </button>
+      <button class="btn-ghost" (click)="goToDashboard()">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- Fallback if sessionStorage was cleared (e.g. direct link) -->
+  <div class="confirmation-card" *ngIf="!order">
+    <div class="success-icon">
+      <i class="bi bi-bag-check-fill"></i>
+    </div>
+    <h2 class="confirmation-title">Thanks for your order!</h2>
+    <p class="confirmation-sub">Your order has been submitted and your receipt is in your expense history.</p>
+    <div class="confirmation-actions">
+      <button class="btn-primary" (click)="goToDashboard()">
+        <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+      </button>
+      <button class="btn-secondary" (click)="goToShop()">
+        <i class="bi bi-shop me-2"></i>Shop Again
+      </button>
+    </div>
+  </div>
+
+</div>

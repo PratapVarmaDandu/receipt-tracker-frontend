@@ -18,6 +18,9 @@ import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-deta
 import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
 import { JobTrackerComponent } from './components/job-tracker/job-tracker.component';
 import { JobDetailComponent } from './components/job-detail/job-detail.component';
+import { ShopComponent } from './components/shop/shop.component';
+import { CheckoutComponent } from './components/checkout/checkout.component';
+import { OrderConfirmationComponent } from './components/order-confirmation/order-confirmation.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
@@ -43,6 +46,9 @@ const routes: Routes = [
   { path: 'garage/:id',    component: VehicleDetailComponent,   canActivate: [AuthGuard] },
   { path: 'jobs',          component: JobTrackerComponent,      canActivate: [AuthGuard] },
   { path: 'jobs/:id',      component: JobDetailComponent,       canActivate: [AuthGuard] },
+  { path: 'shop',          component: ShopComponent,            canActivate: [AuthGuard] },
+  { path: 'shop/checkout', component: CheckoutComponent,        canActivate: [AuthGuard] },
+  { path: 'shop/order',    component: OrderConfirmationComponent, canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

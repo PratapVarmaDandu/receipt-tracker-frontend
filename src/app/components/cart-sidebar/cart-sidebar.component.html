@@ -1,0 +1,66 @@
+<!-- Backdrop -->
+<div class="cart-backdrop" [class.open]="open" (click)="close()"></div>
+
+<!-- Drawer -->
+<div class="cart-drawer" [class.open]="open">
+
+  <div class="cart-drawer-header">
+    <h3><i class="bi bi-cart3 me-2"></i>Your Cart</h3>
+    <button class="btn-close-cart" (click)="close()" aria-label="Close cart">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- Empty state -->
+  <div class="cart-empty" *ngIf="items.length === 0">
+    <i class="bi bi-cart-x cart-empty-icon"></i>
+    <p>Your cart is empty</p>
+    <span>Add items from the catalog</span>
+  </div>
+
+  <!-- Items list -->
+  <div class="cart-items" *ngIf="items.length > 0">
+    <div class="cart-item" *ngFor="let item of items">
+
+      <div class="cart-item-image" *ngIf="item.imageUrl">
+        <img [src]="item.imageUrl" [alt]="item.itemName" />
+      </div>
+      <div class="cart-item-image placeholder" *ngIf="!item.imageUrl">
+        <i class="bi bi-box-seam"></i>
+      </div>
+
+      <div class="cart-item-info">
+        <div class="cart-item-name">{{ item.itemName }}</div>
+        <div class="cart-item-variation" *ngIf="item.variationName !== 'Regular'">{{ item.variationName }}</div>
+        <div class="cart-item-price">{{ item.unitPrice | currency }}</div>
+      </div>
+
+      <div class="cart-item-controls">
+        <button class="qty-btn" (click)="updateQty(item.variationId, item.quantity - 1)">
+          <i class="bi bi-dash"></i>
+        </button>
+        <span class="qty-value">{{ item.quantity }}</span>
+        <button class="qty-btn" (click)="updateQty(item.variationId, item.quantity + 1)">
+          <i class="bi bi-plus"></i>
+        </button>
+        <button class="btn-remove" (click)="remove(item.variationId)" title="Remove">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="cart-footer" *ngIf="items.length > 0">
+    <div class="cart-total-row">
+      <span>Subtotal</span>
+      <span class="cart-total-amount">{{ total | currency }}</span>
+    </div>
+    <p class="cart-tax-note">Tax and fees calculated at checkout</p>
+    <button class="btn-checkout" (click)="checkout()">
+      <i class="bi bi-credit-card me-2"></i>Proceed to Checkout
+    </button>
+  </div>
+
+</div>

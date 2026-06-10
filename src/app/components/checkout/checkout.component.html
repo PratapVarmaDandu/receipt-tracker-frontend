@@ -1,0 +1,136 @@
+<div class="checkout-page">
+
+  <div class="checkout-back">
+    <button class="btn-back" (click)="backToShop()">
+      <i class="bi bi-arrow-left me-1"></i>Back to Shop
+    </button>
+  </div>
+
+  <h2 class="checkout-title">Checkout</h2>
+
+  <div class="checkout-layout">
+
+    <!-- Left: form -->
+    <div class="checkout-form-col">
+
+      <!-- Fulfillment toggle -->
+      <div class="checkout-section">
+        <h4 class="section-title">Fulfillment</h4>
+        <div class="fulfillment-toggle">
+          <button class="toggle-btn" [class.active]="fulfillmentType === 'PICKUP'"
+                  (click)="fulfillmentType = 'PICKUP'">
+            <i class="bi bi-bag-check me-1"></i>Pickup
+          </button>
+          <button class="toggle-btn" [class.active]="fulfillmentType === 'DELIVERY'"
+                  (click)="fulfillmentType = 'DELIVERY'">
+            <i class="bi bi-truck me-1"></i>Delivery
+          </button>
+        </div>
+      </div>
+
+      <!-- Contact info -->
+      <div class="checkout-section">
+        <h4 class="section-title">Contact</h4>
+
+        <div class="form-row">
+          <label class="form-label">Full Name <span class="required">*</span></label>
+          <input type="text" class="form-input" [(ngModel)]="recipientName" placeholder="Your name" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Email <span class="required">*</span></label>
+          <input type="email" class="form-input" [(ngModel)]="recipientEmail" placeholder="you@example.com" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" [(ngModel)]="recipientPhone" placeholder="(optional)" />
+        </div>
+
+        <div class="form-row" *ngIf="fulfillmentType === 'DELIVERY'">
+          <label class="form-label">Delivery Address <span class="required">*</span></label>
+          <input type="text" class="form-input" [(ngModel)]="deliveryAddress"
+                 placeholder="123 Main St, City, State" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label">Special Instructions</label>
+          <textarea class="form-input form-textarea" [(ngModel)]="note"
+                    placeholder="Allergies, preparation notes…" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Payment — Square card element -->
+      <div class="checkout-section">
+        <h4 class="section-title">Payment</h4>
+
+        <!-- SDK load error -->
+        <div class="sdk-error" *ngIf="sdkError">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ sdkError }}
+        </div>
+
+        <!-- Card loading skeleton -->
+        <div class="card-loading" *ngIf="!cardReady && !sdkError">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+          <span>Loading secure payment form…</span>
+        </div>
+
+        <!-- Square injects the card UI into this div -->
+        <div id="square-card-container" [class.hidden]="!cardReady"></div>
+
+        <p class="payment-note" *ngIf="cardReady">
+          <i class="bi bi-lock-fill me-1 text-success"></i>
+          Card details are encrypted by Square. We never see your card number.
+        </p>
+      </div>
+
+      <!-- Validation / API error -->
+      <div class="checkout-error" *ngIf="error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+      </div>
+
+      <button class="btn-place-order" (click)="placeOrder()"
+              [disabled]="submitting || !cardReady || items.length === 0">
+        <span *ngIf="!submitting">
+          <i class="bi bi-lock-fill me-2"></i>Pay {{ total | currency }}
+        </span>
+        <span *ngIf="submitting">
+          <span class="spinner-border spinner-border-sm me-2"></span>Processing…
+        </span>
+      </button>
+
+    </div>
+
+    <!-- Right: order summary -->
+    <div class="checkout-summary-col">
+      <div class="summary-card">
+        <h4 class="section-title">Order Summary</h4>
+        <div class="summary-store" *ngIf="cartService.getSelectedLocation() as loc">
+          <i class="bi bi-shop me-1"></i>{{ loc.name }}
+          <span *ngIf="loc.address" class="summary-store-addr"> · {{ loc.address }}</span>
+        </div>
+        <div class="summary-items">
+          <div class="summary-item" *ngFor="let item of items">
+            <div class="summary-item-info">
+              <span class="summary-item-name">{{ item.itemName }}</span>
+              <span class="summary-item-var"
+                    *ngIf="item.variationName && item.variationName !== 'Regular'">
+                {{ item.variationName }}
+              </span>
+            </div>
+            <div class="summary-item-right">
+              <span class="summary-qty">×{{ item.quantity }}</span>
+              <span class="summary-price">{{ (item.unitPrice * item.quantity) | currency }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-total-row">
+          <span>Total</span>
+          <span class="summary-total">{{ total | currency }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

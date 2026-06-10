@@ -32,6 +32,10 @@ import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-deta
 import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
 import { JobTrackerComponent } from './components/job-tracker/job-tracker.component';
 import { JobDetailComponent } from './components/job-detail/job-detail.component';
+import { ShopComponent } from './components/shop/shop.component';
+import { CartSidebarComponent } from './components/cart-sidebar/cart-sidebar.component';
+import { CheckoutComponent } from './components/checkout/checkout.component';
+import { OrderConfirmationComponent } from './components/order-confirmation/order-confirmation.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -61,7 +65,11 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     VehicleDetailComponent,
     VehicleJoinComponent,
     JobTrackerComponent,
-    JobDetailComponent
+    JobDetailComponent,
+    ShopComponent,
+    CartSidebarComponent,
+    CheckoutComponent,
+    OrderConfirmationComponent
   ],
   imports: [
     BrowserModule,
