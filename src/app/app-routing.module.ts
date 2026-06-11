@@ -21,6 +21,15 @@ import { JobDetailComponent } from './components/job-detail/job-detail.component
 import { ShopComponent } from './components/shop/shop.component';
 import { CheckoutComponent } from './components/checkout/checkout.component';
 import { OrderConfirmationComponent } from './components/order-confirmation/order-confirmation.component';
+import { AdminComponent } from './components/admin/admin.component';
+import { AdminRegisterComponent } from './components/admin-register/admin-register.component';
+import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
+import { AdminMembersComponent } from './components/admin-members/admin-members.component';
+import { AdminJoinComponent } from './components/admin-join/admin-join.component';
+import { AdminSquareComponent } from './components/admin-square/admin-square.component';
+import { AdminCloverComponent } from './components/admin-clover/admin-clover.component';
+import { AdminOrdersComponent } from './components/admin-orders/admin-orders.component';
+import { PlatformComponent } from './components/platform/platform.component';
 import { AuthGuard } from './guards/auth.guard';
 
 const routes: Routes = [
@@ -30,6 +39,7 @@ const routes: Routes = [
   { path: 'group/join/:token',         component: JoinGroupComponent },
   { path: 'documents/shared/:token',   component: DocumentAccessComponent },
   { path: 'garage/join/:token',        component: VehicleJoinComponent },
+  { path: 'admin/join/:token',         component: AdminJoinComponent },
 
   // Authenticated
   { path: '',              redirectTo: 'dashboard', pathMatch: 'full' },
@@ -49,6 +59,14 @@ const routes: Routes = [
   { path: 'shop',          component: ShopComponent,            canActivate: [AuthGuard] },
   { path: 'shop/checkout', component: CheckoutComponent,        canActivate: [AuthGuard] },
   { path: 'shop/order',    component: OrderConfirmationComponent, canActivate: [AuthGuard] },
+  { path: 'admin',                         component: AdminComponent,         canActivate: [AuthGuard] },
+  { path: 'admin/register',               component: AdminRegisterComponent, canActivate: [AuthGuard] },
+  { path: 'admin/org/:slug',              component: AdminDashboardComponent, canActivate: [AuthGuard] },
+  { path: 'admin/org/:slug/members',      component: AdminMembersComponent,   canActivate: [AuthGuard] },
+  { path: 'admin/org/:slug/square',       component: AdminSquareComponent,    canActivate: [AuthGuard] },
+  { path: 'admin/org/:slug/clover',       component: AdminCloverComponent,    canActivate: [AuthGuard] },
+  { path: 'admin/org/:slug/orders',       component: AdminOrdersComponent,    canActivate: [AuthGuard] },
+  { path: 'platform',                     component: PlatformComponent,       canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

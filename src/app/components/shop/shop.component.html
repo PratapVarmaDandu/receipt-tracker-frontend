@@ -39,6 +39,19 @@
             <i class="bi bi-telephone me-1"></i>{{ loc.phoneNumber }}
           </div>
           <div class="store-desc" *ngIf="loc.description">{{ loc.description }}</div>
+          <!-- Provider chips — shown when multiple POSes are configured for this org -->
+          <div class="provider-pills" *ngIf="loc.providers && loc.providers.length > 1">
+            <span *ngFor="let p of loc.providers" class="provider-pill"
+                  [class.provider-pill-clover]="p === 'clover'">
+              {{ p === 'clover' ? 'Clover' : 'Square' }}
+            </span>
+          </div>
+          <!-- Single-provider chip -->
+          <div class="provider-pills" *ngIf="loc.provider && !loc.providers">
+            <span class="provider-pill" [class.provider-pill-clover]="loc.provider === 'clover'">
+              {{ loc.provider === 'clover' ? 'Clover' : 'Square' }}
+            </span>
+          </div>
         </div>
         <div class="store-arrow"><i class="bi bi-arrow-right-circle"></i></div>
       </button>
@@ -105,8 +118,14 @@
       <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ catalogError }}
     </div>
 
-    <!-- Empty -->
-    <div class="shop-empty" *ngIf="!catalogLoading && !catalogError && filtered.length === 0 && items.length > 0">
+    <!-- No items in store -->
+    <div class="shop-empty" *ngIf="!catalogLoading && !catalogError && items.length === 0">
+      <i class="bi bi-bag-x shop-empty-icon"></i>
+      <p>No products found in this store.</p>
+    </div>
+
+    <!-- Search/filter has no matches -->
+    <div class="shop-empty" *ngIf="!catalogLoading && !catalogError && items.length > 0 && filtered.length === 0">
       <i class="bi bi-bag-x shop-empty-icon"></i>
       <p>No items match<span *ngIf="searchQuery"> "{{ searchQuery }}"</span>.</p>
     </div>
@@ -121,7 +140,14 @@
           </div>
         </div>
         <div class="item-body">
-          <div class="item-category" *ngIf="item.categoryName">{{ item.categoryName }}</div>
+          <div class="item-header-row">
+            <div class="item-category" *ngIf="item.categoryName">{{ item.categoryName }}</div>
+            <!-- Source badge only shown when the store has both Square + Clover -->
+            <span *ngIf="hasMultipleProviders && item.source" class="item-source-badge"
+                  [class.item-source-clover]="item.source === 'clover'">
+              {{ item.source === 'clover' ? 'Clover' : 'Square' }}
+            </span>
+          </div>
           <div class="item-name">{{ item.name }}</div>
           <div class="item-desc" *ngIf="item.description">{{ item.description }}</div>
           <div class="item-variations" *ngIf="item.variations && item.variations.length > 1">

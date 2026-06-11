@@ -6,4 +6,5 @@ export interface User {
   authenticated: boolean;
   welcomeDismissed: boolean;
   storageConfigured: boolean;
+  platformAdmin: boolean;
 }

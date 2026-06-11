@@ -1,0 +1,39 @@
+<div class="admin-page">
+  <div class="admin-header">
+    <h2 class="admin-title"><i class="bi bi-building me-2"></i>My Organizations</h2>
+    <button class="btn-register" (click)="register()">
+      <i class="bi bi-plus-lg me-1"></i>Register Business
+    </button>
+  </div>
+
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && orgs.length === 0">
+    <i class="bi bi-building-slash empty-icon"></i>
+    <h3>No organizations yet</h3>
+    <p>Register your business to invite your team and manage your Square store.</p>
+    <button class="btn-register-lg" (click)="register()">
+      <i class="bi bi-plus-lg me-2"></i>Register Your Business
+    </button>
+  </div>
+
+  <div class="org-grid" *ngIf="!loading && orgs.length > 0">
+    <div class="org-card" *ngFor="let org of orgs" (click)="goTo(org.slug)">
+      <div class="org-card-header">
+        <div class="org-avatar">{{ org.name[0].toUpperCase() }}</div>
+        <div class="org-info">
+          <div class="org-name">{{ org.name }}</div>
+          <div class="org-slug">{{ org.slug }}</div>
+        </div>
+        <span class="role-badge" [class]="'role-' + org.myRole.toLowerCase()">{{ org.myRole }}</span>
+      </div>
+      <div class="org-meta">
+        <span><i class="bi bi-people me-1"></i>{{ org.memberCount }} members</span>
+        <span><i class="bi bi-calendar me-1"></i>{{ org.createdAt | date:'mediumDate' }}</span>
+        <span class="plan-badge">{{ org.plan }}</span>
+      </div>
+    </div>
+  </div>
+</div>

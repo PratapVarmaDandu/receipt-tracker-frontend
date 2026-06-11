@@ -62,7 +62,8 @@ export class AppComponent implements OnInit {
           || url.startsWith('/share/')
           || url.startsWith('/group/join/')
           || url.startsWith('/documents/shared/')
-          || url.startsWith('/garage/join/');
+          || url.startsWith('/garage/join/')
+          || url.startsWith('/admin/join/');
         this.sidebarOpen = false;
         document.body.classList.remove('sidebar-open');
         // Tell New Relic which SPA route the user navigated to

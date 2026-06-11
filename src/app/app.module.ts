@@ -36,6 +36,15 @@ import { ShopComponent } from './components/shop/shop.component';
 import { CartSidebarComponent } from './components/cart-sidebar/cart-sidebar.component';
 import { CheckoutComponent } from './components/checkout/checkout.component';
 import { OrderConfirmationComponent } from './components/order-confirmation/order-confirmation.component';
+import { AdminComponent } from './components/admin/admin.component';
+import { AdminRegisterComponent } from './components/admin-register/admin-register.component';
+import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
+import { AdminMembersComponent } from './components/admin-members/admin-members.component';
+import { AdminJoinComponent } from './components/admin-join/admin-join.component';
+import { AdminSquareComponent } from './components/admin-square/admin-square.component';
+import { AdminCloverComponent } from './components/admin-clover/admin-clover.component';
+import { AdminOrdersComponent } from './components/admin-orders/admin-orders.component';
+import { PlatformComponent } from './components/platform/platform.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -69,7 +78,16 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     ShopComponent,
     CartSidebarComponent,
     CheckoutComponent,
-    OrderConfirmationComponent
+    OrderConfirmationComponent,
+    AdminComponent,
+    AdminRegisterComponent,
+    AdminDashboardComponent,
+    AdminMembersComponent,
+    AdminJoinComponent,
+    AdminSquareComponent,
+    AdminCloverComponent,
+    AdminOrdersComponent,
+    PlatformComponent
   ],
   imports: [
     BrowserModule,

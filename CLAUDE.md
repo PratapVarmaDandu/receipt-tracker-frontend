@@ -197,6 +197,30 @@ No `test` script is wired up (Karma devDeps are present but unused).
 - QR code: uses `qrcode` npm package (`npm install qrcode @types/qrcode`); generate data URL via `QRCode.toDataURL(joinUrl)`
 - `JoinGroupComponent` is full-screen (added to `AppComponent.isLoginPage()`)
 
+## Shop components (Square + Clover)
+- `shop/` — route `/shop`; two states: store picker and catalog browser; all locations come from per-org Square/Clover credentials only (no global env-var fallback); orgs with both Square + Clover appear as a single store entry with `providers: ['square','clover']`; `StoreLocation.provider` (single POS) or `StoreLocation.providers` (both) controls catalog loading and checkout routing; `CartItem.source` tracks which POS each item belongs to
+- `cart-sidebar/` — slide-in drawer; qty controls; "Proceed to Checkout" → `/shop/checkout`
+- `checkout/` — route `/shop/checkout`; detects cart composition via `isCloverOnlyCart` / `hasMixedCart` / Square; **Square**: SDK loaded dynamically in `loadSquareSdk(env)` (no `index.html` script tag) → `Square.payments(appId, locationId)` → `card.attach()`; card tokenized on submit → `createOrgPayment(orgSlug, …)`; **Clover**: shows "Pay at Store" panel (no card form) → `createOrgCloverOrder(orgSlug, …)` → `PENDING_PAYMENT` order; **Mixed**: blocked with message to remove one POS type
+- `order-confirmation/` — reads `{ order, payAtStore }` from router navigation state; shows "Pay at Store" callout when `payAtStore=true`; buttons: View Receipt, Shop Again, Dashboard
+- `CartService`: `BehaviorSubject<CartItem[]>` + `BehaviorSubject<StoreLocation|null>` both backed by localStorage; `selectLocation()` clears cart when switching stores
+- `StoreLocation` model (`square.model.ts`): `id, name, …, orgSlug?, provider?, providers?`; `orgSlug` always set for all shop locations; `providers[]` set when org has both Square + Clover
+- `CartItem` model: includes `source?: 'square' | 'clover'` stamped when item is added to cart
+
+## Admin Portal components
+- `admin/` — route `/admin`; lists user's orgs; auto-redirects to dashboard if only 1 org; "Register Business" button
+- `admin-register/` — route `/admin/register`; business name + auto-generated slug (user can override); calls `POST /api/organizations`
+- `admin-dashboard/` — route `/admin/org/:slug`; org overview card with stats row (member count, Square status chip, order count); quick-action cards (Invite Team, Members, Square Config, Order History); inline edit form (name + slug, OWNER only); **Danger Zone** card (OWNER only) with "Delete this organization" button — confirms, calls `deleteOrg()`, navigates to `/admin` on success; cards/stats driven by `Organization.squareConfigured`, `squareEnvironment`, `recentOrderCount`
+- `admin-members/` — route `/admin/org/:slug/members`; invite form (email + role dropdown); member list with role/status badges; Revoke button (ADMIN+ only, hidden for OWNER rows)
+- `admin-square/` — route `/admin/org/:slug/square`; password input for Square access token (never shown back); applicationId, locationId, environment dropdown; status banner (Connected/Not configured); Test Connection button (shows location count); Clear Config button (owner-only with confirm); save clears token field on success
+- `admin-orders/` — route `/admin/org/:slug/orders`; table: date, store, amount, placed-by (name+email), status badge, Square order ID (truncated), receipt link button; Refresh button; empty state
+- `admin-join/` — route `/admin/join/:token`; **no AuthGuard**; shows invite details; if not logged in shows Google login button (stores `postLoginRedirect`); if logged in shows Accept button; idempotent
+- `platform/` — route `/platform`; super-admin only (`currentUser?.platformAdmin`); stats row (total/active/suspended/free/pro/members/square-configured); org table with clickable rows; plan toggle button (FREE↔PRO); suspend/activate button; navigation to org dashboard
+- `AdminJoinComponent` is full-screen: `/admin/join/` prefix added to `AppComponent.isLoginPage()`
+- `OrganizationService`: `create()`, `listMine()`, `getBySlug()`, `update()`, `deleteOrg()`, `listMembers()`, `invite()`, `revoke()`, `getInviteByToken()`, `acceptInvite()`, `getSquareConfig()`, `saveSquareConfig()`, `clearSquareConfig()`, `testSquareConnection()`, `getOrgCatalog()`, `getOrgLocations()`, `createOrgPayment()`, `getOrgOrders()`
+- `PlatformService` (`services/platform.service.ts`): `listAllOrgs()`, `getStats()`, `setOrgStatus()`, `setOrgPlan()`
+- Roles displayed with colour-coded badges: OWNER=amber, ADMIN=purple, STAFF=green, VIEWER=grey
+- `User.platformAdmin: boolean` — drives Platform nav link in sidebar and route access
+
 ## Don't
 - Don't convert components to standalone — everything is NgModule-based
 - Don't add NgRx — use BehaviorSubject in services

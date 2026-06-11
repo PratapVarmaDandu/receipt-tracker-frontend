@@ -9,13 +9,15 @@ import { OrderResponse } from '../../models/square.model';
 })
 export class OrderConfirmationComponent implements OnInit {
   order: OrderResponse | null = null;
+  payAtStore = false;
 
   constructor(private router: Router) {
     // Read order data passed via router navigation state (no sessionStorage needed)
     const nav = this.router.getCurrentNavigation();
-    const state = nav?.extras?.state as { order?: OrderResponse } | undefined;
+    const state = nav?.extras?.state as { order?: OrderResponse; payAtStore?: boolean } | undefined;
     if (state?.order) {
       this.order = state.order;
+      this.payAtStore = !!state.payAtStore;
     }
   }
 

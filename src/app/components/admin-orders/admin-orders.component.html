@@ -1,0 +1,70 @@
+<div class="orders-page">
+  <div class="page-back">
+    <button class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left me-1"></i>Back to Organization
+    </button>
+  </div>
+
+  <div class="page-header">
+    <h2><i class="bi bi-bag-check"></i> Order History</h2>
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Loading orders…</p>
+  </div>
+
+  <div *ngIf="!loading && orders.length === 0 && !error" class="empty-state">
+    <i class="bi bi-bag-x"></i>
+    <h5>No orders yet</h5>
+    <p>Orders placed through this organization's Square shop will appear here.</p>
+  </div>
+
+  <div *ngIf="!loading && orders.length > 0" class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Store</th>
+          <th>Amount</th>
+          <th>Placed By</th>
+          <th>Status</th>
+          <th>Square Order</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of orders">
+          <td>{{ order.placedAt | date:'MMM d, y, h:mm a' }}</td>
+          <td>{{ order.storeName }}</td>
+          <td class="fw-semibold">{{ formatAmount(order.totalAmount) }}</td>
+          <td>
+            <div class="placed-by">
+              <span class="name">{{ order.placedByName }}</span>
+              <span class="email text-muted">{{ order.placedByEmail }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(order.status)">{{ order.status }}</span>
+          </td>
+          <td>
+            <code class="order-id">{{ order.squareOrderId | slice:0:12 }}…</code>
+          </td>
+          <td>
+            <button *ngIf="order.receiptId" class="btn btn-sm btn-outline-primary"
+                    (click)="viewReceipt(order.receiptId)" title="View receipt">
+              <i class="bi bi-receipt"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

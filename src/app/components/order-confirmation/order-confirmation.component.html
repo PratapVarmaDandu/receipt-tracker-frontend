@@ -2,12 +2,18 @@
 
   <div class="confirmation-card" *ngIf="order">
     <div class="success-icon">
-      <i class="bi bi-check-circle-fill"></i>
+      <i class="bi" [class.bi-check-circle-fill]="!payAtStore"
+         [class.bi-bag-check-fill]="payAtStore"></i>
     </div>
-    <h2 class="confirmation-title">Order Placed!</h2>
-    <p class="confirmation-sub">
+    <h2 class="confirmation-title">{{ payAtStore ? 'Order Confirmed!' : 'Order Placed!' }}</h2>
+    <p class="confirmation-sub" *ngIf="!payAtStore">
       Your payment has been submitted to Square.<br/>
       Your purchase has been recorded in your expense history.
+    </p>
+    <p class="confirmation-sub pay-store-sub" *ngIf="payAtStore">
+      <i class="bi bi-shop me-1"></i>
+      Show this confirmation at the store to pick up and pay for your items.<br/>
+      Your order has been recorded in your expense history.
     </p>
 
     <div class="order-meta">

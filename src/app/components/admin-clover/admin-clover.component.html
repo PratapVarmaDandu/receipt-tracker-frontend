@@ -1,0 +1,108 @@
+<div class="clover-config">
+  <div class="page-back">
+    <button class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left me-1"></i>Back to Organization
+    </button>
+  </div>
+
+  <div class="page-header">
+    <h2><i class="bi bi-shop"></i> Clover Integration</h2>
+    <p class="text-muted">Connect your Clover account to enable org-scoped payments and catalog browsing.</p>
+  </div>
+
+  <!-- Alerts -->
+  <div *ngIf="successMsg" class="alert alert-success alert-dismissible">
+    <i class="bi bi-check-circle-fill me-2"></i>{{ successMsg }}
+    <button type="button" class="btn-close" (click)="successMsg=''"></button>
+  </div>
+  <div *ngIf="errorMsg" class="alert alert-danger alert-dismissible">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ errorMsg }}
+    <button type="button" class="btn-close" (click)="errorMsg=''"></button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-4">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div *ngIf="!loading">
+
+    <!-- Current status banner -->
+    <div class="status-banner" [class.connected]="config?.configured" [class.disconnected]="!config?.configured">
+      <div class="status-icon">
+        <i class="bi" [ngClass]="config?.configured ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+      </div>
+      <div class="status-text">
+        <strong>{{ config?.configured ? 'Connected' : 'Not configured' }}</strong>
+        <span *ngIf="config?.configured">
+          &nbsp;&mdash;&nbsp;{{ config?.environment }} &middot;
+          Merchant ID: <code>{{ config?.merchantId }}</code>
+        </span>
+      </div>
+      <div class="status-actions" *ngIf="config?.configured">
+        <button class="btn btn-sm btn-outline-secondary me-2"
+                (click)="testConnection()" [disabled]="testing">
+          <span *ngIf="testing" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!testing" class="bi bi-wifi me-1"></i>Test
+        </button>
+        <button class="btn btn-sm btn-outline-danger"
+                (click)="clearConfig()" [disabled]="clearing">
+          <span *ngIf="clearing" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!clearing" class="bi bi-trash me-1"></i>Remove
+        </button>
+      </div>
+    </div>
+
+    <!-- Test result -->
+    <div *ngIf="testResult" class="test-result"
+         [class.success]="testResult.success" [class.failure]="!testResult.success">
+      <i class="bi me-2" [ngClass]="testResult.success ? 'bi-check-circle' : 'bi-x-circle'"></i>
+      {{ testResult.message }}
+    </div>
+
+    <!-- Credential form -->
+    <div class="config-card">
+      <h5>{{ config?.configured ? 'Update Credentials' : 'Connect Clover Account' }}</h5>
+      <p class="text-muted small">
+        Find these values in your
+        <a href="https://www.clover.com/developers" target="_blank" rel="noopener">Clover Developer Dashboard</a>.
+        The API token is encrypted with AES-256-GCM before storage.
+      </p>
+
+      <div class="mb-3">
+        <label class="form-label">Environment</label>
+        <select class="form-select" name="environment" [(ngModel)]="form.environment">
+          <option value="SANDBOX">Sandbox (testing)</option>
+          <option value="PRODUCTION">Production (live payments)</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">API Token <span class="text-danger">*</span></label>
+        <input type="password" class="form-control" name="accessToken" [(ngModel)]="form.accessToken"
+               [placeholder]="config?.configured ? 'Enter new token to replace existing' : 'clover_api_...'"
+               autocomplete="new-password"/>
+        <div class="form-text">Never shared — stored encrypted on the server.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Merchant ID <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" name="merchantId" [(ngModel)]="form.merchantId"
+               [placeholder]="config?.merchantId || 'XXXXXXXXXXXXXXXXX'"/>
+        <div class="form-text">Found in your Clover dashboard under Account &amp; Setup → Merchants.</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" (click)="save()" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!saving" class="bi bi-floppy me-1"></i>
+          {{ config?.configured ? 'Update' : 'Connect' }}
+        </button>
+        <button *ngIf="canTest" class="btn btn-outline-secondary" (click)="testConnection()" [disabled]="testing">
+          <i class="bi bi-wifi me-1"></i>Test connection
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

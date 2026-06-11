@@ -65,6 +65,12 @@
         <a routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-shop"></i> Shop
         </a>
+        <a routerLink="/admin" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-building"></i> Admin
+        </a>
+        <a *ngIf="currentUser?.platformAdmin" routerLink="/platform" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-shield-lock"></i> Platform
+        </a>
         <a routerLink="/groups" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-people"></i> Groups
         </a>

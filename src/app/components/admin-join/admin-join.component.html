@@ -1,0 +1,52 @@
+<div class="join-page">
+  <div class="join-card">
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner-border text-primary"></div>
+    </div>
+
+    <div class="error-state" *ngIf="!loading && error && !invite">
+      <i class="bi bi-x-circle-fill error-icon"></i>
+      <h3>Invite Unavailable</h3>
+      <p>{{ error }}</p>
+    </div>
+
+    <ng-container *ngIf="!loading && invite && !accepted">
+      <div class="join-icon"><i class="bi bi-building-check"></i></div>
+      <h2 class="join-title">Organization Invite</h2>
+      <p class="join-sub">
+        You've been invited to join an organization as
+        <strong>{{ invite.role }}</strong>.
+      </p>
+      <p class="join-email">Invite sent to: <strong>{{ invite.inviteEmail }}</strong></p>
+
+      <div class="join-error" *ngIf="error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+      </div>
+
+      <div class="join-actions" *ngIf="!isLoggedIn">
+        <p class="login-prompt">Sign in with Google to accept this invite.</p>
+        <button class="btn-google" (click)="login()">
+          <i class="bi bi-google me-2"></i>Sign in with Google
+        </button>
+      </div>
+
+      <div class="join-actions" *ngIf="isLoggedIn">
+        <button class="btn-accept" (click)="accept()" [disabled]="accepting">
+          <span *ngIf="!accepting"><i class="bi bi-check-lg me-1"></i>Accept Invite</span>
+          <span *ngIf="accepting"><span class="spinner-border spinner-border-sm me-2"></span>Accepting…</span>
+        </button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="accepted">
+      <div class="success-icon"><i class="bi bi-check-circle-fill"></i></div>
+      <h2 class="join-title">You're In!</h2>
+      <p class="join-sub">You've successfully joined the organization.</p>
+      <button class="btn-accept" (click)="goDashboard()">
+        <i class="bi bi-building me-1"></i>Go to Admin Dashboard
+      </button>
+    </ng-container>
+
+  </div>
+</div>

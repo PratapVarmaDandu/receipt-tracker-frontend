@@ -1,0 +1,116 @@
+.admin-page { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.admin-title { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+.btn-register {
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { opacity: 0.9; }
+}
+
+.loading-state { display: flex; justify-content: center; padding: 3rem; }
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+
+  .empty-icon { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+  h3 { color: var(--text-primary); margin-bottom: 0.5rem; }
+  p { margin-bottom: 1.5rem; }
+}
+
+.btn-register-lg {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { opacity: 0.9; }
+}
+
+.org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+.org-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+
+  &:hover { box-shadow: var(--shadow-sm); border-color: var(--primary); }
+}
+
+.org-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.org-avatar {
+  width: 42px;
+  height: 42px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.org-info { flex: 1; min-width: 0; }
+.org-name { font-weight: 600; color: var(--text-primary); }
+.org-slug { font-size: 0.75rem; color: var(--text-secondary); }
+
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+
+  &.role-owner  { background: #fef3c7; color: #92400e; }
+  &.role-admin  { background: #ede9fe; color: #5b21b6; }
+  &.role-staff  { background: #d1fae5; color: #065f46; }
+  &.role-viewer { background: var(--border); color: var(--text-secondary); }
+}
+
+.org-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.plan-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  background: var(--border);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}

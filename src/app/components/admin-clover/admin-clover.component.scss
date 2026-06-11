@@ -1,0 +1,63 @@
+.clover-config {
+  max-width: 700px;
+}
+
+.page-back { margin-bottom: 1rem; }
+
+.btn-back {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.page-header {
+  margin-bottom: 1.5rem;
+  h2 { font-size: 1.4rem; font-weight: 600; }
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  border: 1.5px solid;
+
+  &.connected {
+    background: #f0fdf4;
+    border-color: #86efac;
+    .status-icon i { color: #16a34a; font-size: 1.4rem; }
+  }
+
+  &.disconnected {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    .status-icon i { color: #dc2626; font-size: 1.4rem; }
+  }
+
+  .status-text { flex: 1; font-size: 0.9rem; code { font-size: 0.8rem; } }
+}
+
+.test-result {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+
+  &.success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+  &.failure  { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+}
+
+.config-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+
+  h5 { font-weight: 600; margin-bottom: 0.25rem; }
+}

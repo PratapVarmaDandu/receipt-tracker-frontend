@@ -1,0 +1,164 @@
+.members-page { padding: 1.5rem; max-width: 760px; margin: 0 auto; }
+.members-back { margin-bottom: 1rem; }
+
+.btn-back {
+  background: transparent; border: none; color: var(--primary);
+  font-size: 0.875rem; cursor: pointer; padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.page-title { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin: 0 0 1.5rem; }
+
+.invite-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0 0 1rem;
+}
+
+.invite-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.form-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: var(--bg);
+  color: var(--text-primary);
+  &:focus { outline: none; border-color: var(--primary); }
+}
+
+.form-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  background: var(--bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  &:focus { outline: none; border-color: var(--primary); }
+}
+
+.btn-invite {
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.invite-error {
+  font-size: 0.8rem; color: #dc2626; margin-bottom: 0.5rem;
+}
+.invite-success {
+  font-size: 0.8rem; color: #16a34a; margin-bottom: 0.5rem;
+}
+
+.role-legend {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+}
+
+.member-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  overflow: hidden;
+}
+
+.loading-state { display: flex; justify-content: center; padding: 2rem; }
+
+.error-state {
+  padding: 1rem 1.25rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+}
+
+.member-avatar { flex-shrink: 0; }
+
+.avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.member-info { flex: 1; min-width: 0; }
+.member-name { font-weight: 600; color: var(--text-primary); font-size: 0.875rem; }
+.member-email, .member-joined, .member-invited { font-size: 0.75rem; color: var(--text-secondary); }
+
+.member-badges { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+
+.role-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.45rem;
+  border-radius: 99px; text-transform: uppercase;
+  &.role-owner  { background: #fef3c7; color: #92400e; }
+  &.role-admin  { background: #ede9fe; color: #5b21b6; }
+  &.role-staff  { background: #d1fae5; color: #065f46; }
+  &.role-viewer { background: var(--border); color: var(--text-secondary); }
+}
+
+.status-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.45rem;
+  border-radius: 99px; text-transform: uppercase;
+  &.status-active  { background: #d1fae5; color: #065f46; }
+  &.status-pending { background: #fef3c7; color: #92400e; }
+  &.status-revoked { background: #fee2e2; color: #991b1b; }
+}
+
+.btn-revoke {
+  background: transparent; border: none; color: #ef4444;
+  cursor: pointer; padding: 0.25rem; font-size: 1rem;
+  flex-shrink: 0;
+  &:hover { color: #dc2626; }
+}

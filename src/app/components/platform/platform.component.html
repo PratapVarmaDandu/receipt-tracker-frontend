@@ -1,0 +1,127 @@
+<div class="platform-page">
+  <div class="platform-header">
+    <h2><i class="bi bi-shield-lock-fill me-2"></i>Platform Admin</h2>
+    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    </button>
+  </div>
+
+  <!-- Stats row -->
+  <div class="platform-stats" *ngIf="stats">
+    <div class="pstat-card">
+      <div class="pstat-value">{{ stats.totalOrgs }}</div>
+      <div class="pstat-label">Total Orgs</div>
+    </div>
+    <div class="pstat-card success">
+      <div class="pstat-value">{{ stats.activeOrgs }}</div>
+      <div class="pstat-label">Active</div>
+    </div>
+    <div class="pstat-card danger">
+      <div class="pstat-value">{{ stats.suspendedOrgs }}</div>
+      <div class="pstat-label">Suspended</div>
+    </div>
+    <div class="pstat-card info">
+      <div class="pstat-value">{{ stats.freeOrgs }}</div>
+      <div class="pstat-label">Free Plan</div>
+    </div>
+    <div class="pstat-card gold">
+      <div class="pstat-value">{{ stats.proOrgs }}</div>
+      <div class="pstat-label">Pro Plan</div>
+    </div>
+    <div class="pstat-card">
+      <div class="pstat-value">{{ stats.totalMembers }}</div>
+      <div class="pstat-label">Members</div>
+    </div>
+    <div class="pstat-card">
+      <div class="pstat-value">{{ stats.squareConfiguredOrgs }}</div>
+      <div class="pstat-label">Square Configured</div>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+    <p class="mt-2 text-muted">Loading organizations…</p>
+  </div>
+
+  <div *ngIf="!loading && orgs.length === 0 && !error" class="empty-state">
+    <i class="bi bi-building"></i>
+    <h5>No organizations found</h5>
+  </div>
+
+  <div *ngIf="!loading && orgs.length > 0" class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Organization</th>
+          <th>Owner</th>
+          <th>Plan</th>
+          <th>Status</th>
+          <th>Members</th>
+          <th>Square</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let org of orgs">
+          <td>
+            <div class="org-cell" (click)="viewOrg(org.slug)" title="View org dashboard">
+              <span class="org-avatar-sm">{{ org.name[0].toUpperCase() }}</span>
+              <div>
+                <div class="org-name-link">{{ org.name }}</div>
+                <code class="org-slug">{{ org.slug }}</code>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="owner-cell">
+              <div class="owner-name">{{ org.ownerName }}</div>
+              <div class="owner-email text-muted">{{ org.ownerEmail }}</div>
+            </div>
+          </td>
+          <td>
+            <button class="plan-toggle" [class.pro]="org.plan === 'PRO'"
+                    [disabled]="actionInProgress[org.slug]"
+                    (click)="togglePlan(org)"
+                    [title]="'Switch to ' + (org.plan === 'FREE' ? 'PRO' : 'FREE')">
+              {{ org.plan }}
+            </button>
+          </td>
+          <td>
+            <span class="status-pill" [class.active]="org.status === 'ACTIVE'" [class.suspended]="org.status === 'SUSPENDED'">
+              <span class="status-dot"></span>{{ org.status }}
+            </span>
+          </td>
+          <td>{{ org.memberCount }}</td>
+          <td>
+            <i class="bi" [class.bi-check-circle-fill]="org.squareConfigured" [class.bi-dash-circle]="!org.squareConfigured"
+               [class.text-success]="org.squareConfigured" [class.text-muted]="!org.squareConfigured"></i>
+          </td>
+          <td class="text-muted small">{{ org.createdAt | date:'MMM d, y' }}</td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-sm btn-outline-secondary" (click)="viewOrg(org.slug)" title="Open dashboard">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </button>
+              <button class="btn btn-sm"
+                      [class.btn-outline-warning]="org.status === 'ACTIVE'"
+                      [class.btn-outline-success]="org.status === 'SUSPENDED'"
+                      [disabled]="actionInProgress[org.slug]"
+                      (click)="toggleStatus(org)"
+                      [title]="org.status === 'ACTIVE' ? 'Suspend org' : 'Activate org'">
+                <span *ngIf="!actionInProgress[org.slug]">
+                  <i class="bi" [class.bi-pause-circle]="org.status === 'ACTIVE'" [class.bi-play-circle]="org.status === 'SUSPENDED'"></i>
+                </span>
+                <span *ngIf="actionInProgress[org.slug]" class="spinner-border spinner-border-sm"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

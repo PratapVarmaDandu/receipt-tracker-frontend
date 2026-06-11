@@ -60,28 +60,43 @@
         </div>
       </div>
 
-      <!-- Payment — Square card element -->
+      <!-- Payment section -->
       <div class="checkout-section">
         <h4 class="section-title">Payment</h4>
 
-        <!-- SDK load error -->
-        <div class="sdk-error" *ngIf="sdkError">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ sdkError }}
+        <!-- Mixed cart warning -->
+        <div class="sdk-error" *ngIf="hasMixedCart">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Your cart has both Square and Clover items. Please remove one type to checkout.
         </div>
 
-        <!-- Card loading skeleton -->
-        <div class="card-loading" *ngIf="!cardReady && !sdkError">
-          <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-          <span>Loading secure payment form…</span>
+        <!-- Clover: pay at store -->
+        <div class="pay-at-store-notice" *ngIf="isCloverOnlyCart && !hasMixedCart">
+          <i class="bi bi-shop-window pay-store-icon"></i>
+          <div>
+            <div class="pay-store-title">Pick up &amp; Pay at Store</div>
+            <div class="pay-store-desc">
+              Place the order now and bring this confirmation to the store.
+              Payment is collected when you pick up your items.
+            </div>
+          </div>
         </div>
 
-        <!-- Square injects the card UI into this div -->
-        <div id="square-card-container" [class.hidden]="!cardReady"></div>
-
-        <p class="payment-note" *ngIf="cardReady">
-          <i class="bi bi-lock-fill me-1 text-success"></i>
-          Card details are encrypted by Square. We never see your card number.
-        </p>
+        <!-- Square card form -->
+        <ng-container *ngIf="!isCloverOnlyCart && !hasMixedCart">
+          <div class="sdk-error" *ngIf="sdkError">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ sdkError }}
+          </div>
+          <div class="card-loading" *ngIf="!cardReady && !sdkError">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+            <span>Loading secure payment form…</span>
+          </div>
+          <div id="square-card-container" [class.hidden]="!cardReady"></div>
+          <p class="payment-note" *ngIf="cardReady">
+            <i class="bi bi-lock-fill me-1 text-success"></i>
+            Card details are encrypted by Square. We never see your card number.
+          </p>
+        </ng-container>
       </div>
 
       <!-- Validation / API error -->
@@ -89,9 +104,11 @@
         <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
       </div>
 
-      <button class="btn-place-order" (click)="placeOrder()"
-              [disabled]="submitting || !cardReady || items.length === 0">
-        <span *ngIf="!submitting">
+      <button class="btn-place-order" (click)="placeOrder()" [disabled]="!canPlaceOrder">
+        <span *ngIf="!submitting && isCloverOnlyCart">
+          <i class="bi bi-bag-check me-2"></i>Place Order · Pay at Store
+        </span>
+        <span *ngIf="!submitting && !isCloverOnlyCart">
           <i class="bi bi-lock-fill me-2"></i>Pay {{ total | currency }}
         </span>
         <span *ngIf="submitting">

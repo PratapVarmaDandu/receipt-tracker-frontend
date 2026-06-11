@@ -5,6 +5,9 @@ export interface StoreLocation {
   phoneNumber?: string;
   logoUrl?: string;
   address?: string;
+  orgSlug?: string;    // set when this location comes from an org's Square or Clover config
+  provider?: 'square' | 'clover';  // single-provider orgs
+  providers?: ('square' | 'clover')[];  // set when org has BOTH Square + Clover configured
 }
 
 export interface SquareVariation {
@@ -23,6 +26,7 @@ export interface SquareCatalogItem {
   categoryName?: string;
   imageUrl?: string;
   variations: SquareVariation[];
+  source?: 'square' | 'clover';  // which POS provided this item
 }
 
 export interface CartItem {
@@ -33,6 +37,7 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   imageUrl?: string;
+  source?: 'square' | 'clover';  // which POS this item belongs to
 }
 
 export interface CreateOrderRequest {

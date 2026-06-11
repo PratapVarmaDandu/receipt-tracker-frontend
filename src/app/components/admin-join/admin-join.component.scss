@@ -1,0 +1,57 @@
+.join-page {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 1rem;
+}
+
+.join-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.loading-state { display: flex; justify-content: center; padding: 2rem; }
+
+.error-state { .error-icon { font-size: 2.5rem; color: #ef4444; display: block; margin-bottom: 0.75rem; } }
+
+.join-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.75rem; }
+.success-icon { font-size: 2.5rem; color: #22c55e; margin-bottom: 0.75rem; }
+
+.join-title { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem; }
+
+.join-sub { color: var(--text-secondary); margin: 0 0 0.75rem; font-size: 0.9rem; }
+
+.join-email { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
+
+.join-error {
+  padding: 0.65rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius);
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.join-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+
+.login-prompt { font-size: 0.85rem; color: var(--text-secondary); margin: 0; }
+
+.btn-google, .btn-accept {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}

@@ -129,6 +129,30 @@
   flex-shrink: 0;
 }
 
+.provider-pills {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  margin-top: 0.3rem;
+}
+
+.provider-pill {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+
+  &.provider-pill-clover {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
+}
+
 // ── Active store banner ───────────────────────────────────────────────────────
 
 .active-store-bar {
@@ -370,12 +394,38 @@
   gap: 0.35rem;
 }
 
+.item-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-height: 1rem;
+}
+
 .item-category {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--primary);
+}
+
+.item-source-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.item-source-clover {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+  }
 }
 
 .item-name {

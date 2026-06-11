@@ -1,0 +1,35 @@
+<div class="register-page">
+  <div class="register-card">
+    <div class="register-icon"><i class="bi bi-building-add"></i></div>
+    <h2 class="register-title">Register Your Business</h2>
+    <p class="register-sub">Create an organization to invite your team and manage your store.</p>
+
+    <div class="form-row">
+      <label class="form-label">Business Name <span class="required">*</span></label>
+      <input type="text" class="form-input" [(ngModel)]="name"
+             (ngModelChange)="onNameChange()" placeholder="e.g. Spice Town Market" />
+    </div>
+
+    <div class="form-row">
+      <label class="form-label">Organization URL <span class="required">*</span></label>
+      <div class="slug-row">
+        <span class="slug-prefix">app/admin/org/</span>
+        <input type="text" class="form-input slug-input" [(ngModel)]="slug"
+               (ngModelChange)="onSlugChange()" placeholder="spice-town" />
+      </div>
+      <div class="slug-hint">Lowercase letters, numbers, and hyphens only.</div>
+    </div>
+
+    <div class="form-error" *ngIf="error">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    </div>
+
+    <div class="register-actions">
+      <button class="btn-cancel" (click)="cancel()" [disabled]="submitting">Cancel</button>
+      <button class="btn-submit" (click)="submit()" [disabled]="submitting || !name.trim() || !slug.trim()">
+        <span *ngIf="!submitting"><i class="bi bi-check-lg me-1"></i>Create Organization</span>
+        <span *ngIf="submitting"><span class="spinner-border spinner-border-sm me-2"></span>Creating…</span>
+      </button>
+    </div>
+  </div>
+</div>

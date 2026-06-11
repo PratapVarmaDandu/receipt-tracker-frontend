@@ -1,0 +1,71 @@
+<div class="members-page">
+  <div class="members-back">
+    <button class="btn-back" (click)="goBack()">
+      <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </button>
+  </div>
+
+  <h2 class="page-title"><i class="bi bi-people-fill me-2"></i>Team Members</h2>
+
+  <!-- Invite form -->
+  <div class="invite-card">
+    <h4 class="section-title">Invite Member</h4>
+
+    <div class="invite-form">
+      <input type="email" class="form-input" [(ngModel)]="inviteEmail"
+             placeholder="colleague@company.com" />
+      <select class="form-select" [(ngModel)]="inviteRole">
+        <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+      </select>
+      <button class="btn-invite" (click)="invite()" [disabled]="inviting || !inviteEmail.trim()">
+        <span *ngIf="!inviting"><i class="bi bi-send me-1"></i>Send Invite</span>
+        <span *ngIf="inviting"><span class="spinner-border spinner-border-sm me-2"></span>Sending…</span>
+      </button>
+    </div>
+
+    <div class="invite-error" *ngIf="inviteError">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ inviteError }}
+    </div>
+    <div class="invite-success" *ngIf="inviteSuccess">
+      <i class="bi bi-check-circle-fill me-1"></i>{{ inviteSuccess }}
+    </div>
+
+    <div class="role-legend">
+      <div><strong>ADMIN</strong> — invite/revoke members, full access</div>
+      <div><strong>STAFF</strong> — operational access (orders, catalog)</div>
+      <div><strong>VIEWER</strong> — read-only dashboard</div>
+    </div>
+  </div>
+
+  <!-- Member list -->
+  <div class="member-list">
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner-border text-primary"></div>
+    </div>
+
+    <div class="error-state" *ngIf="error">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+    </div>
+
+    <div class="member-row" *ngFor="let m of members">
+      <div class="member-avatar">
+        <img *ngIf="m.userPicture" [src]="m.userPicture" class="avatar-img" />
+        <div *ngIf="!m.userPicture" class="avatar-placeholder">{{ m.inviteEmail[0].toUpperCase() }}</div>
+      </div>
+      <div class="member-info">
+        <div class="member-name">{{ m.userName || m.inviteEmail }}</div>
+        <div class="member-email" *ngIf="m.userName">{{ m.inviteEmail }}</div>
+        <div class="member-joined" *ngIf="m.joinedAt">Joined {{ m.joinedAt | date:'mediumDate' }}</div>
+        <div class="member-invited" *ngIf="!m.joinedAt">Invited {{ m.invitedAt | date:'mediumDate' }}</div>
+      </div>
+      <div class="member-badges">
+        <span class="role-badge" [class]="'role-' + m.role.toLowerCase()">{{ m.role }}</span>
+        <span class="status-badge" [class]="statusClass(m.status)">{{ m.status }}</span>
+      </div>
+      <button class="btn-revoke" *ngIf="m.role !== 'OWNER' && m.status !== 'REVOKED'"
+              (click)="revoke(m)" title="Revoke access">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    </div>
+  </div>
+</div>

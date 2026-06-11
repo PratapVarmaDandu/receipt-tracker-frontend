@@ -1,0 +1,277 @@
+.dash-page { padding: 1.5rem; max-width: 800px; margin: 0 auto; }
+
+.dash-back { margin-bottom: 1rem; }
+
+.btn-back {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.loading-state { display: flex; justify-content: center; padding: 3rem; }
+
+.error-state {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius);
+  color: #dc2626;
+}
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.org-avatar-lg {
+  width: 56px;
+  height: 56px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.org-name { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.4rem; }
+
+.org-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+  text-transform: uppercase;
+  &.role-owner  { background: #fef3c7; color: #92400e; }
+  &.role-admin  { background: #ede9fe; color: #5b21b6; }
+  &.role-staff  { background: #d1fae5; color: #065f46; }
+  &.role-viewer { background: var(--border); color: var(--text-secondary); }
+}
+
+.plan-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  background: var(--border);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  &.pro { background: #fef3c7; color: #92400e; }
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  &.suspended { color: #dc2626; }
+}
+
+.env-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.stats-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 120px;
+
+  .stat-icon { font-size: 1.6rem; }
+  .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+  .stat-label { font-size: 0.75rem; color: var(--text-secondary); }
+}
+
+.btn-edit-org {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+  border-radius: 4px;
+  line-height: 1;
+  &:hover { background: var(--border); color: var(--primary); }
+}
+
+.edit-card {
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.edit-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--text-primary);
+}
+
+.edit-row {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.edit-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.edit-error {
+  font-size: 0.82rem;
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+
+  &:hover:not(.action-card-disabled) { box-shadow: var(--shadow-sm); border-color: var(--primary); }
+  &.action-card-disabled { opacity: 0.5; cursor: default; }
+}
+
+.action-icon { font-size: 1.5rem; color: var(--primary); display: block; margin-bottom: 0.5rem; }
+.action-label { font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+.action-sub { font-size: 0.78rem; color: var(--text-secondary); }
+
+.org-details-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, var(--radius));
+  overflow: hidden;
+}
+
+.detail-row {
+  display: flex;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+
+  &:last-child { border-bottom: none; }
+}
+
+.detail-label {
+  width: 90px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.detail-value { color: var(--text-primary); }
+.mono { font-family: monospace; font-size: 0.82rem; }
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  margin-right: 6px;
+  vertical-align: middle;
+  &.active { background: #22c55e; }
+}
+
+.danger-zone {
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #fff;
+}
+
+.danger-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+}
+
+.danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  strong { font-size: 0.9rem; }
+}
+
+.danger-desc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0.2rem 0 0;
+}
+
+.btn-delete-org {
+  flex-shrink: 0;
+  padding: 0.4rem 1rem;
+  border: 1.5px solid #dc2626;
+  border-radius: 7px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover:not(:disabled) { background: #dc2626; color: #fff; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}

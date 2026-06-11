@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { SquareService } from '../../services/square.service';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { CartService } from '../../services/cart.service';
+import { OrganizationService } from '../../services/organization.service';
 import { LoggerService } from '../../services/logger.service';
 import { SquareCatalogItem, SquareVariation, CartItem, StoreLocation } from '../../models/square.model';
 
@@ -35,8 +37,8 @@ export class ShopComponent implements OnInit {
   addedFeedback: { [itemId: string]: boolean } = {};
 
   constructor(
-    private squareService: SquareService,
     private cartService: CartService,
+    private orgService: OrganizationService,
     private logger: LoggerService
   ) {}
 
@@ -53,28 +55,75 @@ export class ShopComponent implements OnInit {
     this.loadLocations();
   }
 
+  // Returns true when the selected store has both Square + Clover configured
+  get hasMultipleProviders(): boolean {
+    return !!(this.selectedLocation?.providers && this.selectedLocation.providers.length > 1);
+  }
+
   private loadLocations(): void {
     this.locationsLoading = true;
-    this.squareService.getLocations().subscribe({
-      next: locs => {
-        this.locations = locs;
-        this.locationsLoading = false;
+    this.locationsError = '';
 
-        // If a saved location is still in the list, load its catalog automatically
-        if (this.selectedLocation) {
-          const stillValid = locs.find(l => l.id === this.selectedLocation!.id);
-          if (stillValid) {
-            this.loadCatalog();
-          } else {
-            this.selectedLocation = null;
-            this.cartService.clearLocation();
+    // All locations come from per-org Square / Clover credentials — no global env-var fallback
+    this.orgService.listMine().pipe(
+      switchMap(orgs => {
+        const sqCalls = orgs
+          .filter(o => o.squareConfigured)
+          .map(org => this.orgService.getOrgLocations(org.slug).pipe(
+            map((locs: any[]) => locs.map(l => ({ ...l, orgSlug: org.slug, provider: 'square' as const } as StoreLocation))),
+            catchError(() => of([] as StoreLocation[]))
+          ));
+
+        const cloverCalls = orgs
+          .filter(o => o.cloverConfigured)
+          .map(org => this.orgService.getOrgCloverLocations(org.slug).pipe(
+            map((locs: any[]) => locs.map(l => ({ ...l, orgSlug: org.slug, provider: 'clover' as const } as StoreLocation))),
+            catchError(() => of([] as StoreLocation[]))
+          ));
+
+        const all = [...sqCalls, ...cloverCalls];
+        if (all.length === 0) return of([] as StoreLocation[]);
+        return forkJoin(all).pipe(
+          map(results => ([] as StoreLocation[]).concat(...results))
+        );
+      }),
+      catchError(() => of([] as StoreLocation[]))
+    ).subscribe(orgLocs => {
+      // Deduplicate by orgSlug — merge Square + Clover for the same org into one entry
+      const orgLocBySlug = new Map<string, StoreLocation>();
+      for (const loc of orgLocs) {
+        if (!loc.orgSlug) continue;
+        const existing = orgLocBySlug.get(loc.orgSlug);
+        if (existing) {
+          const currentProviders: ('square' | 'clover')[] =
+            existing.providers ?? (existing.provider ? [existing.provider] : []);
+          const newProvider = loc.provider;
+          if (newProvider && !currentProviders.includes(newProvider)) {
+            existing.providers = [...currentProviders, newProvider];
+            delete existing.provider;
           }
+        } else {
+          orgLocBySlug.set(loc.orgSlug, { ...loc });
         }
-      },
-      error: err => {
-        this.locationsError = 'Could not load stores. Check Square credentials.';
-        this.locationsLoading = false;
-        this.logger.error(this.source, 'loadLocations failed', err);
+      }
+
+      this.locations = Array.from(orgLocBySlug.values());
+      this.locationsLoading = false;
+
+      if (this.selectedLocation) {
+        const stillValid = this.locations.find(l => l.id === this.selectedLocation!.id);
+        if (stillValid) {
+          this.selectedLocation = { ...stillValid };
+          this.cartService.selectLocation(stillValid);
+          this.loadCatalog();
+        } else {
+          this.selectedLocation = null;
+          this.cartService.clearLocation();
+        }
+      }
+
+      if (this.locations.length === 0) {
+        this.locationsError = 'No stores available. Set up Square or Clover credentials in Admin → your Org.';
       }
     });
   }
@@ -96,12 +145,57 @@ export class ShopComponent implements OnInit {
     this.items = [];
     this.filtered = [];
     this.catalogError = '';
+    this.categories = [];
   }
 
   private loadCatalog(): void {
     this.catalogLoading = true;
     this.catalogError = '';
-    this.squareService.getCatalog().subscribe({
+
+    const loc       = this.selectedLocation!;
+    const orgSlug   = loc.orgSlug;
+    const providers = loc.providers;
+    const provider  = loc.provider;
+
+    if (!orgSlug) {
+      // Should not happen — all locations are org-scoped now
+      this.catalogError = 'No store configuration found.';
+      this.catalogLoading = false;
+      return;
+    }
+
+    let catalog$: Observable<SquareCatalogItem[]>;
+
+    if (providers && providers.length > 1) {
+      // Org has both Square + Clover — fetch in parallel, merge, stamp source
+      const calls: Observable<SquareCatalogItem[]>[] = [];
+      if (providers.includes('square')) {
+        calls.push(this.orgService.getOrgCatalog(orgSlug).pipe(
+          map((items: any[]) => items.map(i => ({ ...i, source: 'square' as const }))),
+          catchError(() => of([] as SquareCatalogItem[]))
+        ));
+      }
+      if (providers.includes('clover')) {
+        calls.push(this.orgService.getOrgCloverCatalog(orgSlug).pipe(
+          map((items: any[]) => items.map(i => ({ ...i, source: 'clover' as const }))),
+          catchError(() => of([] as SquareCatalogItem[]))
+        ));
+      }
+      catalog$ = forkJoin(calls).pipe(
+        map(results => ([] as SquareCatalogItem[]).concat(...results))
+      );
+    } else if (provider === 'clover') {
+      catalog$ = this.orgService.getOrgCloverCatalog(orgSlug).pipe(
+        map((items: any[]) => items.map(i => ({ ...i, source: 'clover' as const })))
+      );
+    } else {
+      catalog$ = this.orgService.getOrgCatalog(orgSlug).pipe(
+        map((items: any[]) => items.map(i => ({ ...i, source: 'square' as const }))),
+        catchError(err => { throw err; })
+      );
+    }
+
+    catalog$.subscribe({
       next: items => {
         this.items = items;
         items.forEach(item => {
@@ -109,18 +203,20 @@ export class ShopComponent implements OnInit {
             this.selectedVariations[item.id] = item.variations[0];
           }
         });
+        // Derive categories from items
+        const catMap = new Map<string, string>();
+        items.forEach(item => {
+          if (item.categoryId && item.categoryName) catMap.set(item.categoryId, item.categoryName);
+        });
+        this.categories = Array.from(catMap.entries()).map(([id, name]) => ({ id, name }));
         this.applyFilter();
         this.catalogLoading = false;
       },
       error: err => {
-        this.catalogError = 'Could not load catalog.';
+        this.catalogError = err?.error?.error || 'Could not load catalog. Check your POS credentials.';
         this.catalogLoading = false;
         this.logger.error(this.source, 'loadCatalog failed', err);
       }
-    });
-    this.squareService.getCategories().subscribe({
-      next: cats => (this.categories = cats),
-      error: err => this.logger.warn(this.source, 'loadCategories failed', err)
     });
   }
 
@@ -164,7 +260,8 @@ export class ShopComponent implements OnInit {
       variationName: variation.name,
       unitPrice:     variation.price,
       quantity:      1,
-      imageUrl:      item.imageUrl
+      imageUrl:      item.imageUrl,
+      source:        item.source
     };
     this.cartService.addItem(cartItem);
     this.addedFeedback[item.id] = true;

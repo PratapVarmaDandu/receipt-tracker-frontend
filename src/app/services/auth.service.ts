@@ -13,7 +13,8 @@ const LOCAL_DEV_USER: User = {
   picture: '',
   authenticated: true,
   welcomeDismissed: true,
-  storageConfigured: false
+  storageConfigured: false,
+  platformAdmin: false
 };
 
 @Injectable({ providedIn: 'root' })
