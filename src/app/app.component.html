@@ -53,16 +53,16 @@
 
         <div class="nav-section">Manage</div>
 
-        <a routerLink="/garage" routerLinkActive="active" (click)="closeSidebar()">
+        <a *ngIf="features.has('GARAGE')" routerLink="/garage" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-speedometer2"></i> My Garage
         </a>
-        <a routerLink="/documents" routerLinkActive="active" (click)="closeSidebar()">
+        <a *ngIf="features.has('DOCUMENT_VAULT')" routerLink="/documents" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-folder2-open"></i> Document Vault
         </a>
-        <a routerLink="/jobs" routerLinkActive="active" (click)="closeSidebar()">
+        <a *ngIf="features.has('JOB_TRACKER')" routerLink="/jobs" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-briefcase"></i> Job Tracker
         </a>
-        <a routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
+        <a *ngIf="features.has('SHOP_POS')" routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-shop"></i> Shop
         </a>
         <a routerLink="/admin" routerLinkActive="active" (click)="closeSidebar()">

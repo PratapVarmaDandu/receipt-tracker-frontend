@@ -39,4 +39,18 @@ export class PlatformService {
       catchError(err => { this.logger.error(this.source, 'setOrgPlan failed', err); throw err; })
     );
   }
+
+  /** Returns the org's active feature list after the grant. */
+  grantFeature(slug: string, feature: string): Observable<string[]> {
+    return this.http.post<string[]>(`${this.base}/orgs/${slug}/features`, { feature }).pipe(
+      catchError(err => { this.logger.error(this.source, 'grantFeature failed', err); throw err; })
+    );
+  }
+
+  /** Returns the org's active feature list after the revoke. */
+  revokeFeature(slug: string, feature: string): Observable<string[]> {
+    return this.http.delete<string[]>(`${this.base}/orgs/${slug}/features/${feature}`).pipe(
+      catchError(err => { this.logger.error(this.source, 'revokeFeature failed', err); throw err; })
+    );
+  }
 }

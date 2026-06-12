@@ -16,11 +16,11 @@
     <div class="qa-icon" style="background:#ede9fe; color:#7c3aed;"><i class="bi bi-camera"></i></div>
     <div class="qa-label">Scan Receipt</div>
   </a>
-  <a routerLink="/garage" class="quick-action-btn">
+  <a *ngIf="features.has('GARAGE')" routerLink="/garage" class="quick-action-btn">
     <div class="qa-icon" style="background:#fef3c7; color:#d97706;"><i class="bi bi-speedometer2"></i></div>
     <div class="qa-label">My Garage</div>
   </a>
-  <a routerLink="/documents" class="quick-action-btn">
+  <a *ngIf="features.has('DOCUMENT_VAULT')" routerLink="/documents" class="quick-action-btn">
     <div class="qa-icon" style="background:#f0fdf4; color:#16a34a;"><i class="bi bi-folder2-open"></i></div>
     <div class="qa-label">Documents</div>
   </a>

@@ -25,7 +25,7 @@
         <span *ngIf="saving"><span class="spinner-border spinner-border-sm"></span></span>
       </button>
       <button *ngIf="editing" class="btn btn-sm btn-outline-secondary" (click)="editing=false">Cancel</button>
-      <button class="btn btn-sm btn-outline-primary" (click)="showShareDialog = true" title="Share expense">
+      <button *ngIf="features.has('EXPENSE_SHARING')" class="btn btn-sm btn-outline-primary" (click)="showShareDialog = true" title="Share expense">
         <i class="bi bi-people me-1"></i>Share
       </button>
       <button class="btn btn-sm btn-outline-danger" (click)="delete()">
@@ -249,7 +249,7 @@
     </div>
 
     <!-- Expense Shares panel (view mode only) -->
-    <div class="card border-0 shadow-sm mt-3">
+    <div *ngIf="features.has('EXPENSE_SHARING')" class="card border-0 shadow-sm mt-3">
       <div class="card-body">
         <app-share-manager [receiptId]="receipt.id!"></app-share-manager>
       </div>

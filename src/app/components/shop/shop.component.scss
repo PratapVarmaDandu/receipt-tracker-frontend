@@ -499,8 +499,45 @@
 }
 
 @media (max-width: 640px) {
-  .shop-page { padding: 1rem; }
-  .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.875rem; }
-  .item-body { padding: 0.625rem; }
-  .shop-header { flex-direction: row; align-items: center; }
+  .shop-page { padding: 0.75rem; }
+
+  .active-store-bar { padding: 0.6rem 0.75rem; gap: 0.5rem; }
+  .btn-change-store { font-size: 0.75rem; padding: 0.3rem 0.55rem; }
+
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .item-image-wrap { aspect-ratio: 1 / 1; }
+
+  .item-image-placeholder { font-size: 2rem; }
+
+  .item-body {
+    padding: 0.6rem;
+    gap: 0.2rem;
+  }
+
+  .item-name {
+    font-size: 0.85rem;
+    line-height: 1.25;
+  }
+
+  .item-price {
+    font-size: 0.95rem;
+  }
+
+  .item-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+  }
+
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.78rem;
+  }
 }

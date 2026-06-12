@@ -38,6 +38,16 @@
     </div>
   </div>
 
+  <!-- Feature adoption row -->
+  <div class="platform-stats feature-adoption" *ngIf="stats?.featureAdoption">
+    <div class="pstat-card" *ngFor="let f of appFeatures">
+      <div class="pstat-value">
+        <i class="bi {{ f.icon }} me-1"></i>{{ stats!.featureAdoption[f.key] || 0 }}
+      </div>
+      <div class="pstat-label">{{ f.label }}</div>
+    </div>
+  </div>
+
   <div *ngIf="error" class="alert alert-danger">
     <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
   </div>
@@ -62,12 +72,14 @@
           <th>Status</th>
           <th>Members</th>
           <th>Square</th>
+          <th>Features</th>
           <th>Created</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let org of orgs">
+        <ng-container *ngFor="let org of orgs">
+        <tr>
           <td>
             <div class="org-cell" (click)="viewOrg(org.slug)" title="View org dashboard">
               <span class="org-avatar-sm">{{ org.name[0].toUpperCase() }}</span>
@@ -101,6 +113,13 @@
             <i class="bi" [class.bi-check-circle-fill]="org.squareConfigured" [class.bi-dash-circle]="!org.squareConfigured"
                [class.text-success]="org.squareConfigured" [class.text-muted]="!org.squareConfigured"></i>
           </td>
+          <td>
+            <button class="feature-count-btn" (click)="toggleExpand(org)"
+                    [title]="expandedOrg === org.slug ? 'Hide features' : 'Manage features'">
+              <i class="bi bi-grid-3x3-gap me-1"></i>{{ org.features?.length || 0 }}/{{ appFeatures.length }}
+              <i class="bi ms-1" [class.bi-chevron-down]="expandedOrg !== org.slug" [class.bi-chevron-up]="expandedOrg === org.slug"></i>
+            </button>
+          </td>
           <td class="text-muted small">{{ org.createdAt | date:'MMM d, y' }}</td>
           <td>
             <div class="action-btns">
@@ -121,6 +140,27 @@
             </div>
           </td>
         </tr>
+
+        <!-- Feature toggles expander -->
+        <tr *ngIf="expandedOrg === org.slug" class="feature-row">
+          <td colspan="9">
+            <div class="feature-toggles">
+              <button *ngFor="let f of appFeatures"
+                      class="feature-pill"
+                      [class.granted]="orgHasFeature(org, f.key)"
+                      [disabled]="featureInProgress[org.slug + ':' + f.key]"
+                      (click)="toggleFeature(org, f.key)"
+                      [title]="(orgHasFeature(org, f.key) ? 'Revoke ' : 'Grant ') + f.label">
+                <span *ngIf="!featureInProgress[org.slug + ':' + f.key]">
+                  <i class="bi {{ f.icon }} me-1"></i>{{ f.label }}
+                  <i class="bi ms-1" [class.bi-check-circle-fill]="orgHasFeature(org, f.key)" [class.bi-plus-circle]="!orgHasFeature(org, f.key)"></i>
+                </span>
+                <span *ngIf="featureInProgress[org.slug + ':' + f.key]" class="spinner-border spinner-border-sm"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        </ng-container>
       </tbody>
     </table>
   </div>

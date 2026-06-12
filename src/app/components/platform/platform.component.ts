@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { PlatformService } from '../../services/platform.service';
 import { LoggerService } from '../../services/logger.service';
 import { Organization } from '../../models/organization.model';
-import { PlatformStats } from '../../models/platform.model';
+import { PlatformStats, APP_FEATURES } from '../../models/platform.model';
 
 @Component({
   selector: 'app-platform',
@@ -18,6 +18,10 @@ export class PlatformComponent implements OnInit {
   loading = true;
   error = '';
   actionInProgress: { [slug: string]: boolean } = {};
+
+  appFeatures = APP_FEATURES;
+  expandedOrg: string | null = null;
+  featureInProgress: { [key: string]: boolean } = {};
 
   constructor(
     private platformService: PlatformService,
@@ -80,5 +84,36 @@ export class PlatformComponent implements OnInit {
 
   viewOrg(slug: string): void {
     this.router.navigate(['/admin/org', slug]);
+  }
+
+  toggleExpand(org: Organization): void {
+    this.expandedOrg = this.expandedOrg === org.slug ? null : org.slug;
+  }
+
+  orgHasFeature(org: Organization, feature: string): boolean {
+    return !!org.features && org.features.includes(feature);
+  }
+
+  toggleFeature(org: Organization, feature: string): void {
+    const key = `${org.slug}:${feature}`;
+    if (this.featureInProgress[key]) return;
+    this.featureInProgress[key] = true;
+
+    const call = this.orgHasFeature(org, feature)
+      ? this.platformService.revokeFeature(org.slug, feature)
+      : this.platformService.grantFeature(org.slug, feature);
+
+    call.subscribe({
+      next: features => {
+        org.features = features;
+        this.featureInProgress[key] = false;
+        this.platformService.getStats().subscribe(stats => { this.stats = stats; });
+      },
+      error: err => {
+        alert(err?.error?.error || 'Failed to update feature.');
+        this.featureInProgress[key] = false;
+        this.logger.error(this.source, 'toggleFeature failed', err);
+      }
+    });
   }
 }

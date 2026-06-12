@@ -7,6 +7,7 @@ import { ExpenseShare } from '../../models/expense-share.model';
 import { DocumentService } from '../../services/document.service';
 import { DocumentSummary } from '../../models/document.model';
 import { VehicleService } from '../../services/vehicle.service';
+import { FeatureService } from '../../services/feature.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -35,14 +36,18 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private analyticsService: AnalyticsService,
     private shareService: ExpenseShareService,
     private docService: DocumentService,
-    private vehicleService: VehicleService
+    private vehicleService: VehicleService,
+    public features: FeatureService
   ) {}
 
   ngOnInit() {
     this.load();
     this.loadPendingShares();
-    this.loadDocSummary();
-    this.loadVehicles();
+    // Garage / Vault widgets only when the org has the feature
+    this.features.ensureLoaded().subscribe(set => {
+      if (set.has('DOCUMENT_VAULT')) this.loadDocSummary();
+      if (set.has('GARAGE')) this.loadVehicles();
+    });
   }
 
   loadDocSummary(): void {

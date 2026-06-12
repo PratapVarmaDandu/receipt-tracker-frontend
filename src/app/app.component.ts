@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter, take } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
+import { FeatureService } from './services/feature.service';
 import { UiEventsService } from './services/ui-events.service';
 import { User } from './models/user.model';
 
@@ -18,6 +19,7 @@ export class AppComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
+    public features: FeatureService,
     private router: Router,
     private uiEvents: UiEventsService
   ) {}
@@ -25,6 +27,10 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser().subscribe(user => {
       this.currentUser = user;
+      if (user) {
+        // Load feature entitlements so gated nav links can render
+        this.features.ensureLoaded().subscribe();
+      }
       if (user && !user.welcomeDismissed) {
         this.showWelcomeBanner = true;
       }

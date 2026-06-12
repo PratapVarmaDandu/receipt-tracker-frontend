@@ -15,6 +15,8 @@ export interface Organization {
   cloverConfigured: boolean;
   cloverEnvironment: 'SANDBOX' | 'PRODUCTION' | null;
   recentOrderCount: number;
+  /** Active feature grants — populated in the platform admin listing */
+  features?: string[];
 }
 
 export interface OrgMember {

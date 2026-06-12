@@ -8,6 +8,7 @@ import { Vehicle } from '../../models/vehicle.model';
 import { ReceiptService } from '../../services/receipt.service';
 import { GroupService } from '../../services/group.service';
 import { VehicleService } from '../../services/vehicle.service';
+import { FeatureService } from '../../services/feature.service';
 import { ExpenseShare } from '../../models/expense-share.model';
 
 @Component({
@@ -63,6 +64,7 @@ export class ReceiptDetailComponent implements OnInit {
     private receiptService: ReceiptService,
     private groupService: GroupService,
     private vehicleService: VehicleService,
+    public features: FeatureService,
     private fb: FormBuilder
   ) {}
 
@@ -85,9 +87,13 @@ export class ReceiptDetailComponent implements OnInit {
       error: () => {}
     });
 
-    this.vehicleService.list().subscribe({
-      next: (vehicles) => { this.myVehicles = vehicles; },
-      error: () => {}
+    this.features.ensureLoaded().subscribe(set => {
+      if (set.has('GARAGE')) {
+        this.vehicleService.list().subscribe({
+          next: (vehicles) => { this.myVehicles = vehicles; },
+          error: () => {}
+        });
+      }
     });
   }
 

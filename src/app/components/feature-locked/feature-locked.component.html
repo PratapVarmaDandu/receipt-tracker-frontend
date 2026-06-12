@@ -1,0 +1,17 @@
+<div class="locked-page">
+  <div class="locked-card">
+    <div class="locked-icon">
+      <i class="bi {{ info.icon }}"></i>
+      <span class="lock-badge"><i class="bi bi-lock-fill"></i></span>
+    </div>
+    <h2>{{ info.label }} is not included in your plan</h2>
+    <p *ngIf="info.blurb" class="blurb">{{ info.blurb }}</p>
+    <p class="hint">
+      This module isn't enabled for your organization yet.
+      Contact your administrator to add it to your plan.
+    </p>
+    <a routerLink="/dashboard" class="btn-back">
+      <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
