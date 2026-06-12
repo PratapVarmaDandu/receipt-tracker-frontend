@@ -70,6 +70,13 @@ export class FeatureService {
     return set !== null && set.has(feature);
   }
 
+  /** Clears the cache and re-fetches features. Used after a subscription purchase. */
+  reload(): Observable<Set<string>> {
+    this.features$.next(null);
+    this.inflight$ = null;
+    return this.ensureLoaded();
+  }
+
   /** Reactive view for components that need to re-render after load. */
   watch(): Observable<Set<string> | null> {
     return this.features$.asObservable();

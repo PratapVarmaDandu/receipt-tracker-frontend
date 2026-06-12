@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { PlatformService } from '../../services/platform.service';
 import { LoggerService } from '../../services/logger.service';
 import { Organization } from '../../models/organization.model';
-import { PlatformStats, APP_FEATURES } from '../../models/platform.model';
+import { PlatformStats, PlatformUser, APP_FEATURES } from '../../models/platform.model';
 
 @Component({
   selector: 'app-platform',
@@ -12,6 +12,8 @@ import { PlatformStats, APP_FEATURES } from '../../models/platform.model';
 })
 export class PlatformComponent implements OnInit {
   private readonly source = 'PlatformComponent';
+
+  activeTab: 'orgs' | 'users' = 'orgs';
 
   orgs: Organization[] = [];
   stats: PlatformStats | null = null;
@@ -22,6 +24,17 @@ export class PlatformComponent implements OnInit {
   appFeatures = APP_FEATURES;
   expandedOrg: string | null = null;
   featureInProgress: { [key: string]: boolean } = {};
+
+  // Users tab
+  users: PlatformUser[] = [];
+  usersLoading = false;
+  usersLoaded = false;
+  usersError = '';
+  expandedUserId: number | null = null;
+  userFeatureInProgress: { [key: string]: boolean } = {};
+
+  /** Personal features only — SHOP_POS stays org-scoped */
+  readonly userFeatures = APP_FEATURES.filter(f => f.key !== 'SHOP_POS');
 
   constructor(
     private platformService: PlatformService,
@@ -78,6 +91,58 @@ export class PlatformComponent implements OnInit {
       error: err => {
         alert(err?.error?.error || 'Failed to change plan.');
         this.actionInProgress[org.slug] = false;
+      }
+    });
+  }
+
+  switchTab(tab: 'orgs' | 'users'): void {
+    this.activeTab = tab;
+    if (tab === 'users' && !this.usersLoaded) this.loadUsers();
+  }
+
+  loadUsers(): void {
+    this.usersLoading = true;
+    this.usersError = '';
+    this.platformService.getUsers().subscribe({
+      next: users => {
+        this.users = users;
+        this.usersLoading = false;
+        this.usersLoaded = true;
+      },
+      error: err => {
+        this.usersError = err?.error?.error || 'Failed to load users.';
+        this.usersLoading = false;
+        this.logger.error(this.source, 'loadUsers failed', err);
+      }
+    });
+  }
+
+  toggleUserExpand(user: PlatformUser): void {
+    this.expandedUserId = this.expandedUserId === user.id ? null : user.id;
+  }
+
+  userHasFeature(user: PlatformUser, feature: string): boolean {
+    return user.features.includes(feature);
+  }
+
+  toggleUserFeature(user: PlatformUser, feature: string): void {
+    const key = `${user.id}:${feature}`;
+    if (this.userFeatureInProgress[key]) return;
+    this.userFeatureInProgress[key] = true;
+
+    const call = this.userHasFeature(user, feature)
+      ? this.platformService.revokeUserFeature(user.id, feature)
+      : this.platformService.grantUserFeature(user.id, feature);
+
+    call.subscribe({
+      next: res => {
+        user.features = res.features;
+        this.userFeatureInProgress[key] = false;
+      },
+      error: err => {
+        alert(err?.error?.error || 'Failed to update feature.');
+        this.userFeatureInProgress[key] = false;
+        this.logger.error(this.source, 'toggleUserFeature failed', err);
       }
     });
   }

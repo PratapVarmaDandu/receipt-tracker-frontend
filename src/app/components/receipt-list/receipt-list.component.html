@@ -85,10 +85,24 @@
   <p class="text-muted mt-2">Loading receipts…</p>
 </div>
 
-<!-- Empty state -->
-<div *ngIf="!loading && filtered.length === 0" class="text-center py-5">
-  <i class="bi bi-inbox" style="font-size:3rem; color:#cbd5e1;"></i>
-  <p class="text-muted mt-3">No receipts found. <a routerLink="/upload">Upload your first receipt</a></p>
+<!-- Empty state: no receipts at all -->
+<div *ngIf="!loading && receipts.length === 0" class="empty-state-block text-center py-5">
+  <i class="bi bi-receipt" style="font-size:3.5rem; color:#c7d2fe;"></i>
+  <h5 class="mt-3 mb-1">No receipts yet</h5>
+  <p class="text-muted mb-4">Scan or upload your first receipt to start tracking spending and cashback.</p>
+  <a routerLink="/upload" class="btn btn-primary">
+    <i class="bi bi-cloud-upload me-1"></i>Upload Receipt
+  </a>
+</div>
+
+<!-- Empty state: has receipts but filter returned nothing -->
+<div *ngIf="!loading && receipts.length > 0 && filtered.length === 0" class="text-center py-5">
+  <i class="bi bi-funnel" style="font-size:2.5rem; color:#cbd5e1;"></i>
+  <h6 class="mt-3 mb-1 text-muted">No receipts match your search</h6>
+  <p class="text-muted small mb-3">Try a different keyword or store type.</p>
+  <button class="btn btn-outline-secondary btn-sm" (click)="searchText=''; filterType=''; applyFilters()">
+    <i class="bi bi-x-circle me-1"></i>Clear filters
+  </button>
 </div>
 
 <!-- Receipt grid -->

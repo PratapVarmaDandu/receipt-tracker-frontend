@@ -1,0 +1,144 @@
+<div class="psq-page">
+  <div class="psq-header">
+    <h2><i class="bi bi-credit-card-2-front-fill me-2"></i>Platform Square Config</h2>
+    <p class="psq-subtitle">Steward's own Square merchant account — used for feature subscriptions on the /plans page.</p>
+  </div>
+
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div *ngIf="!loading">
+
+    <!-- Status banner -->
+    <div class="status-banner" [class.connected]="config?.configured" [class.not-configured]="!config?.configured">
+      <i class="bi me-2" [class.bi-check-circle-fill]="config?.configured" [class.bi-exclamation-circle]="!config?.configured"></i>
+      {{ config?.configured ? 'Connected — Square credentials are stored' : 'Not configured' }}
+    </div>
+
+    <div *ngIf="successMessage" class="alert alert-success mt-3">
+      <i class="bi bi-check-circle me-2"></i>{{ successMessage }}
+    </div>
+    <div *ngIf="error" class="alert alert-danger mt-3">
+      <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+    </div>
+
+    <form class="psq-form" (ngSubmit)="save()" #f="ngForm">
+
+      <!-- Credentials -->
+      <div class="form-section">
+        <div class="section-title">Credentials</div>
+
+        <div class="form-group">
+          <label>Access Token</label>
+          <div class="input-reveal">
+            <input [type]="showToken ? 'text' : 'password'"
+                   [(ngModel)]="accessToken" name="accessToken"
+                   class="form-control"
+                   placeholder="{{ config?.configured ? '(stored — paste to replace)' : 'sq0atp-...' }}" />
+            <button type="button" class="btn-reveal" (click)="showToken = !showToken" tabindex="-1">
+              <i class="bi" [class.bi-eye]="!showToken" [class.bi-eye-slash]="showToken"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Application ID</label>
+            <input type="text" [(ngModel)]="applicationId" name="applicationId"
+                   class="form-control" placeholder="sq0idp-..." />
+          </div>
+          <div class="form-group">
+            <label>Location ID</label>
+            <input type="text" [(ngModel)]="locationId" name="locationId"
+                   class="form-control" placeholder="L..." />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Environment</label>
+          <select [(ngModel)]="environment" name="environment" class="form-select">
+            <option value="SANDBOX">Sandbox</option>
+            <option value="PRODUCTION">Production</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Webhook Signature Key</label>
+          <div class="input-reveal">
+            <input [type]="showWebhookKey ? 'text' : 'password'"
+                   [(ngModel)]="webhookSignatureKey" name="webhookSignatureKey"
+                   class="form-control"
+                   placeholder="{{ config?.configured ? '(stored — paste to replace)' : 'Signature key from Square Dashboard' }}" />
+            <button type="button" class="btn-reveal" (click)="showWebhookKey = !showWebhookKey" tabindex="-1">
+              <i class="bi" [class.bi-eye]="!showWebhookKey" [class.bi-eye-slash]="showWebhookKey"></i>
+            </button>
+          </div>
+          <div class="form-hint">Square Dashboard → Webhooks → endpoint → Signature key</div>
+        </div>
+      </div>
+
+      <!-- Subscription Plan IDs -->
+      <div class="form-section">
+        <div class="section-title">Subscription Plan IDs</div>
+        <div class="form-hint mb-3">Copy from Square Dashboard → Catalog → Subscription Plans → each plan's variation ID.</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Garage Plan ID</label>
+            <input type="text" [(ngModel)]="planIdGarage" name="planIdGarage"
+                   class="form-control" placeholder="plan-variation-id" />
+          </div>
+          <div class="form-group">
+            <label>Document Vault Plan ID</label>
+            <input type="text" [(ngModel)]="planIdVault" name="planIdVault"
+                   class="form-control" placeholder="plan-variation-id" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Job Tracker Plan ID</label>
+            <input type="text" [(ngModel)]="planIdJobs" name="planIdJobs"
+                   class="form-control" placeholder="plan-variation-id" />
+          </div>
+          <div class="form-group">
+            <label>Full Suite Plan ID</label>
+            <input type="text" [(ngModel)]="planIdSuite" name="planIdSuite"
+                   class="form-control" placeholder="plan-variation-id" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Test + Save + Clear -->
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline-secondary"
+                [disabled]="!config?.configured || testing"
+                (click)="testConnection()">
+          <span *ngIf="!testing"><i class="bi bi-wifi me-1"></i>Test Connection</span>
+          <span *ngIf="testing"><span class="spinner-border spinner-border-sm me-1"></span>Testing…</span>
+        </button>
+
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          <span *ngIf="!saving"><i class="bi bi-floppy me-1"></i>Save</span>
+          <span *ngIf="saving"><span class="spinner-border spinner-border-sm me-1"></span>Saving…</span>
+        </button>
+
+        <button type="button" class="btn btn-outline-danger ms-auto"
+                *ngIf="config?.configured"
+                (click)="clearConfig()">
+          <i class="bi bi-trash me-1"></i>Clear Config
+        </button>
+      </div>
+    </form>
+
+    <!-- Test result -->
+    <div *ngIf="testResult" class="alert mt-3"
+         [class.alert-success]="testResult.success"
+         [class.alert-danger]="!testResult.success">
+      <i class="bi me-2"
+         [class.bi-check-circle-fill]="testResult.success"
+         [class.bi-x-circle-fill]="!testResult.success"></i>{{ testResult.message }}
+    </div>
+
+  </div>
+</div>

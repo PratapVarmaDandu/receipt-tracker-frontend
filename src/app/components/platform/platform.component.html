@@ -1,10 +1,28 @@
 <div class="platform-page">
   <div class="platform-header">
     <h2><i class="bi bi-shield-lock-fill me-2"></i>Platform Admin</h2>
-    <button class="btn btn-sm btn-outline-secondary" (click)="load()">
-      <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+    <div class="header-actions">
+      <a routerLink="/platform/square-config" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-credit-card-2-front me-1"></i>Square Config
+      </a>
+      <button class="btn btn-sm btn-outline-secondary" (click)="load()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="platform-tabs">
+    <button class="ptab" [class.active]="activeTab === 'orgs'" (click)="switchTab('orgs')">
+      <i class="bi bi-building me-1"></i>Organizations
+    </button>
+    <button class="ptab" [class.active]="activeTab === 'users'" (click)="switchTab('users')">
+      <i class="bi bi-people me-1"></i>Users
     </button>
   </div>
+
+  <!-- ═══ ORGS TAB ═══════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'orgs'">
 
   <!-- Stats row -->
   <div class="platform-stats" *ngIf="stats">
@@ -164,4 +182,90 @@
       </tbody>
     </table>
   </div>
+
+  </ng-container>
+  <!-- ═══ END ORGS TAB ══════════════════════════════════════════════════════ -->
+
+  <!-- ═══ USERS TAB ══════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'users'">
+
+    <div *ngIf="usersLoading" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2 text-muted">Loading users…</p>
+    </div>
+
+    <div *ngIf="usersError" class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ usersError }}
+    </div>
+
+    <div *ngIf="!usersLoading && users.length === 0 && !usersError" class="empty-state">
+      <i class="bi bi-people"></i>
+      <h5>No users found</h5>
+    </div>
+
+    <div *ngIf="!usersLoading && users.length > 0" class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Joined</th>
+            <th>Role</th>
+            <th>Features</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let user of users">
+            <tr>
+              <td>
+                <div class="owner-cell">
+                  <div class="owner-name">{{ user.name }}</div>
+                  <div class="owner-email text-muted">{{ user.email }}</div>
+                </div>
+              </td>
+              <td class="text-muted small">{{ user.joinedAt | date:'MMM d, y' }}</td>
+              <td>
+                <span *ngIf="user.platformAdmin" class="badge bg-warning text-dark">Platform Admin</span>
+                <span *ngIf="!user.platformAdmin" class="text-muted small">User</span>
+              </td>
+              <td>
+                <button class="feature-count-btn" (click)="toggleUserExpand(user)"
+                        [title]="expandedUserId === user.id ? 'Hide features' : 'Manage features'">
+                  <i class="bi bi-grid-3x3-gap me-1"></i>{{ user.features.length }}/{{ userFeatures.length }}
+                  <i class="bi ms-1"
+                     [class.bi-chevron-down]="expandedUserId !== user.id"
+                     [class.bi-chevron-up]="expandedUserId === user.id"></i>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Feature toggles expander -->
+            <tr *ngIf="expandedUserId === user.id" class="feature-row">
+              <td colspan="4">
+                <div class="feature-toggles">
+                  <button *ngFor="let f of userFeatures"
+                          class="feature-pill"
+                          [class.granted]="userHasFeature(user, f.key)"
+                          [disabled]="userFeatureInProgress[user.id + ':' + f.key]"
+                          (click)="toggleUserFeature(user, f.key)"
+                          [title]="(userHasFeature(user, f.key) ? 'Revoke ' : 'Grant ') + f.label">
+                    <span *ngIf="!userFeatureInProgress[user.id + ':' + f.key]">
+                      <i class="bi {{ f.icon }} me-1"></i>{{ f.label }}
+                      <i class="bi ms-1"
+                         [class.bi-check-circle-fill]="userHasFeature(user, f.key)"
+                         [class.bi-plus-circle]="!userHasFeature(user, f.key)"></i>
+                    </span>
+                    <span *ngIf="userFeatureInProgress[user.id + ':' + f.key]"
+                          class="spinner-border spinner-border-sm"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+  <!-- ═══ END USERS TAB ════════════════════════════════════════════════════ -->
+
 </div>

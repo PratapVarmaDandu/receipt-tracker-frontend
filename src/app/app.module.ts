@@ -46,6 +46,8 @@ import { AdminCloverComponent } from './components/admin-clover/admin-clover.com
 import { AdminOrdersComponent } from './components/admin-orders/admin-orders.component';
 import { PlatformComponent } from './components/platform/platform.component';
 import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
+import { PlansComponent } from './components/plans/plans.component';
+import { PlatformSquareConfigComponent } from './components/platform-square-config/platform-square-config.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -89,7 +91,9 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     AdminCloverComponent,
     AdminOrdersComponent,
     PlatformComponent,
-    FeatureLockedComponent
+    FeatureLockedComponent,
+    PlansComponent,
+    PlatformSquareConfigComponent
   ],
   imports: [
     BrowserModule,

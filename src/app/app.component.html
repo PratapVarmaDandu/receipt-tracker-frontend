@@ -65,6 +65,9 @@
         <a *ngIf="features.has('SHOP_POS') || hasPublicShop" routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-shop"></i> Shop
         </a>
+        <a routerLink="/plans" routerLinkActive="active" (click)="closeSidebar()">
+          <i class="bi bi-bag-check"></i> Plans
+        </a>
         <a routerLink="/admin" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-building"></i> Admin
         </a>

@@ -135,7 +135,10 @@
   <div class="empty-state" *ngIf="!loading && apps.length === 0 && !showAddPanel">
     <i class="bi bi-briefcase"></i>
     <h3>No applications yet</h3>
-    <p>Start tracking your job search — add your first application above.</p>
+    <p>Track every role you apply to — interviews, contacts, follow-ups and offers in one place.</p>
+    <button class="btn btn-primary mt-2" (click)="toggleAddPanel()">
+      <i class="bi bi-plus-circle me-1"></i>Add Your First Application
+    </button>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -158,6 +161,7 @@
         <!-- Empty column placeholder -->
         <div class="col-empty" *ngIf="columnApps(col).length === 0">
           <i class="bi bi-inbox"></i>
+          <span>No applications</span>
         </div>
 
         <div class="kanban-card" *ngFor="let app of columnApps(col); trackBy: trackById"

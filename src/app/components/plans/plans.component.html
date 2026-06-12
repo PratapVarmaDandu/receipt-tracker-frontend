@@ -1,0 +1,84 @@
+<div class="plans-page">
+  <div class="plans-header">
+    <h2><i class="bi bi-bag-check-fill me-2"></i>Plans &amp; Features</h2>
+    <p class="plans-subtitle">Unlock features with a monthly subscription. Cancel anytime.</p>
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success d-flex align-items-center gap-2">
+    <i class="bi bi-check-circle-fill"></i>{{ successMessage }}
+  </div>
+
+  <div *ngIf="configError" class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-2"></i>{{ configError }}
+  </div>
+
+  <!-- Plan cards grid -->
+  <div class="plan-grid" *ngIf="!selectedPlan">
+    <div class="plan-card" *ngFor="let plan of plans"
+         [class.owned]="isPlanOwned(plan)"
+         [class.suite]="plan.key === 'FULL_SUITE'">
+
+      <div class="plan-icon">
+        <i class="bi {{ plan.icon }}"></i>
+      </div>
+      <div class="plan-name">{{ plan.label }}</div>
+      <div class="plan-price">{{ plan.price }}</div>
+      <p class="plan-blurb">{{ plan.blurb }}</p>
+
+      <div *ngIf="isPlanOwned(plan)" class="plan-owned-badge">
+        <i class="bi bi-check-circle-fill me-1"></i>Active
+      </div>
+      <button *ngIf="!isPlanOwned(plan)"
+              class="btn-subscribe"
+              [disabled]="!!configError || !squareConfig?.configured"
+              (click)="selectPlan(plan)">
+        Subscribe
+      </button>
+    </div>
+  </div>
+
+  <!-- Checkout panel -->
+  <div class="checkout-panel" *ngIf="selectedPlan">
+    <div class="checkout-card">
+      <div class="checkout-header">
+        <i class="bi {{ selectedPlan.icon }} me-2"></i>
+        <span>{{ selectedPlan.label }} — {{ selectedPlan.price }}</span>
+        <button class="btn-close-checkout" (click)="cancelSelection()" title="Cancel">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <p class="checkout-blurb">{{ selectedPlan.blurb }}</p>
+
+      <div *ngIf="sdkError" class="alert alert-danger small">
+        <i class="bi bi-exclamation-triangle me-1"></i>{{ sdkError }}
+      </div>
+
+      <div *ngIf="error" class="alert alert-danger small">
+        <i class="bi bi-x-circle me-1"></i>{{ error }}
+      </div>
+
+      <div class="card-form-label">Card details</div>
+      <div id="plans-card-container"></div>
+
+      <div *ngIf="!cardReady && !sdkError" class="card-loading">
+        <div class="spinner-border spinner-border-sm text-primary me-2"></div>Loading payment form…
+      </div>
+
+      <div class="checkout-actions">
+        <button class="btn-pay"
+                [disabled]="!cardReady || submitting"
+                (click)="subscribe()">
+          <span *ngIf="!submitting">
+            <i class="bi bi-lock-fill me-1"></i>Pay {{ selectedPlan.price }}
+          </span>
+          <span *ngIf="submitting">
+            <span class="spinner-border spinner-border-sm me-1"></span>Processing…
+          </span>
+        </button>
+        <button class="btn-cancel" [disabled]="submitting" (click)="cancelSelection()">Cancel</button>
+      </div>
+      <p class="secure-note"><i class="bi bi-shield-lock me-1"></i>Secured by Square. Card details never touch our servers.</p>
+    </div>
+  </div>
+</div>

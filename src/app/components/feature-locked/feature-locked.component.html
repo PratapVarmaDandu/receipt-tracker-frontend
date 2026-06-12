@@ -7,9 +7,11 @@
     <h2>{{ info.label }} is not included in your plan</h2>
     <p *ngIf="info.blurb" class="blurb">{{ info.blurb }}</p>
     <p class="hint">
-      This module isn't enabled for your organization yet.
-      Contact your administrator to add it to your plan.
+      This feature requires a subscription. Unlock it in seconds on the Plans page.
     </p>
+    <a routerLink="/plans" class="btn-plans">
+      <i class="bi bi-bag-check"></i> View Plans
+    </a>
     <a routerLink="/dashboard" class="btn-back">
       <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>

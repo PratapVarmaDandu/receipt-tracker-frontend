@@ -31,6 +31,8 @@ import { AdminCloverComponent } from './components/admin-clover/admin-clover.com
 import { AdminOrdersComponent } from './components/admin-orders/admin-orders.component';
 import { PlatformComponent } from './components/platform/platform.component';
 import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
+import { PlansComponent } from './components/plans/plans.component';
+import { PlatformSquareConfigComponent } from './components/platform-square-config/platform-square-config.component';
 import { AuthGuard } from './guards/auth.guard';
 import { FeatureGuard } from './guards/feature.guard';
 
@@ -69,7 +71,9 @@ const routes: Routes = [
   { path: 'admin/org/:slug/square',       component: AdminSquareComponent,    canActivate: [AuthGuard] },
   { path: 'admin/org/:slug/clover',       component: AdminCloverComponent,    canActivate: [AuthGuard] },
   { path: 'admin/org/:slug/orders',       component: AdminOrdersComponent,    canActivate: [AuthGuard] },
-  { path: 'platform',                     component: PlatformComponent,       canActivate: [AuthGuard] },
+  { path: 'platform',                     component: PlatformComponent,            canActivate: [AuthGuard] },
+  { path: 'platform/square-config',       component: PlatformSquareConfigComponent, canActivate: [AuthGuard] },
+  { path: 'plans',                        component: PlansComponent,               canActivate: [AuthGuard] },
 
   { path: '**', redirectTo: 'dashboard' }
 ];
