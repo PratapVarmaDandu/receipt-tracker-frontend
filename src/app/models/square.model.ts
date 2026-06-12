@@ -8,6 +8,7 @@ export interface StoreLocation {
   orgSlug?: string;    // set when this location comes from an org's Square or Clover config
   provider?: 'square' | 'clover';  // single-provider orgs
   providers?: ('square' | 'clover')[];  // set when org has BOTH Square + Clover configured
+  isPublic?: boolean;  // true when location comes from a public store (no membership required)
 }
 
 export interface SquareVariation {

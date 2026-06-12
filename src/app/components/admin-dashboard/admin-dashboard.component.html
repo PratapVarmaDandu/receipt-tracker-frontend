@@ -134,6 +134,35 @@
       </div>
     </div>
 
+    <!-- Public store toggle (OWNER only, only when a POS is configured) -->
+    <div class="public-store-card" *ngIf="isOwner() && (org.squareConfigured || org.cloverConfigured)">
+      <div class="public-store-left">
+        <i class="bi" [class.bi-globe2]="org.publicStore" [class.bi-lock-fill]="!org.publicStore"
+           [class.text-success]="org.publicStore" [class.text-muted]="!org.publicStore"></i>
+        <div>
+          <div class="public-store-title">
+            Public Storefront
+            <span class="public-store-badge" [class.active]="org.publicStore">
+              {{ org.publicStore ? 'PUBLIC' : 'MEMBERS ONLY' }}
+            </span>
+          </div>
+          <div class="public-store-desc" *ngIf="!org.publicStore">
+            Only org members can browse and purchase. Enable to let any platform user shop here.
+          </div>
+          <div class="public-store-desc" *ngIf="org.publicStore">
+            Any logged-in user can browse and purchase from this store — no membership required.
+          </div>
+        </div>
+      </div>
+      <button class="btn-public-toggle" [class.active]="org.publicStore"
+              [disabled]="publicStoreUpdating" (click)="togglePublicStore()">
+        <span *ngIf="publicStoreUpdating" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="!publicStoreUpdating" class="bi me-1"
+           [class.bi-eye-slash]="org.publicStore" [class.bi-eye]="!org.publicStore"></i>
+        {{ org.publicStore ? 'Make Private' : 'Make Public' }}
+      </button>
+    </div>
+
     <!-- Danger zone (OWNER only) -->
     <div class="danger-zone" *ngIf="isOwner()">
       <div class="danger-label">Danger Zone</div>

@@ -51,6 +51,12 @@ export class OrganizationService {
     );
   }
 
+  setPublicStore(slug: string, enabled: boolean): Observable<Organization> {
+    return this.http.put<Organization>(`${this.base}/${slug}/public-store`, { enabled }).pipe(
+      catchError(err => { this.logger.error(this.source, 'setPublicStore failed', err); throw err; })
+    );
+  }
+
   // ── Members ───────────────────────────────────────────────────────────────
 
   listMembers(slug: string): Observable<OrgMember[]> {
@@ -188,6 +194,57 @@ export class OrganizationService {
     const t = Date.now();
     return this.http.get<OrgOrder[]>(`${this.base}/${slug}/orders`).pipe(
       catchError(err => { this.logger.apiError(this.source, 'GET', `/${slug}/orders`, err, t); return of([]); })
+    );
+  }
+
+  // ── Public shop (no membership required) ─────────────────────────────────
+
+  getPublicStores(): Observable<{ slug: string; name: string; squareConfigured: boolean; cloverConfigured: boolean }[]> {
+    const t = Date.now();
+    return this.http.get<any[]>(`${environment.apiUrl}/shop/public`).pipe(
+      catchError(err => { this.logger.apiError(this.source, 'GET', '/shop/public', err, t); return of([]); })
+    );
+  }
+
+  getPublicSquareConfig(slug: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiUrl}/shop/public/${slug}/square/config`).pipe(
+      catchError(err => { this.logger.error(this.source, 'getPublicSquareConfig failed', err); throw err; })
+    );
+  }
+
+  getPublicOrgLocations(slug: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/shop/public/${slug}/square/locations`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  getPublicOrgCloverLocations(slug: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/shop/public/${slug}/clover/locations`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  getPublicOrgCatalog(slug: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/shop/public/${slug}/square/catalog`).pipe(
+      catchError(err => { this.logger.error(this.source, 'getPublicOrgCatalog failed', err); throw err; })
+    );
+  }
+
+  getPublicOrgCloverCatalog(slug: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiUrl}/shop/public/${slug}/clover/catalog`).pipe(
+      catchError(err => { this.logger.error(this.source, 'getPublicOrgCloverCatalog failed', err); throw err; })
+    );
+  }
+
+  createPublicOrgPayment(slug: string, req: any): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/shop/public/${slug}/square/payments`, req).pipe(
+      catchError(err => { this.logger.error(this.source, 'createPublicOrgPayment failed', err); throw err; })
+    );
+  }
+
+  createPublicOrgCloverOrder(slug: string, req: any): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/shop/public/${slug}/clover/orders`, req).pipe(
+      catchError(err => { this.logger.error(this.source, 'createPublicOrgCloverOrder failed', err); throw err; })
     );
   }
 }

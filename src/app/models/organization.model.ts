@@ -10,6 +10,7 @@ export interface Organization {
   memberCount: number;
   createdAt: string;
   myRole: OrgRole;
+  publicStore: boolean;
   squareConfigured: boolean;
   squareEnvironment: 'SANDBOX' | 'PRODUCTION' | null;
   cloverConfigured: boolean;

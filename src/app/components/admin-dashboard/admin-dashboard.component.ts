@@ -23,6 +23,7 @@ export class AdminDashboardComponent implements OnInit {
   editError = '';
 
   deleting = false;
+  publicStoreUpdating = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -85,6 +86,20 @@ export class AdminDashboardComponent implements OnInit {
       error: err => {
         this.error = err?.error?.error || 'Failed to delete organization.';
         this.deleting = false;
+      }
+    });
+  }
+
+  togglePublicStore(): void {
+    const current = this.org!.publicStore;
+    const action = current ? 'make private' : 'make public';
+    if (!confirm(`Are you sure you want to ${action} this store? ${current ? 'Members only will be able to browse.' : 'Anyone on the platform can browse and purchase.'}`)) return;
+    this.publicStoreUpdating = true;
+    this.orgService.setPublicStore(this.org!.slug, !current).subscribe({
+      next: updated => { this.org = updated; this.publicStoreUpdating = false; },
+      error: err => {
+        alert(err?.error?.error || 'Failed to update public store setting.');
+        this.publicStoreUpdating = false;
       }
     });
   }

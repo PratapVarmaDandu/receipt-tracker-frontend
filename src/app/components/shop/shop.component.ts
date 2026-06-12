@@ -64,8 +64,8 @@ export class ShopComponent implements OnInit {
     this.locationsLoading = true;
     this.locationsError = '';
 
-    // All locations come from per-org Square / Clover credentials — no global env-var fallback
-    this.orgService.listMine().pipe(
+    // Member-org locations
+    const member$ = this.orgService.listMine().pipe(
       switchMap(orgs => {
         const sqCalls = orgs
           .filter(o => o.squareConfigured)
@@ -83,18 +83,42 @@ export class ShopComponent implements OnInit {
 
         const all = [...sqCalls, ...cloverCalls];
         if (all.length === 0) return of([] as StoreLocation[]);
-        return forkJoin(all).pipe(
-          map(results => ([] as StoreLocation[]).concat(...results))
-        );
+        return forkJoin(all).pipe(map(results => ([] as StoreLocation[]).concat(...results)));
       }),
       catchError(() => of([] as StoreLocation[]))
-    ).subscribe(orgLocs => {
-      // Deduplicate by orgSlug — merge Square + Clover for the same org into one entry
+    );
+
+    // Public store locations (fetched in parallel)
+    const public$ = this.orgService.getPublicStores().pipe(
+      switchMap(stores => {
+        const sqCalls = stores
+          .filter(s => s.squareConfigured)
+          .map(s => this.orgService.getPublicOrgLocations(s.slug).pipe(
+            map((locs: any[]) => locs.map(l => ({ ...l, orgSlug: s.slug, provider: 'square' as const, isPublic: true } as StoreLocation))),
+            catchError(() => of([] as StoreLocation[]))
+          ));
+        const cloverCalls = stores
+          .filter(s => s.cloverConfigured)
+          .map(s => this.orgService.getPublicOrgCloverLocations(s.slug).pipe(
+            map((locs: any[]) => locs.map(l => ({ ...l, orgSlug: s.slug, provider: 'clover' as const, isPublic: true } as StoreLocation))),
+            catchError(() => of([] as StoreLocation[]))
+          ));
+        const all = [...sqCalls, ...cloverCalls];
+        if (all.length === 0) return of([] as StoreLocation[]);
+        return forkJoin(all).pipe(map(results => ([] as StoreLocation[]).concat(...results)));
+      }),
+      catchError(() => of([] as StoreLocation[]))
+    );
+
+    forkJoin([member$, public$]).subscribe(([memberLocs, publicLocs]) => {
+      // Deduplicate by orgSlug — member access takes priority over public; merge providers
       const orgLocBySlug = new Map<string, StoreLocation>();
-      for (const loc of orgLocs) {
+
+      for (const loc of [...memberLocs, ...publicLocs]) {
         if (!loc.orgSlug) continue;
         const existing = orgLocBySlug.get(loc.orgSlug);
         if (existing) {
+          // Merge provider; member entry clears isPublic flag
           const currentProviders: ('square' | 'clover')[] =
             existing.providers ?? (existing.provider ? [existing.provider] : []);
           const newProvider = loc.provider;
@@ -102,6 +126,7 @@ export class ShopComponent implements OnInit {
             existing.providers = [...currentProviders, newProvider];
             delete existing.provider;
           }
+          if (!loc.isPublic) existing.isPublic = false;
         } else {
           orgLocBySlug.set(loc.orgSlug, { ...loc });
         }
@@ -123,7 +148,7 @@ export class ShopComponent implements OnInit {
       }
 
       if (this.locations.length === 0) {
-        this.locationsError = 'No stores available. Set up Square or Clover credentials in Admin → your Org.';
+        this.locationsError = 'No stores available.';
       }
     });
   }
@@ -164,19 +189,26 @@ export class ShopComponent implements OnInit {
       return;
     }
 
+    const isPublic = !!loc.isPublic;
     let catalog$: Observable<SquareCatalogItem[]>;
 
     if (providers && providers.length > 1) {
       // Org has both Square + Clover — fetch in parallel, merge, stamp source
       const calls: Observable<SquareCatalogItem[]>[] = [];
       if (providers.includes('square')) {
-        calls.push(this.orgService.getOrgCatalog(orgSlug).pipe(
+        const sq$ = isPublic
+          ? this.orgService.getPublicOrgCatalog(orgSlug)
+          : this.orgService.getOrgCatalog(orgSlug);
+        calls.push(sq$.pipe(
           map((items: any[]) => items.map(i => ({ ...i, source: 'square' as const }))),
           catchError(() => of([] as SquareCatalogItem[]))
         ));
       }
       if (providers.includes('clover')) {
-        calls.push(this.orgService.getOrgCloverCatalog(orgSlug).pipe(
+        const cl$ = isPublic
+          ? this.orgService.getPublicOrgCloverCatalog(orgSlug)
+          : this.orgService.getOrgCloverCatalog(orgSlug);
+        calls.push(cl$.pipe(
           map((items: any[]) => items.map(i => ({ ...i, source: 'clover' as const }))),
           catchError(() => of([] as SquareCatalogItem[]))
         ));
@@ -185,11 +217,15 @@ export class ShopComponent implements OnInit {
         map(results => ([] as SquareCatalogItem[]).concat(...results))
       );
     } else if (provider === 'clover') {
-      catalog$ = this.orgService.getOrgCloverCatalog(orgSlug).pipe(
-        map((items: any[]) => items.map(i => ({ ...i, source: 'clover' as const })))
-      );
+      const cl$ = isPublic
+        ? this.orgService.getPublicOrgCloverCatalog(orgSlug)
+        : this.orgService.getOrgCloverCatalog(orgSlug);
+      catalog$ = cl$.pipe(map((items: any[]) => items.map(i => ({ ...i, source: 'clover' as const }))));
     } else {
-      catalog$ = this.orgService.getOrgCatalog(orgSlug).pipe(
+      const sq$ = isPublic
+        ? this.orgService.getPublicOrgCatalog(orgSlug)
+        : this.orgService.getOrgCatalog(orgSlug);
+      catalog$ = sq$.pipe(
         map((items: any[]) => items.map(i => ({ ...i, source: 'square' as const }))),
         catchError(err => { throw err; })
       );

@@ -93,12 +93,17 @@ export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
       (providers && providers.length === 1 && providers[0] === 'clover');
     if (isCloverOnlyStore) return;
 
-    // All Square config is per-org — no global env-var fallback
     if (!orgSlug) {
       this.sdkError = 'No store selected. Please go back and choose a store.';
       return;
     }
-    this.orgService.getSquareConfig(orgSlug).subscribe({
+
+    // Public stores expose their Square config via a separate public endpoint
+    const config$ = selectedLocation?.isPublic
+      ? this.orgService.getPublicSquareConfig(orgSlug)
+      : this.orgService.getSquareConfig(orgSlug);
+
+    config$.subscribe({
       next: cfg => {
         if (!cfg.configured || !cfg.applicationId || !cfg.locationId) {
           this.sdkError = 'Square is not fully configured for this organization.';
@@ -108,7 +113,7 @@ export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: err => {
         this.sdkError = 'Could not load payment configuration.';
-        this.logger.error(this.source, 'getSquareConfig (org) failed', err);
+        this.logger.error(this.source, 'getSquareConfig failed', err);
       }
     });
   }
@@ -189,7 +194,11 @@ export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
         note:            this.note.trim() || undefined
       };
 
-      this.orgService.createOrgCloverOrder(orgSlug!, request).subscribe({
+      const cloverOrder$ = selectedLocation?.isPublic
+        ? this.orgService.createPublicOrgCloverOrder(orgSlug!, request)
+        : this.orgService.createOrgCloverOrder(orgSlug!, request);
+
+      cloverOrder$.subscribe({
         next: (res: OrderResponse) => {
           this.cartService.clearCart();
           this.submitting = false;
@@ -242,8 +251,9 @@ export class CheckoutComponent implements OnInit, AfterViewInit, OnDestroy {
         locationId: selectedLocation?.id
       };
 
-      // All payments are org-scoped — orgSlug is always set at this point
-      const payment$: Observable<OrderResponse> = this.orgService.createOrgPayment(orgSlug!, request);
+      const payment$: Observable<OrderResponse> = selectedLocation?.isPublic
+        ? this.orgService.createPublicOrgPayment(orgSlug!, request)
+        : this.orgService.createOrgPayment(orgSlug!, request);
 
       payment$.subscribe({
         next: (res: OrderResponse) => {
