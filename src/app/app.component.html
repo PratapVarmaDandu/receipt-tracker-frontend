@@ -62,7 +62,7 @@
         <a *ngIf="features.has('JOB_TRACKER')" routerLink="/jobs" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-briefcase"></i> Job Tracker
         </a>
-        <a *ngIf="features.has('SHOP_POS')" routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
+        <a *ngIf="features.has('SHOP_POS') || hasPublicShop" routerLink="/shop" routerLinkActive="active" (click)="closeSidebar()">
           <i class="bi bi-shop"></i> Shop
         </a>
         <a routerLink="/admin" routerLinkActive="active" (click)="closeSidebar()">

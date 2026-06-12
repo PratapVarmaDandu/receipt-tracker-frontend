@@ -3,6 +3,7 @@ import { Router, NavigationEnd } from '@angular/router';
 import { filter, take } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
+import { OrganizationService } from './services/organization.service';
 import { UiEventsService } from './services/ui-events.service';
 import { User } from './models/user.model';
 
@@ -16,10 +17,12 @@ export class AppComponent implements OnInit {
   isLoginPage = false;
   showWelcomeBanner = false;
   sidebarOpen = false;
+  hasPublicShop = false;
 
   constructor(
     private authService: AuthService,
     public features: FeatureService,
+    private orgService: OrganizationService,
     private router: Router,
     private uiEvents: UiEventsService
   ) {}
@@ -30,6 +33,12 @@ export class AppComponent implements OnInit {
       if (user) {
         // Load feature entitlements so gated nav links can render
         this.features.ensureLoaded().subscribe();
+        // Show Shop nav if any public store exists (regardless of SHOP_POS entitlement)
+        this.orgService.getPublicStores().subscribe(
+          stores => { this.hasPublicShop = stores.length > 0; }
+        );
+      } else {
+        this.hasPublicShop = false;
       }
       if (user && !user.welcomeDismissed) {
         this.showWelcomeBanner = true;
