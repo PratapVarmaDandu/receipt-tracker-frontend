@@ -182,21 +182,28 @@ export class ShareDialogComponent implements OnInit {
     if (set.has(itemId)) { set.delete(itemId); } else { set.add(itemId); }
   }
 
-  /** Subtotal of items assigned to an invitee (before tax). */
+  /** Number of invitees assigned to a given item (minimum 1). */
+  private itemAssigneeCount(itemId: number): number {
+    let count = 0;
+    this.itemAssignments.forEach(set => { if (set.has(itemId)) count++; });
+    return Math.max(1, count);
+  }
+
+  /** Subtotal of items assigned to an invitee (before tax), split by assignee count. */
   inviteeSubtotal(email: string): number {
     const ids = this.itemAssignments.get(email) ?? new Set<number>();
     return this.receipt.items
       .filter(i => i.id != null && ids.has(i.id))
-      .reduce((s, i) => s + (i.totalPrice || 0), 0);
+      .reduce((s, i) => s + (i.totalPrice || 0) / this.itemAssigneeCount(i.id!), 0);
   }
 
-  /** Tax amount for taxable items assigned to an invitee. */
+  /** Tax amount for taxable items assigned to an invitee, split by assignee count. */
   inviteeTax(email: string): number {
     const ids = this.itemAssignments.get(email) ?? new Set<number>();
     const rate = this.effectiveTaxRate;
     return this.receipt.items
       .filter(i => i.id != null && ids.has(i.id) && i.taxable)
-      .reduce((s, i) => s + (i.totalPrice || 0) * rate, 0);
+      .reduce((s, i) => s + ((i.totalPrice || 0) / this.itemAssigneeCount(i.id!)) * rate, 0);
   }
 
   inviteeTotal(email: string): number {
