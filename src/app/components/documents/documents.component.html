@@ -140,7 +140,7 @@
       <div class="col-md-3">
         <label class="form-label form-label-sm fw-500">Category *</label>
         <select class="form-select form-select-sm" [(ngModel)]="uploadForm.category"
-                (ngModelChange)="uploadForm.subcategory=''">
+                (ngModelChange)="onCategoryChange()">
           <option *ngFor="let cat of categories" [value]="cat">{{ CATEGORY_LABELS[cat] }}</option>
         </select>
       </div>
@@ -166,7 +166,7 @@
         <label class="form-label form-label-sm fw-500">Visa / Doc Type</label>
         <select class="form-select form-select-sm" [(ngModel)]="uploadForm.subcategory">
           <option value="">— select type —</option>
-          <optgroup *ngFor="let grp of subcategoryGroups" [label]="grp.label">
+          <optgroup *ngFor="let grp of subcategoryGroupsList" [label]="grp.label">
             <option *ngFor="let o of grp.options" [value]="o.value">{{ o.label }}</option>
           </optgroup>
         </select>

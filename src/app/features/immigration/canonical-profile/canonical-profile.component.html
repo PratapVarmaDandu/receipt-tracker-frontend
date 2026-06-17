@@ -1,0 +1,565 @@
+<div class="page-header">
+  <a routerLink="/immigration" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Cases
+  </a>
+  <h2><i class="bi bi-person-vcard me-2"></i>My Profile</h2>
+  <div class="header-actions">
+    <span *ngIf="savedOk" class="save-ok text-success me-3">
+      <i class="bi bi-check-circle me-1"></i>Saved
+    </span>
+    <button class="btn btn-primary" (click)="save()" [disabled]="saving || loading">
+      <span *ngIf="saving"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+      <span *ngIf="!saving"><i class="bi bi-floppy me-1"></i>Save</span>
+    </button>
+  </div>
+</div>
+
+<div *ngIf="loading" class="text-center py-5 text-muted">
+  <i class="bi bi-arrow-repeat spin me-2"></i>Loading…
+</div>
+<div *ngIf="loadError" class="alert alert-danger">{{ loadError }}</div>
+
+<ng-container *ngIf="!loading && !loadError">
+
+  <div *ngIf="saveError" class="alert alert-danger mb-3">{{ saveError }}</div>
+
+  <p class="text-muted mb-3" style="font-size:.85rem">
+    This information is used to prepare your case documents. All fields are optional
+    and can be updated at any time.
+  </p>
+
+  <!-- Tab bar -->
+  <div class="profile-tabs mb-4">
+    <button *ngFor="let t of tabs" class="tab-btn" [class.active]="activeTab === t.id" (click)="setTab(t.id)">
+      <i class="bi {{t.icon}} me-1"></i>{{ t.label }}
+    </button>
+  </div>
+
+  <!-- ── Tab: Personal Info ─────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'bio'" class="card p-3">
+    <h5 class="section-title">Personal Information</h5>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Legal First Name</label>
+        <input class="form-control" [(ngModel)]="form.legalFirstName" placeholder="As on passport">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Middle Name</label>
+        <input class="form-control" [(ngModel)]="form.middleName" placeholder="Optional">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Legal Last Name</label>
+        <input class="form-control" [(ngModel)]="form.legalLastName" placeholder="As on passport">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Date of Birth</label>
+        <input class="form-control" type="date" [(ngModel)]="form.dateOfBirth">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Country of Birth</label>
+        <input class="form-control" [(ngModel)]="form.countryOfBirth" placeholder="e.g. India">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Citizenship Country</label>
+        <input class="form-control" [(ngModel)]="form.citizenshipCountry" placeholder="e.g. India">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Gender</label>
+        <select class="form-select" [(ngModel)]="form.gender">
+          <option value="">— Select —</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+          <option value="X">Non-binary / Other</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Phone</label>
+        <input class="form-control" [(ngModel)]="form.phone" placeholder="+1 (555) 000-0000">
+      </div>
+    </div>
+
+    <h5 class="section-title mt-4">Current Address</h5>
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">Street Line 1</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.line1">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Street Line 2</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.line2" placeholder="Apt, Suite, Unit">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">City</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.city">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">State</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.state" placeholder="e.g. CA">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">ZIP</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.zip">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Country</label>
+        <input class="form-control" [(ngModel)]="form.currentAddress.country" placeholder="US">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Passport ──────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'passport'">
+
+    <!-- Section header -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="mb-0">Passports</h5>
+        <p class="text-muted small mb-0">Add all passports — most recent issue date is used as current.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('passport')"
+                [disabled]="!form.passports.length">
+          <i class="bi bi-share me-1"></i>Share
+        </button>
+        <button class="btn btn-sm btn-outline-primary" (click)="addPassport()">
+          <i class="bi bi-plus me-1"></i>Add Passport
+        </button>
+      </div>
+    </div>
+
+    <!-- Share panel -->
+    <ng-container *ngIf="sharePanel?.section === 'passport'">
+      <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+    </ng-container>
+
+    <div *ngIf="form.passports.length === 0" class="text-muted py-3">No passports added yet.</div>
+
+    <div *ngFor="let p of form.passports; let i = index" class="card mb-3">
+      <!-- Passport card header -->
+      <div class="entry-header p-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-passport text-primary"></i>
+          <span class="fw-semibold">Passport {{ i + 1 }}</span>
+          <span *ngIf="isCurrentPassport(p) && form.passports.length > 1"
+                class="badge bg-success">Current</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" (click)="removePassport(i)">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <!-- Passport fields -->
+      <div class="p-3 border-top">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Passport Number</label>
+            <input class="form-control" type="password" autocomplete="off"
+                   [(ngModel)]="p.number" placeholder="Stored encrypted">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Issuing Country</label>
+            <input class="form-control" [(ngModel)]="p.country" placeholder="e.g. India">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Issue Date</label>
+            <input class="form-control" type="date" [(ngModel)]="p.issueDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Expiry Date</label>
+            <input class="form-control" type="date" [(ngModel)]="p.expiryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Notes</label>
+            <input class="form-control" [(ngModel)]="p.notes" placeholder="Optional">
+          </div>
+        </div>
+        <!-- Doc attachment -->
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'passport', idx: i, items: p.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+    <p *ngIf="form.passports.length" class="text-muted small mt-1">
+      <i class="bi bi-lock me-1"></i>Passport numbers are AES-256-GCM encrypted before storage.
+    </p>
+  </div>
+
+  <!-- ── Tab: US Entry & Status ─────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'entry'">
+
+    <!-- Travel history -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div>
+        <h5 class="mb-0">Travel & I-94 History</h5>
+        <p class="text-muted small mb-0">Each US entry with its I-94 record.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('travel')"
+                [disabled]="!form.travelEntries.length">
+          <i class="bi bi-share me-1"></i>Share
+        </button>
+        <button class="btn btn-sm btn-outline-primary" (click)="addTravelEntry()">
+          <i class="bi bi-plus me-1"></i>Add Entry
+        </button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="sharePanel?.section === 'travel'">
+      <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+    </ng-container>
+
+    <div *ngIf="form.travelEntries.length === 0" class="text-muted py-3">No travel entries added yet.</div>
+
+    <div *ngFor="let e of form.travelEntries; let i = index" class="card mb-3">
+      <div class="entry-header p-3 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-airplane-engines text-primary"></i>
+          <span class="fw-semibold">Entry {{ i + 1 }}</span>
+          <span *ngIf="e.entryDate" class="text-muted small">{{ e.entryDate | date:'mediumDate' }}</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger" (click)="removeTravelEntry(i)">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+      <div class="p-3 border-top">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Port of Entry</label>
+            <input class="form-control" [(ngModel)]="e.portOfEntry" placeholder="e.g. JFK">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Entry Date</label>
+            <input class="form-control" type="date" [(ngModel)]="e.entryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Admitted Until</label>
+            <input class="form-control" type="date" [(ngModel)]="e.admittedUntil">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">I-94 Admission Number</label>
+            <input class="form-control" [(ngModel)]="e.i94Number" placeholder="11-digit number">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Visa Class</label>
+            <input class="form-control" [(ngModel)]="e.visaClass" placeholder="e.g. H-1B">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Notes</label>
+            <input class="form-control" [(ngModel)]="e.notes" placeholder="Optional">
+          </div>
+        </div>
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'travel', idx: i, items: e.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+
+    <!-- Current visa status — standalone -->
+    <div class="card p-3 mt-3">
+      <h5 class="section-title">Current Visa Status</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Current Visa Type</label>
+          <input class="form-control" [(ngModel)]="form.currentVisaType"
+                 placeholder="Visa class on stamp (e.g. H-1B)">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Visa Expiry Date</label>
+          <input class="form-control" type="date" [(ngModel)]="form.currentVisaExpiry">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Education & Work ──────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'history'">
+
+    <!-- Education -->
+    <div class="card mb-3 p-3">
+      <div class="section-title-row">
+        <h5 class="section-title mb-0">Education</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('education')"
+                  [disabled]="!form.education.length">
+            <i class="bi bi-share me-1"></i>Share
+          </button>
+          <button class="btn btn-sm btn-outline-primary" (click)="addEducation()">
+            <i class="bi bi-plus me-1"></i>Add
+          </button>
+        </div>
+      </div>
+      <ng-container *ngIf="sharePanel?.section === 'education'">
+        <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+      </ng-container>
+      <div *ngIf="form.education.length === 0" class="text-muted mt-2">No education records.</div>
+      <div *ngFor="let e of form.education; let i = index" class="list-item mt-3">
+        <div class="row g-2">
+          <div class="col-md-5">
+            <label class="form-label">Institution</label>
+            <input class="form-control" [(ngModel)]="e.institution">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Degree</label>
+            <input class="form-control" [(ngModel)]="e.degree" placeholder="e.g. B.Tech">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Field</label>
+            <input class="form-control" [(ngModel)]="e.field" placeholder="Computer Science">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Start Year</label>
+            <input class="form-control" type="number" [(ngModel)]="e.startYear">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">End Year</label>
+            <input class="form-control" type="number" [(ngModel)]="e.endYear">
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-sm btn-outline-danger" (click)="removeEducation(i)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'education', idx: i, items: e.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+
+    <!-- Employment -->
+    <div class="card p-3">
+      <div class="section-title-row">
+        <h5 class="section-title mb-0">Employment History</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('employment')"
+                  [disabled]="!form.employment.length">
+            <i class="bi bi-share me-1"></i>Share
+          </button>
+          <button class="btn btn-sm btn-outline-primary" (click)="addEmployment()">
+            <i class="bi bi-plus me-1"></i>Add
+          </button>
+        </div>
+      </div>
+      <ng-container *ngIf="sharePanel?.section === 'employment'">
+        <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+      </ng-container>
+      <div *ngIf="form.employment.length === 0" class="text-muted mt-2">No employment records.</div>
+      <div *ngFor="let j of form.employment; let i = index" class="list-item mt-3">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">Employer</label>
+            <input class="form-control" [(ngModel)]="j.employer">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Title</label>
+            <input class="form-control" [(ngModel)]="j.title">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Country</label>
+            <input class="form-control" [(ngModel)]="j.country" placeholder="US">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Start</label>
+            <input class="form-control" type="date" [(ngModel)]="j.startDate">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">End</label>
+            <input class="form-control" type="date" [(ngModel)]="j.endDate" placeholder="leave blank if current">
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-sm btn-outline-danger" (click)="removeEmployment(i)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'employment', idx: i, items: j.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Dependents & Visas ─────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'dependents'">
+
+    <!-- Dependents -->
+    <div class="card mb-3 p-3">
+      <div class="section-title-row">
+        <h5 class="section-title mb-0">Dependents</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('dependent')"
+                  [disabled]="!form.dependents.length">
+            <i class="bi bi-share me-1"></i>Share
+          </button>
+          <button class="btn btn-sm btn-outline-primary" (click)="addDependent()">
+            <i class="bi bi-plus me-1"></i>Add
+          </button>
+        </div>
+      </div>
+      <ng-container *ngIf="sharePanel?.section === 'dependent'">
+        <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+      </ng-container>
+      <div *ngIf="form.dependents.length === 0" class="text-muted mt-2">No dependents.</div>
+      <div *ngFor="let d of form.dependents; let i = index" class="list-item mt-3">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">Full Name</label>
+            <input class="form-control" [(ngModel)]="d.name">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Relationship</label>
+            <input class="form-control" [(ngModel)]="d.relationship" placeholder="e.g. Spouse">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Date of Birth</label>
+            <input class="form-control" type="date" [(ngModel)]="d.dateOfBirth">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Citizenship</label>
+            <input class="form-control" [(ngModel)]="d.citizenshipCountry" placeholder="Country">
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-sm btn-outline-danger" (click)="removeDependent(i)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'dependent', idx: i, items: d.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+
+    <!-- Prior Visas -->
+    <div class="card p-3">
+      <div class="section-title-row">
+        <h5 class="section-title mb-0">Prior Visas</h5>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('priorVisa')"
+                  [disabled]="!form.priorVisas.length">
+            <i class="bi bi-share me-1"></i>Share
+          </button>
+          <button class="btn btn-sm btn-outline-primary" (click)="addPriorVisa()">
+            <i class="bi bi-plus me-1"></i>Add
+          </button>
+        </div>
+      </div>
+      <ng-container *ngIf="sharePanel?.section === 'priorVisa'">
+        <ng-container *ngTemplateOutlet="shareTpl"></ng-container>
+      </ng-container>
+      <div *ngIf="form.priorVisas.length === 0" class="text-muted mt-2">No prior visa records.</div>
+      <div *ngFor="let v of form.priorVisas; let i = index" class="list-item mt-3">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label">Visa Type</label>
+            <input class="form-control" [(ngModel)]="v.visaType" placeholder="e.g. H-1B, F-1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Issuing Country</label>
+            <input class="form-control" [(ngModel)]="v.country">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Issue Date</label>
+            <input class="form-control" type="date" [(ngModel)]="v.issueDate">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Expiry Date</label>
+            <input class="form-control" type="date" [(ngModel)]="v.expiryDate">
+          </div>
+          <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-sm btn-outline-danger" (click)="removePriorVisa(i)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <ng-container *ngTemplateOutlet="docAttachTpl; context: { section: 'priorVisa', idx: i, items: v.documentIds || [] }"></ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Notes (always visible at bottom) ───────────────────────────── -->
+  <div class="card mt-3 p-3">
+    <label class="form-label">Notes</label>
+    <textarea class="form-control" [(ngModel)]="form.notes" rows="3"
+              placeholder="Any additional context for your case team"></textarea>
+  </div>
+
+</ng-container>
+
+<!-- ── Shared template: doc attachment row ───────────────────────────── -->
+<ng-template #docAttachTpl let-section="section" let-idx="idx" let-items="items">
+  <div class="doc-attach-row mt-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
+      <span class="detail-label mb-0" style="font-size:.72rem">ATTACHED DOCS</span>
+      <button class="btn btn-xs" (click)="togglePicker(section, idx)">
+        <i class="bi bi-paperclip me-1"></i>Attach from Vault
+      </button>
+    </div>
+
+    <!-- Attached chips -->
+    <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="items.length">
+      <span *ngFor="let docId of items" class="doc-chip">
+        <i class="bi bi-file-earmark me-1"></i>{{ docTitle(docId) }}
+        <button class="chip-remove" (click)="removeDoc(section, idx, docId)" title="Remove">×</button>
+      </span>
+    </div>
+    <div *ngIf="!items.length" class="text-muted" style="font-size:.78rem">No documents attached.</div>
+
+    <!-- Picker dropdown -->
+    <div *ngIf="expandedPicker === pickerKey(section, idx)" class="doc-picker mt-2">
+      <div *ngIf="vaultDocsLoading" class="text-muted small">Loading vault…</div>
+      <div *ngIf="!vaultDocsLoading && !availableDocs(section, idx).length" class="text-muted small">
+        No more documents in vault.
+        <a routerLink="/documents" class="ms-1">Upload to vault</a>
+      </div>
+      <div *ngIf="!vaultDocsLoading && availableDocs(section, idx).length" class="d-flex gap-2">
+        <select class="form-select form-select-sm"
+                [(ngModel)]="selectedDocId[pickerKey(section, idx)]">
+          <option [ngValue]="null">— select document —</option>
+          <option *ngFor="let doc of availableDocs(section, idx)" [value]="doc.id">
+            {{ doc.title }}
+          </option>
+        </select>
+        <button class="btn btn-sm btn-primary flex-shrink-0"
+                (click)="attachDoc(section, idx)"
+                [disabled]="!selectedDocId[pickerKey(section, idx)]">
+          Attach
+        </button>
+      </div>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ── Shared template: share panel ──────────────────────────────────── -->
+<ng-template #shareTpl>
+  <div class="share-panel mt-3 mb-1 p-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="fw-semibold" style="font-size:.9rem">
+        <i class="bi bi-share me-1"></i>Share with employer or immigration team
+      </span>
+      <button class="btn-close" style="font-size:.75rem" (click)="closeShare()"></button>
+    </div>
+    <div *ngIf="!sharePanel?.shareUrl">
+      <div class="row g-2">
+        <div class="col-md-7">
+          <input class="form-control form-control-sm" type="email"
+                 placeholder="Recipient email" [(ngModel)]="sharePanel!.email">
+        </div>
+        <div class="col-md-3">
+          <select class="form-select form-select-sm" [(ngModel)]="sharePanel!.expiry">
+            <option [value]="7">7 days</option>
+            <option [value]="14">14 days</option>
+            <option [value]="30">30 days</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-sm btn-primary w-100" (click)="submitShare()"
+                  [disabled]="sharePanel?.sharing || !sharePanel?.email?.trim()">
+            <span *ngIf="!sharePanel?.sharing"><i class="bi bi-send"></i></span>
+            <span *ngIf="sharePanel?.sharing" class="spinner-border spinner-border-sm"></span>
+          </button>
+        </div>
+      </div>
+      <div *ngIf="shareError" class="alert alert-danger py-1 small mt-2">{{ shareError }}</div>
+    </div>
+    <div *ngIf="sharePanel?.shareUrl">
+      <div class="d-flex gap-2 align-items-center">
+        <input class="form-control form-control-sm" [value]="sharePanel?.shareUrl" readonly>
+        <button class="btn btn-sm btn-outline-primary flex-shrink-0" (click)="copyShareUrl()"
+                title="Copy link"><i class="bi bi-clipboard"></i></button>
+      </div>
+      <p class="text-success small mt-2 mb-0">
+        <i class="bi bi-check-circle me-1"></i>Link sent to {{ sharePanel?.email }}
+      </p>
+    </div>
+  </div>
+</ng-template>

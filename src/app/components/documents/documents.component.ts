@@ -44,6 +44,10 @@ export class DocumentsComponent implements OnInit {
   dragover = false;
   uploadForm: UploadForm = this.emptyForm();
 
+  // Subcategory lists — stable references so *ngFor doesn't re-render on every CD cycle
+  subcategoryOptions: SubcategoryOption[] = [];
+  subcategoryGroupsList: { visaType: string; label: string; options: SubcategoryOption[] }[] = [];
+
   // Metadata
   readonly categories: DocumentCategory[] = ['RESUME', 'TAX', 'INCOME', 'IMMIGRATION', 'OTHER'];
   readonly CATEGORY_LABELS = CATEGORY_LABELS;
@@ -135,25 +139,29 @@ export class DocumentsComponent implements OnInit {
     if (!this.uploadForm.title) {
       this.uploadForm.title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
     }
+    this.updateSubcategoryLists();
     this.showUpload = true;
   }
 
-  get subcategoryOptions() {
-    return this.uploadForm.category ? SUBCATEGORIES[this.uploadForm.category] : [];
+  onCategoryChange(): void {
+    this.uploadForm.subcategory = '';
+    this.updateSubcategoryLists();
   }
 
-  get subcategoryGroups(): { visaType: string; label: string; options: SubcategoryOption[] }[] {
-    if (this.uploadForm.category !== 'IMMIGRATION') return [];
-    const grouped: Record<string, typeof this.subcategoryOptions> = {};
+  private updateSubcategoryLists(): void {
+    this.subcategoryOptions = this.uploadForm.category ? (SUBCATEGORIES[this.uploadForm.category] ?? []) : [];
+    if (this.uploadForm.category !== 'IMMIGRATION') {
+      this.subcategoryGroupsList = [];
+      return;
+    }
+    const grouped: Record<string, SubcategoryOption[]> = {};
     for (const opt of this.subcategoryOptions) {
       const vt = opt.visaType || 'GENERAL';
       if (!grouped[vt]) grouped[vt] = [];
       grouped[vt].push(opt);
     }
-    return Object.entries(grouped).map(([k, v]) => ({
-      visaType: k,
-      label: VISA_TYPE_LABELS[k] || k,
-      options: v
+    this.subcategoryGroupsList = Object.entries(grouped).map(([k, v]) => ({
+      visaType: k, label: VISA_TYPE_LABELS[k] || k, options: v
     }));
   }
 
@@ -181,6 +189,8 @@ export class DocumentsComponent implements OnInit {
         this.docs.unshift(doc);
         this.applyFilters();
         if (this.summary) this.summary.total++;
+        this.uploadForm = this.emptyForm();
+        this.updateSubcategoryLists();
         this.logger.info(this.source, `Uploaded doc id=${doc.id}`);
       },
       error: err => {

@@ -1,0 +1,404 @@
+<!-- ── Consent Modal ──────────────────────────────────────────────────────── -->
+<div *ngIf="showConsentModal" class="consent-modal-backdrop">
+  <div class="consent-modal-card">
+    <div class="consent-modal-header">
+      <i class="bi bi-shield-lock me-2"></i>
+      <h5 class="mb-0">Case Access Authorization</h5>
+    </div>
+    <div class="consent-modal-body">
+      <p class="consent-intro">
+        Before accessing your immigration case, please review and agree to the following terms regarding how your information will be used and shared.
+      </p>
+
+      <div class="consent-terms">
+        <h6>1. Data Sharing</h6>
+        <p>You authorize the following parties to view and manage information related to your immigration matter:</p>
+        <ul>
+          <li *ngIf="case?.lawFirmImmOrgId"><strong>{{ case?.lawFirmImmOrgName }}</strong> — your legal representative (law firm)</li>
+          <li *ngIf="case?.employerImmOrgId"><strong>{{ case?.employerImmOrgName }}</strong> — your sponsoring employer</li>
+          <li *ngIf="!case?.lawFirmImmOrgId && !case?.employerImmOrgId">No external parties have been linked to this case yet.</li>
+        </ul>
+
+        <h6>2. Use of Your Information</h6>
+        <p>Your personal information — including immigration documents, passport details, travel history, and work authorization records — will be used solely for the purpose of processing your immigration case.</p>
+
+        <h6>3. Right to Revoke</h6>
+        <p>You may contact your immigration representative at any time to revoke access. Revoking consent does not affect actions already taken on your behalf.</p>
+
+        <h6>4. Data Security</h6>
+        <p>All information is stored securely and accessed only by authorized personnel. Your case data is encrypted and handled in compliance with applicable data protection regulations.</p>
+      </div>
+
+      <div class="consent-check">
+        <label class="d-flex align-items-start gap-2">
+          <input type="checkbox" [(ngModel)]="consentChecked" class="mt-1">
+          <span>I have read and understood the above terms and agree to authorize the named parties to access my immigration case information.</span>
+        </label>
+      </div>
+
+      <div *ngIf="consentError" class="alert alert-danger mt-3" style="font-size:.875rem">{{ consentError }}</div>
+    </div>
+    <div class="consent-modal-footer">
+      <button class="btn btn-outline-secondary btn-sm" (click)="declineConsent()" [disabled]="submittingConsent">
+        Decline &amp; Go Back
+      </button>
+      <button class="btn btn-primary btn-sm" (click)="submitConsent()" [disabled]="!consentChecked || submittingConsent">
+        <i *ngIf="submittingConsent" class="bi bi-arrow-repeat spin me-1"></i>
+        I Agree
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page-header">
+  <a routerLink="/immigration" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Cases
+  </a>
+  <div *ngIf="!caseLoading && case" class="d-flex align-items-center gap-2 flex-wrap">
+    <h2 class="mb-0">{{ case.caseNumber }}</h2>
+    <span class="badge" [ngClass]="statusCss[case.status]">
+      {{ statusLabels[case.status] || case.status }}
+    </span>
+    <span *ngIf="case.callerRelationship" class="role-badge role-badge--{{case.callerRelationship | lowercase}}">
+      {{ case.callerRelationship | titlecase }}
+    </span>
+  </div>
+  <span *ngIf="caseLoading" class="text-muted">Loading…</span>
+</div>
+
+<div *ngIf="caseError" class="alert alert-danger">{{ caseError }}</div>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button [class.active]="activeTab === 'overview'"   (click)="setTab('overview')">Overview</button>
+  <button [class.active]="activeTab === 'timeline'"   (click)="setTab('timeline')">Timeline</button>
+  <button *ngIf="canSeeForms()" [class.active]="activeTab === 'forms'" (click)="setTab('forms')">Forms</button>
+  <button [class.active]="activeTab === 'documents'"  (click)="setTab('documents')">Documents</button>
+  <button [class.active]="activeTab === 'messaging'"  (click)="setTab('messaging')">Messaging</button>
+</div>
+
+<div class="tab-content">
+
+  <!-- ── Overview ──────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'overview'">
+    <div *ngIf="caseLoading" class="text-muted py-3">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+    </div>
+    <div *ngIf="!caseLoading && case" class="card p-3">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="detail-label">Case Type</div>
+          <div class="detail-value">{{ caseTypeLabels[case.caseType] || case.caseType }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="detail-label">Beneficiary</div>
+          <div class="detail-value">{{ case.beneficiaryName }}</div>
+          <div class="text-muted" style="font-size:.8rem">{{ case.beneficiaryEmail }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="detail-label">Employer</div>
+          <div class="detail-value">{{ case.employerImmOrgName || '—' }}</div>
+        </div>
+        <div class="col-md-4">
+          <div class="detail-label">Law Firm</div>
+          <div class="detail-value">{{ case.lawFirmImmOrgName || '—' }}</div>
+        </div>
+        <div class="col-md-4" *ngIf="case.priorityDate">
+          <div class="detail-label">Priority Date</div>
+          <div class="detail-value">{{ case.priorityDate | date:'mediumDate' }}</div>
+        </div>
+        <div class="col-md-4" *ngIf="case.receiptNumber">
+          <div class="detail-label">Receipt Number</div>
+          <div class="detail-value detail-mono">{{ case.receiptNumber }}</div>
+        </div>
+        <div class="col-12">
+          <div class="detail-label">Opened</div>
+          <div class="detail-value">{{ case.createdAt | date:'medium' }}</div>
+        </div>
+      </div>
+      <div class="mt-3">
+        <a routerLink="/immigration/profile" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-person-vcard me-1"></i>View / Edit My Profile
+        </a>
+      </div>
+    </div>
+
+    <!-- Key Dates panel -->
+    <div class="card mt-3 p-3">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Key Dates</h6>
+        <button class="btn btn-sm btn-outline-secondary" (click)="syncKeyDates()" [disabled]="syncingKeyDates">
+          <i class="bi bi-arrow-repeat me-1" [class.spin]="syncingKeyDates"></i>Sync from Profile
+        </button>
+      </div>
+      <div *ngIf="keyDatesLoading" class="text-muted">Loading…</div>
+      <div *ngIf="!keyDatesLoading && keyDates.length === 0" class="text-muted">
+        No key dates. Click "Sync from Profile" to derive dates from your profile.
+      </div>
+      <div *ngIf="keyDates.length > 0" class="kd-list">
+        <div *ngFor="let kd of keyDates" class="kd-row">
+          <div class="kd-label">{{ kd.label }}</div>
+          <div class="kd-date">{{ kd.date | date:'mediumDate' }}</div>
+          <span class="kd-badge" [ngClass]="urgencyCss(kd.urgency)">
+            <ng-container *ngIf="kd.daysUntil < 0">{{ -kd.daysUntil }}d overdue</ng-container>
+            <ng-container *ngIf="kd.daysUntil === 0">Today</ng-container>
+            <ng-container *ngIf="kd.daysUntil > 0">{{ kd.daysUntil }}d away</ng-container>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Feed panel -->
+    <div class="card mt-3 p-3">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0"><i class="bi bi-activity me-2"></i>Activity</h6>
+        <button class="btn btn-sm btn-link" (click)="loadFeed()">
+          <i class="bi bi-arrow-clockwise" [class.spin]="feedLoading"></i>
+        </button>
+      </div>
+      <div *ngIf="feedLoading" class="text-muted">
+        <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+      </div>
+      <div *ngIf="!feedLoading && feed.length === 0" class="text-muted">
+        No activity yet.
+      </div>
+      <div class="feed-list">
+        <div *ngFor="let item of feed | slice:0:15" class="feed-row">
+          <div class="feed-action">{{ item.action }}</div>
+          <div class="feed-meta text-muted">
+            <span *ngIf="item.actorName">{{ item.actorName }} · </span>
+            {{ item.createdAt | date:'short' }}
+          </div>
+          <div *ngIf="item.detail && !item.detail.startsWith('{')" class="feed-detail text-muted">{{ item.detail }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Timeline ──────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'timeline'">
+
+    <div class="d-flex gap-2 justify-content-end mb-3">
+      <button class="btn btn-sm btn-outline-secondary" (click)="showAddAppt = !showAddAppt; showAddEvent = false">
+        <i class="bi bi-calendar-plus me-1"></i>Add Appointment
+      </button>
+      <button class="btn btn-sm btn-outline-primary" (click)="showAddEvent = !showAddEvent; showAddAppt = false">
+        <i class="bi bi-plus-lg me-1"></i>Add Event
+      </button>
+    </div>
+
+    <!-- Add Event form -->
+    <div *ngIf="showAddEvent" class="card mb-3 p-3">
+      <h6 class="mb-3">New Event</h6>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="eventForm.eventType">
+            <option *ngFor="let t of eventTypes" [value]="t">{{ t | titlecase }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="eventForm.eventDate">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Title <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" [(ngModel)]="eventForm.title" placeholder="Brief description">
+        </div>
+        <div class="col-12">
+          <textarea class="form-control form-control-sm" [(ngModel)]="eventForm.description"
+                    rows="2" placeholder="Details (optional)"></textarea>
+        </div>
+      </div>
+      <div class="mt-2 d-flex gap-2">
+        <button class="btn btn-sm btn-primary" (click)="submitEvent()"
+                [disabled]="!eventForm.eventDate || !eventForm.title || addingEvent">
+          <i class="bi bi-check me-1"></i>Add
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="showAddEvent = false">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Add Appointment form -->
+    <div *ngIf="showAddAppt" class="card mb-3 p-3">
+      <h6 class="mb-3">New Appointment</h6>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="apptForm.appointmentType">
+            <option *ngFor="let t of apptTypes" [value]="t">{{ t | titlecase }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Date &amp; Time <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" type="datetime-local" [(ngModel)]="apptForm.scheduledAt">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Location</label>
+          <input class="form-control form-control-sm" [(ngModel)]="apptForm.location" placeholder="Address or video link">
+        </div>
+        <div class="col-12">
+          <textarea class="form-control form-control-sm" [(ngModel)]="apptForm.notes"
+                    rows="2" placeholder="Notes (optional)"></textarea>
+        </div>
+      </div>
+      <div class="mt-2 d-flex gap-2">
+        <button class="btn btn-sm btn-primary" (click)="submitAppt()"
+                [disabled]="!apptForm.scheduledAt || addingAppt">
+          <i class="bi bi-check me-1"></i>Add
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="showAddAppt = false">Cancel</button>
+      </div>
+    </div>
+
+    <div *ngIf="timelineLoading" class="text-muted py-3">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+    </div>
+    <div *ngIf="timelineError" class="alert alert-danger">{{ timelineError }}</div>
+
+    <div *ngIf="!timelineLoading && timeline.length === 0" class="text-muted py-3">
+      No events yet. Add the first entry above.
+    </div>
+
+    <div class="timeline-list">
+      <div *ngFor="let item of timeline" class="timeline-item">
+        <div class="timeline-icon" [class.appt-icon]="item.itemType === 'APPOINTMENT'">
+          <i class="bi" [ngClass]="iconFor(item)"></i>
+        </div>
+        <div class="timeline-body">
+          <div class="timeline-header">
+            <span class="timeline-title">{{ item.title }}</span>
+            <span class="timeline-date text-muted">{{ item.date | date:'mediumDate' }}</span>
+          </div>
+          <div class="timeline-meta text-muted">
+            <span class="badge badge-type me-2">{{ item.typeLabel }}</span>
+            <span *ngIf="item.location"><i class="bi bi-geo-alt me-1"></i>{{ item.location }}</span>
+            <span *ngIf="item.performedByName" class="ms-2">by {{ item.performedByName }}</span>
+          </div>
+          <div *ngIf="item.description" class="timeline-desc text-muted">{{ item.description }}</div>
+        </div>
+        <button *ngIf="!item.systemGenerated"
+                class="timeline-delete btn btn-sm btn-outline-danger"
+                (click)="deleteTimelineItem(item)" title="Delete">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Forms ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'forms'">
+
+    <div class="alert alert-info d-flex align-items-start mb-3" style="font-size:.85rem">
+      <i class="bi bi-info-circle me-2 mt-1"></i>
+      <span>
+        These field summaries are for <strong>reference only</strong> — they help your
+        case team prepare. Work with your attorney to prepare official government filings.
+      </span>
+    </div>
+
+    <div class="d-flex justify-content-end mb-3">
+      <button class="btn btn-outline-primary btn-sm" (click)="generateForms()" [disabled]="generatingForms">
+        <span *ngIf="generatingForms"><i class="bi bi-arrow-repeat spin me-1"></i>Generating…</span>
+        <span *ngIf="!generatingForms"><i class="bi bi-arrow-repeat me-1"></i>Refresh from Profile</span>
+      </button>
+    </div>
+
+    <div *ngIf="formsLoading" class="text-muted py-3">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+    </div>
+    <div *ngIf="formsError" class="alert alert-danger">{{ formsError }}</div>
+
+    <div *ngIf="!formsLoading && forms.length === 0 && !formsError" class="text-muted py-3">
+      No form data yet. Click "Refresh from Profile" to generate.
+    </div>
+
+    <div *ngFor="let f of forms" class="card mb-3">
+      <!-- Form card header row -->
+      <div class="d-flex align-items-center justify-content-between p-3 gap-3">
+        <div class="min-w-0">
+          <div class="fw-semibold">{{ f.formTypeLabel }}</div>
+          <div class="text-muted" style="font-size:.78rem;margin-top:.1rem">{{ f.formType }}</div>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <div class="completeness-wrap">
+            <div class="completeness-bar">
+              <div class="completeness-fill" [style.width.%]="f.completeness"></div>
+            </div>
+            <span class="completeness-label">{{ f.completeness }}%</span>
+          </div>
+          <span class="badge" [ngClass]="formStatusCss[f.status]">
+            {{ formStatusLabels[f.status] || f.status }}
+          </span>
+          <button class="btn btn-sm btn-outline-secondary" (click)="toggleFieldView(f.id)">
+            <i class="bi" [ngClass]="expandedFormId === f.id ? 'bi-chevron-up' : 'bi-list-ul'"></i>
+            {{ expandedFormId === f.id ? 'Hide' : 'Fields' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Expanded fields panel -->
+      <div *ngIf="expandedFormId === f.id" class="border-top p-3" style="background:var(--hover-bg,#f8fafc)">
+        <ng-container *ngIf="getFieldEntries(f.id) as entries">
+          <div *ngIf="entries.length === 0" class="text-muted small">
+            No fields mapped. Complete your profile to populate them.
+          </div>
+          <table *ngIf="entries.length > 0" class="field-table w-100">
+            <tr *ngFor="let entry of entries">
+              <td class="field-key">{{ entry.key }}</td>
+              <td class="field-value">{{ entry.value }}</td>
+            </tr>
+          </table>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Documents ─────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'documents'">
+    <p class="text-muted">Document case-file integration coming soon.</p>
+  </div>
+
+  <!-- ── Messaging ──────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'messaging'">
+
+    <!-- Channel tabs -->
+    <div class="msg-channel-bar mb-3">
+      <button *ngFor="let ch of channels"
+              class="msg-channel-btn"
+              [class.active]="msgChannel === ch"
+              (click)="setMsgChannel(ch)">
+        {{ channelLabels[ch] }}
+      </button>
+    </div>
+
+    <div *ngIf="msgError" class="alert alert-danger">{{ msgError }}</div>
+
+    <!-- Message list -->
+    <div class="msg-list">
+      <div *ngIf="msgLoading" class="text-muted py-3 text-center">
+        <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+      </div>
+      <div *ngIf="!msgLoading && messages.length === 0" class="text-muted py-3 text-center">
+        No messages in this channel yet.
+      </div>
+      <div *ngFor="let m of messages" class="msg-bubble">
+        <div class="msg-author">{{ m.authorName }}</div>
+        <div class="msg-content">{{ m.content }}</div>
+        <div class="msg-time text-muted">{{ m.createdAt | date:'short' }}</div>
+      </div>
+    </div>
+
+    <!-- Send form -->
+    <div class="msg-send-row mt-3">
+      <textarea class="form-control" [(ngModel)]="msgContent" rows="2"
+                placeholder="Type a message…" (keydown.enter)="$event.preventDefault(); sendMessage()"></textarea>
+      <button class="btn btn-primary ms-2" (click)="sendMessage()"
+              [disabled]="!msgContent.trim() || sendingMsg">
+        <i class="bi bi-send" [class.spin]="sendingMsg"></i>
+      </button>
+    </div>
+  </div>
+
+
+</div>

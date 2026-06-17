@@ -2,10 +2,30 @@
 
 ## Module structure
 - NgModule-based (no standalone components — don't migrate)
-- Single `AppModule`; all components eagerly declared there
-- No lazy loading
-- All routes gated by `AuthGuard` except `/login`
+- **Lazy-loaded feature modules** under `src/app/features/`; `AppModule` is a thin shell
+- `src/app/shared/shared.module.ts` re-exports `CommonModule`, `FormsModule`, `ReactiveFormsModule`, `RouterModule` — every feature module imports `SharedModule`
+- `GroupsSharedModule` (`features/groups/groups-shared.module.ts`) exports `GroupListComponent` so it can be used both as the `/groups` route and as a widget in `DashboardModule`
 - `APP_INITIALIZER` calls `AuthService.checkAuth()` before bootstrap
+
+### Shell (AppModule — eagerly loaded)
+`AppComponent`, `LoginComponent`, `WelcomeBannerComponent`, `FeatureLockedComponent`, `StorageSettingsComponent`, `UploadComponent`, `ShareResponseComponent`, `PlansComponent`
+
+### Lazy feature modules
+| Module | Path prefix | Key components |
+|--------|------------|----------------|
+| `DashboardModule` | `dashboard` | DashboardComponent |
+| `ReceiptsModule` | `receipts` | ReceiptList, ReceiptDetail, ShareDialog, ShareManager |
+| `GroupsModule` | `groups` + `group` | GroupDetail, JoinGroup (GroupList via GroupsSharedModule) |
+| `DocumentsModule` | `documents` | Documents, DocumentDetail, DocumentShareDialog, DocumentAccess |
+| `GarageModule` | `garage` | Garage, VehicleDetail, VehicleJoin |
+| `JobsModule` | `jobs` | JobTracker, JobDetail |
+| `ShopModule` | `shop` | Shop, CartSidebar, Checkout, OrderConfirmation |
+| `AdminModule` | `admin` | Admin, AdminDashboard, AdminMembers, AdminSquare, AdminClover, AdminOrders, AdminJoin |
+| `PlatformModule` | `platform` | Platform, PlatformSquareConfig |
+| `ImmigrationModule` | `immigration` | CaseList, CaseDetail, CaseForm, CanonicalProfile, CaseJoin |
+
+### Public routes (no AuthGuard)
+`/share/:token` (ShareResponse in AppModule), `/group/join/:token` (JoinGroup in GroupsModule), `/documents/shared/:token` (DocumentAccess in DocumentsModule), `/garage/join/:token` (VehicleJoin in GarageModule), `/admin/join/:token` (AdminJoin in AdminModule), `/immigration/cases/join/:token` (CaseJoin in ImmigrationModule)
 
 ## State management
 - No NgRx, no signals — `BehaviorSubject` in services only
@@ -221,12 +241,93 @@ No `test` script is wired up (Karma devDeps are present but unused).
 - Roles displayed with colour-coded badges: OWNER=amber, ADMIN=purple, STAFF=green, VIEWER=grey
 - `User.platformAdmin: boolean` — drives Platform nav link in sidebar and route access
 
+## Immigration / Visa Tracker components
+- All components live under `src/app/features/immigration/`
+- Module: `ImmigrationModule` (declared in `immigration.module.ts`); routes under `/immigration/**`
+
+### Service layer
+- `ImmigrationService` (`services/immigration.service.ts`) — all case/profile CRUD; key interfaces:
+  - `PassportEntry` — `{ id?, number?, country?, issueDate?, expiryDate?, notes?, documentIds?: number[] }`
+  - `TravelEntry` — `{ id?, portOfEntry?, i94Number?, entryDate?, admittedUntil?, visaClass?, notes?, documentIds?: number[] }`
+  - `Education`, `Employment`, `Dependent`, `PriorVisa` — each has `documentIds?: number[]` for vault attachments
+  - `CanonicalProfile` — replaced single passport/entry fields with `passports?: PassportEntry[]` and `travelEntries?: TravelEntry[]`; kept `currentVisaType`/`currentVisaExpiry` as standalone fields
+- `DocumentService` injected into `CanonicalProfileComponent` for vault doc loading (`list()`) and share creation (`createShare()`)
+
+### `canonical-profile/` — route `/immigration/profile`
+Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Education & Work, Dependents & Visas.
+
+**Passport tab** — `*ngFor` over `form.passports`; each card shows number/country/dates/notes fields + doc-attach template; current passport = item with highest `issueDate` (string ISO compare in `isCurrentPassport()`); "CURRENT" badge rendered by `isCurrentPassport(p)` method; "Add Passport" appends blank entry.
+
+**US Entry tab** — `*ngFor` over `form.travelEntries`; standalone "Current Visa Status" section below the list (visa type + expiry); each entry has port/I-94/admitted-until/visa-class fields + doc-attach template.
+
+**Doc attachment** — shared `#docAttachTpl` ng-template used in all 6 section types:
+- `expandedPicker: string|null` — key of the open picker (`pickerKey(section, index)` = `"passport-0"` etc.)
+- `selectedDocId: Record<string, number|null>` — stable reference, safe for CD
+- `availableDocs(section, index)` — method (not getter); filters out already-attached docs; called only when picker opens
+- `attachDoc(section, index)` — appends `docId` to `item.documentIds`, clears picker
+- `removeDoc(section, index, docId)` — removes from `item.documentIds`
+- `docTitle(id)` — looks up title from `vaultDocs` array, fallback `"Doc #id"`
+
+**Share panel** — shared `#shareTpl` ng-template; one panel open at a time (`sharePanel` object or `null`):
+- `openShare(section)` — sets `sharePanel = { section, email:'', expiry:30, sharing:false, shareUrl:null }`
+- `getSectionDocIds(section)` — collects all `documentIds` from every item in the section (deduped with `Set`)
+- `submitShare()` — validates ≥1 doc attached; calls `DocumentService.createShare({ documentIds, recipientEmail, purpose, expiryDays })`; `shareUrl = window.location.origin + '/documents/shared/' + share.shareToken`
+- `copyShareUrl()` — `navigator.clipboard.writeText(sharePanel.shareUrl)`
+- Share blocked with inline error if no docs attached yet
+
+**Key CSS classes** (`canonical-profile.component.scss`):
+- `.entry-header` — light-grey rounded-top header per passport/travel card
+- `.doc-chip` — indigo pill chip for attached doc (title + ×-remove button)
+- `.chip-remove` — borderless button; hover turns dark-red
+- `.doc-picker` — dropdown list of available vault docs
+- `.btn-xs` — tiny action button (attach/cancel in picker)
+- `.share-panel` — green-tinted card shown when share panel is open
+- `.btn-back` — indigo text link `← Cases` in page header (no underline)
+
+**Private helpers:**
+- `sectionItems(section)` — maps section string → correct `form.*` array
+- `shareSectionLabel(section)` — human-readable label for share purpose string
+- `newId()` — `crypto.randomUUID()` with fallback; used as temporary client-side id for new passport/travel entries before save
+
+### `services/immigration.service.ts` — key constants
+- `CASE_TYPE_LABELS` — maps all 14 `CaseType` values to display strings: H1B family, H-4 dependents, PERM/I-140, I-485, GC EAD, GC Renewal, Naturalization, Consular
+- `CASE_TYPE_GROUPS` — exported `{ label: string; types: string[] }[]` array for `<optgroup>` dropdown; groups: "H-1B Specialty Occupation", "H-4 Dependents", "Green Card Pathway", "Green Card & Citizenship", "Other"
+- `ImmigrationCase` interface additions: `parentCaseId?: number`, `i140Approved`, `i140ApprovedDate?`, `assignedAttorneyMemberId?`, `assignedAttorneyName?`, `beneficiaryInvitePending`; beneficiary name/email are nullable
+- `CreateCaseRequest` additions: `beneficiaryEmail: string` (required), `parentCaseId?: number`, `assignedAttorneyMemberId?: number`
+- New methods: `getCaseByInviteToken(token)` — public endpoint, no auth; `acceptCaseInvite(token)` — auth required
+
+### `case-list/` — route `/immigration`
+- **Role picker** — shown when `!isOrgMember && cases.length === 0`; two cards: "Employer / HR" → `/immigration/employer`, "Attorney / Paralegal" → `/immigration/attorney`; footer note tells beneficiaries to check their email for invite
+- **Org member empty state** — separate `*ngIf` for `isOrgMember && cases.length === 0` with "New Case" prompt
+- **Role context bar** — always shown above the list; employer/law-firm chips for org members, beneficiary chip for non-members
+
+### `case-form/` — route `/immigration/cases/new`
+- Org-member-only: redirects away if caller has no active `ImmOrgMember` record
+- `forkJoin` on init loads employer orgs + law firm orgs + cases (for parent-case selector)
+- `beneficiaryEmail` field required in all cases
+- `needsParentCase` getter — true for `H4`, `H4_EAD`; shows parent H1B case selector
+- `isH4Ead` getter — true for `H4_EAD`; shows I-140 warning alert when selected parent lacks approval
+- `parentCaseI140Warning` — computed warning text surfacing the I-140 requirement
+- `onLawFirmChange()` — loads org members of selected law firm for attorney assignment dropdown
+- `<optgroup>` grouped case type select using `CASE_TYPE_GROUPS`
+
+### `case-detail/`, `case-join/`
+- `case-detail/` — tabbed view (Overview, Forms, Timeline, Consent, Activity, Messaging)
+- Consent tab — Grant/Revoke buttons are state-driven; Grant disabled when `latestConsent(rel)?.granted === true`; Revoke disabled when no record or already revoked — prevents duplicate log entries
+- Timeline tab — Add Event / Add Appointment inline forms; cards use `p-3` Bootstrap utility (`.card` has zero padding without it)
+- `CaseJoinComponent` — public route (`/immigration/cases/join/:token`), no `AuthGuard`; loads case info via public token endpoint; unauthenticated users see "Sign in with Google" button; on accept, validates email match and redirects to case; `accepted` boolean flips to show success state before redirect
+
+### Security guardrails (enforced in this module)
+- No label, placeholder, or validation message recommends a specific form or gives legal advice
+- No real PII in any test fixture or seed — use `John Doe`, `Acme Corp`, `Dewey Cheatham & Howe LLP`
+- `documentIds` arrays in JSON are loose cross-feature references — no FK constraints (per app-wide cross-phase FK rule)
+
 ## Don't
 - Don't convert components to standalone — everything is NgModule-based
 - Don't add NgRx — use BehaviorSubject in services
 - Don't call `console.log/warn/error` directly — use `LoggerService`
 - Don't remove `withCredentials: true` from `CredentialsInterceptor` — breaks session auth
-- Don't declare new components without adding them to `AppModule.declarations`
+- Don't declare new components in `AppModule` — declare them in their feature module under `src/app/features/`; only shell components (used directly by AppComponent) belong in AppModule
 - Don't create Angular enums for `StoreType`/`ReceiptDocType` — they're string unions by design (match backend strings directly)
 - Don't add `AuthGuard` to `/share/:token` or `/group/join/:token` — users visit before logging in
 - Don't use the `replace` pipe in templates — it doesn't exist in Angular; use a component method instead

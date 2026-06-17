@@ -1,0 +1,79 @@
+<div class="join-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5 text-muted">
+    <i class="bi bi-arrow-repeat spin me-2"></i>Loading invitation…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="join-card">
+    <div class="join-icon join-icon--error">
+      <i class="bi bi-exclamation-triangle"></i>
+    </div>
+    <h3>Invalid Invitation</h3>
+    <p class="text-muted">{{ error }}</p>
+    <a routerLink="/immigration" class="btn btn-outline-primary">Go to Visa Tracker</a>
+  </div>
+
+  <!-- Accepted success -->
+  <div *ngIf="accepted" class="join-card">
+    <div class="join-icon join-icon--success">
+      <i class="bi bi-check-circle"></i>
+    </div>
+    <h3>You're in!</h3>
+    <p class="text-muted">Your case access has been confirmed. Redirecting…</p>
+  </div>
+
+  <!-- Case info + actions -->
+  <div *ngIf="!loading && !error && !accepted && caseInfo" class="join-card">
+    <div class="join-icon">
+      <i class="bi bi-briefcase"></i>
+    </div>
+    <h3>Visa Case Invitation</h3>
+    <p class="text-muted">You have been invited to access a visa sponsorship case.</p>
+
+    <div class="case-info-grid">
+      <div class="case-info-row">
+        <span class="ci-label">Case Number</span>
+        <span class="ci-value mono">{{ caseInfo.caseNumber }}</span>
+      </div>
+      <div class="case-info-row">
+        <span class="ci-label">Case Type</span>
+        <span class="ci-value">{{ caseTypeLabels[caseInfo.caseType] || caseInfo.caseType }}</span>
+      </div>
+      <div *ngIf="caseInfo.employerImmOrgName" class="case-info-row">
+        <span class="ci-label">Employer</span>
+        <span class="ci-value"><i class="bi bi-building me-1"></i>{{ caseInfo.employerImmOrgName }}</span>
+      </div>
+      <div *ngIf="caseInfo.lawFirmImmOrgName" class="case-info-row">
+        <span class="ci-label">Law Firm</span>
+        <span class="ci-value"><i class="bi bi-person-workspace me-1"></i>{{ caseInfo.lawFirmImmOrgName }}</span>
+      </div>
+    </div>
+
+    <div class="join-actions">
+      <!-- Not logged in -->
+      <ng-container *ngIf="!isLoggedIn">
+        <p class="text-muted small mb-3">Sign in with Google to accept this invitation.</p>
+        <button class="btn btn-primary btn-lg" (click)="login()">
+          <i class="bi bi-google me-2"></i>Sign in with Google
+        </button>
+      </ng-container>
+
+      <!-- Logged in -->
+      <ng-container *ngIf="isLoggedIn">
+        <p class="text-muted small mb-3">
+          By clicking Accept, you confirm that you are the intended recipient of this invitation.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+          <a routerLink="/immigration" class="btn btn-outline-secondary">Decline</a>
+          <button class="btn btn-primary btn-lg" (click)="accept()" [disabled]="accepting">
+            <span *ngIf="accepting"><i class="bi bi-arrow-repeat spin me-1"></i>Accepting…</span>
+            <span *ngIf="!accepting"><i class="bi bi-check-lg me-1"></i>Accept Invitation</span>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,102 @@
+<div class="page-header">
+  <h2><i class="bi bi-briefcase me-2"></i>Visa Tracker</h2>
+  <div class="d-flex gap-2 flex-wrap">
+    <a *ngIf="hasEmployerOrg" routerLink="/immigration/employer" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-building me-1"></i>Employer
+    </a>
+    <a *ngIf="hasLawFirmOrg" routerLink="/immigration/attorney" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-person-workspace me-1"></i>Attorney
+    </a>
+    <a routerLink="/immigration/profile" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-person-vcard me-1"></i>My Profile
+    </a>
+    <button *ngIf="isOrgMember" class="btn btn-primary btn-sm" (click)="newCase()">
+      <i class="bi bi-plus-lg me-1"></i>New Case
+    </button>
+  </div>
+</div>
+
+<!-- Role context bar -->
+<div *ngIf="isOrgMember" class="role-context-bar">
+  <ng-container *ngFor="let org of employerOrgs">
+    <span class="role-chip role-chip--employer">
+      <i class="bi bi-building me-1"></i>{{ org.name }}
+      <span class="role-chip__label">Employer</span>
+    </span>
+  </ng-container>
+  <ng-container *ngFor="let org of lawFirmOrgs">
+    <span class="role-chip role-chip--attorney">
+      <i class="bi bi-person-workspace me-1"></i>{{ org.name }}
+      <span class="role-chip__label">Law Firm</span>
+    </span>
+  </ng-container>
+</div>
+<div *ngIf="!isOrgMember" class="role-context-bar role-context-bar--beneficiary">
+  <span class="role-chip role-chip--beneficiary">
+    <i class="bi bi-person-vcard me-1"></i>Visa Applicant
+    <span class="role-chip__label">Beneficiary</span>
+  </span>
+</div>
+
+<div *ngIf="loading" class="text-center py-5 text-muted">
+  <i class="bi bi-arrow-repeat spin me-2"></i>Loading cases…
+</div>
+
+<div *ngIf="error && !loading" class="alert alert-danger">{{ error }}</div>
+
+<!-- First-time user: no org + no cases → role picker -->
+<div *ngIf="!loading && !error && !isOrgMember && cases.length === 0" class="role-picker">
+  <i class="bi bi-briefcase display-4 text-muted mb-3"></i>
+  <h4>Welcome to Visa Tracker</h4>
+  <p class="text-muted mb-4">Choose how you'll be using this tool:</p>
+  <div class="role-picker__cards">
+    <a routerLink="/immigration/employer" class="role-picker__card">
+      <i class="bi bi-building role-picker__icon"></i>
+      <div class="role-picker__card-title">Employer / HR</div>
+      <div class="role-picker__card-desc">I sponsor work visas for employees at my company</div>
+    </a>
+    <a routerLink="/immigration/attorney" class="role-picker__card">
+      <i class="bi bi-person-workspace role-picker__icon"></i>
+      <div class="role-picker__card-title">Attorney / Paralegal</div>
+      <div class="role-picker__card-desc">I represent clients in immigration proceedings</div>
+    </a>
+  </div>
+  <p class="text-muted mt-4" style="font-size:.8rem">
+    <i class="bi bi-info-circle me-1"></i>
+    Visa applicants are invited by their employer. If you're waiting for an invitation, check your email.
+  </p>
+</div>
+
+<!-- Org member with no cases yet -->
+<div *ngIf="!loading && !error && isOrgMember && cases.length === 0" class="empty-state">
+  <i class="bi bi-briefcase display-4 text-muted"></i>
+  <p class="mt-3 text-muted">No cases yet. Click <strong>New Case</strong> to open your first case.</p>
+</div>
+
+<div *ngIf="!loading && cases.length > 0" class="case-list">
+  <div *ngFor="let c of cases" class="case-card" (click)="openCase(c.id)">
+    <div class="case-card__header">
+      <span class="case-number">{{ c.caseNumber }}</span>
+      <span class="badge" [ngClass]="statusCss[c.status]">
+        {{ statusLabels[c.status] || c.status }}
+      </span>
+    </div>
+    <div class="case-card__body">
+      <div class="case-type">{{ caseTypeLabels[c.caseType] || c.caseType }}</div>
+      <div class="case-meta text-muted">
+        <span *ngIf="c.employerImmOrgName">
+          <i class="bi bi-building me-1"></i>{{ c.employerImmOrgName }}
+        </span>
+        <span *ngIf="c.lawFirmImmOrgName" class="ms-3">
+          <i class="bi bi-person-workspace me-1"></i>{{ c.lawFirmImmOrgName }}
+        </span>
+        <span *ngIf="c.callerRelationship" class="ms-3 role-badge role-badge--{{c.callerRelationship | lowercase}}">
+          {{ c.callerRelationship | titlecase }}
+        </span>
+      </div>
+    </div>
+    <div class="case-card__footer text-muted">
+      Created {{ c.createdAt | date:'mediumDate' }}
+    </div>
+  </div>
+</div>

@@ -7,47 +7,16 @@ import { firstValueFrom } from 'rxjs';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { UploadComponent } from './components/upload/upload.component';
-import { ReceiptListComponent } from './components/receipt-list/receipt-list.component';
-import { ReceiptDetailComponent } from './components/receipt-detail/receipt-detail.component';
 import { LoginComponent } from './components/login/login.component';
+import { WelcomeBannerComponent } from './components/welcome-banner/welcome-banner.component';
+import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
+import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
+import { UploadComponent } from './components/upload/upload.component';
+import { ShareResponseComponent } from './components/share-response/share-response.component';
+import { PlansComponent } from './components/plans/plans.component';
 
 import { AuthService } from './services/auth.service';
 import { CredentialsInterceptor } from './interceptors/credentials.interceptor';
-import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
-import { WelcomeBannerComponent } from './components/welcome-banner/welcome-banner.component';
-import { ShareDialogComponent } from './components/share-dialog/share-dialog.component';
-import { ShareManagerComponent } from './components/share-manager/share-manager.component';
-import { ShareResponseComponent } from './components/share-response/share-response.component';
-import { GroupListComponent } from './components/group-list/group-list.component';
-import { GroupDetailComponent } from './components/group-detail/group-detail.component';
-import { JoinGroupComponent } from './components/join-group/join-group.component';
-import { DocumentsComponent } from './components/documents/documents.component';
-import { DocumentDetailComponent } from './components/document-detail/document-detail.component';
-import { DocumentShareDialogComponent } from './components/document-share-dialog/document-share-dialog.component';
-import { DocumentAccessComponent } from './components/document-access/document-access.component';
-import { GarageComponent } from './components/garage/garage.component';
-import { VehicleDetailComponent } from './components/vehicle-detail/vehicle-detail.component';
-import { VehicleJoinComponent } from './components/vehicle-join/vehicle-join.component';
-import { JobTrackerComponent } from './components/job-tracker/job-tracker.component';
-import { JobDetailComponent } from './components/job-detail/job-detail.component';
-import { ShopComponent } from './components/shop/shop.component';
-import { CartSidebarComponent } from './components/cart-sidebar/cart-sidebar.component';
-import { CheckoutComponent } from './components/checkout/checkout.component';
-import { OrderConfirmationComponent } from './components/order-confirmation/order-confirmation.component';
-import { AdminComponent } from './components/admin/admin.component';
-import { AdminRegisterComponent } from './components/admin-register/admin-register.component';
-import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
-import { AdminMembersComponent } from './components/admin-members/admin-members.component';
-import { AdminJoinComponent } from './components/admin-join/admin-join.component';
-import { AdminSquareComponent } from './components/admin-square/admin-square.component';
-import { AdminCloverComponent } from './components/admin-clover/admin-clover.component';
-import { AdminOrdersComponent } from './components/admin-orders/admin-orders.component';
-import { PlatformComponent } from './components/platform/platform.component';
-import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
-import { PlansComponent } from './components/plans/plans.component';
-import { PlatformSquareConfigComponent } from './components/platform-square-config/platform-square-config.component';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -56,44 +25,13 @@ export function initAuth(authService: AuthService): () => Promise<void> {
 @NgModule({
   declarations: [
     AppComponent,
-    DashboardComponent,
-    UploadComponent,
-    ReceiptListComponent,
-    ReceiptDetailComponent,
     LoginComponent,
-    StorageSettingsComponent,
     WelcomeBannerComponent,
-    ShareDialogComponent,
-    ShareManagerComponent,
-    ShareResponseComponent,
-    GroupListComponent,
-    GroupDetailComponent,
-    JoinGroupComponent,
-    DocumentsComponent,
-    DocumentDetailComponent,
-    DocumentShareDialogComponent,
-    DocumentAccessComponent,
-    GarageComponent,
-    VehicleDetailComponent,
-    VehicleJoinComponent,
-    JobTrackerComponent,
-    JobDetailComponent,
-    ShopComponent,
-    CartSidebarComponent,
-    CheckoutComponent,
-    OrderConfirmationComponent,
-    AdminComponent,
-    AdminRegisterComponent,
-    AdminDashboardComponent,
-    AdminMembersComponent,
-    AdminJoinComponent,
-    AdminSquareComponent,
-    AdminCloverComponent,
-    AdminOrdersComponent,
-    PlatformComponent,
     FeatureLockedComponent,
-    PlansComponent,
-    PlatformSquareConfigComponent
+    StorageSettingsComponent,
+    UploadComponent,
+    ShareResponseComponent,
+    PlansComponent
   ],
   imports: [
     BrowserModule,

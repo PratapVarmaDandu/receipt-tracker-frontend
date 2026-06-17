@@ -1,0 +1,161 @@
+<div class="page-header">
+  <div class="d-flex align-items-center gap-2">
+    <h2><i class="bi bi-person-workspace me-2"></i>Attorney Dashboard</h2>
+    <span *ngIf="selectedOrg" class="org-badge">{{ selectedOrg.name }}</span>
+  </div>
+  <a routerLink="/immigration" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>All Cases
+  </a>
+</div>
+
+<div *ngIf="loading" class="text-center py-5 text-muted">
+  <i class="bi bi-arrow-repeat spin me-2"></i>Loading…
+</div>
+
+<div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+<!-- No law firm orgs -->
+<div *ngIf="!loading && lawFirmOrgs.length === 0 && !showCreateOrg" class="card p-4 text-center">
+  <i class="bi bi-person-workspace display-4 text-muted"></i>
+  <p class="mt-3 text-muted">You have no law firm organization yet.</p>
+  <button class="btn btn-primary" (click)="showCreateOrg = true">
+    <i class="bi bi-plus-lg me-1"></i>Create Law Firm Organization
+  </button>
+</div>
+
+<!-- Create org form -->
+<div *ngIf="showCreateOrg" class="card p-3 mb-4">
+  <h6 class="mb-3">Create Law Firm Organization</h6>
+  <div *ngIf="createError" class="alert alert-danger">{{ createError }}</div>
+  <div class="mb-3">
+    <label class="form-label">Firm Name <span class="text-danger">*</span></label>
+    <input class="form-control" [(ngModel)]="newOrgName" placeholder="e.g. Smith & Partners LLP">
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-secondary" (click)="showCreateOrg = false" [disabled]="creating">Cancel</button>
+    <button class="btn btn-primary" (click)="createOrg()" [disabled]="!newOrgName.trim() || creating">
+      <span *ngIf="creating"><i class="bi bi-arrow-repeat spin me-1"></i>Creating…</span>
+      <span *ngIf="!creating">Create</span>
+    </button>
+  </div>
+</div>
+
+<!-- Org selector -->
+<div *ngIf="lawFirmOrgs.length > 1" class="mb-3">
+  <label class="form-label">Law Firm</label>
+  <select class="form-select" (change)="selectOrg($any($event.target).value)" style="max-width:320px">
+    <option *ngFor="let o of lawFirmOrgs" [value]="o.id">{{ o.name }}</option>
+  </select>
+</div>
+
+<div *ngIf="!loading && selectedOrg" class="row g-4">
+
+  <!-- Stats -->
+  <div class="col-12">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value">{{ cases.length }}</div>
+        <div class="stat-label">Total Cases</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ activePartnerships().length }}</div>
+        <div class="stat-label">Employer Clients</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ pendingPartnerships().length }}</div>
+        <div class="stat-label">Pending Requests</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cases -->
+  <div class="col-lg-8">
+    <div class="card p-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="section-title mb-0">Cases</h6>
+        <div class="d-flex gap-1 flex-wrap">
+          <button class="btn btn-xs" [class.active]="!activeFilter" (click)="activeFilter = null">All</button>
+          <button *ngFor="let s of statusFilters()" class="btn btn-xs"
+                  [class.active]="activeFilter === s" (click)="activeFilter = s">
+            {{ statusLabels[s] || s }}
+          </button>
+        </div>
+      </div>
+      <div *ngIf="filteredCases().length === 0" class="text-muted py-3 text-center">
+        No cases for this organization yet.
+      </div>
+      <table *ngIf="filteredCases().length > 0" class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Case #</th>
+            <th>Beneficiary</th>
+            <th>Employer</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filteredCases()">
+            <td class="mono">{{ c.caseNumber }}</td>
+            <td>
+              <div>{{ c.beneficiaryName }}</div>
+              <div class="text-muted small">{{ c.beneficiaryEmail }}</div>
+            </td>
+            <td class="text-muted small">{{ c.employerImmOrgName || '—' }}</td>
+            <td>{{ caseTypeLabels[c.caseType] || c.caseType }}</td>
+            <td><span class="badge" [ngClass]="statusCss[c.status]">{{ statusLabels[c.status] || c.status }}</span></td>
+            <td><button class="btn btn-sm btn-outline-primary" (click)="openCase(c.id)">View</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div class="col-lg-4">
+
+    <!-- Employer clients -->
+    <div class="card p-3 mb-3">
+      <h6 class="section-title">Employer Clients</h6>
+      <div *ngIf="pendingPartnerships().length > 0" class="mb-2">
+        <div *ngFor="let p of pendingPartnerships()" class="partner-row">
+          <span>{{ p.employerOrgName }} <span class="badge bg-warning text-dark">Pending</span></span>
+          <button class="btn btn-xs btn-success" (click)="acceptPartnership(p.id)">Accept</button>
+        </div>
+      </div>
+      <div *ngFor="let p of activePartnerships()" class="partner-row">
+        <span>{{ p.employerOrgName }}</span>
+        <button class="btn btn-xs btn-outline-danger" (click)="endPartnership(p.id)">End</button>
+      </div>
+      <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
+        No employer partnerships yet.
+      </div>
+    </div>
+
+    <!-- Team -->
+    <div class="card p-3">
+      <h6 class="section-title">Team Members</h6>
+      <div *ngIf="inviteResult" class="alert alert-success alert-sm mb-2">{{ inviteResult }}</div>
+      <div *ngIf="inviteError" class="alert alert-danger alert-sm mb-2">{{ inviteError }}</div>
+      <div class="d-flex gap-2 mb-3">
+        <input class="form-control form-control-sm" [(ngModel)]="inviteEmail"
+               placeholder="Email address" (keydown.enter)="inviteMember()">
+        <button class="btn btn-primary btn-sm" (click)="inviteMember()" [disabled]="!inviteEmail.trim() || inviting">
+          <span *ngIf="inviting"><i class="bi bi-arrow-repeat spin"></i></span>
+          <span *ngIf="!inviting">Invite</span>
+        </button>
+      </div>
+      <div *ngFor="let m of members" class="member-row">
+        <div>
+          <div class="small fw-semibold">{{ m.email }}</div>
+          <div class="text-muted" style="font-size:.75rem">{{ m.role | titlecase }}</div>
+        </div>
+        <span class="badge" [ngClass]="m.status === 'ACTIVE' ? 'bg-success' : m.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary'">
+          {{ m.status | titlecase }}
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>
