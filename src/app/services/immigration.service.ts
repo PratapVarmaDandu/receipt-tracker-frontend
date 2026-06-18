@@ -24,6 +24,7 @@ export interface ImmigrationCase {
   i140ApprovedDate: string | null;
   assignedAttorneyMemberId: number | null;
   assignedAttorneyName: string | null;
+  assignedAttorneyEmail: string | null;
   beneficiaryInvitePending: boolean;
   createdById: number | null;
   createdAt: string;
@@ -344,6 +345,14 @@ export class ImmigrationService {
     );
   }
 
+  getCaseBeneficiaryProfile(caseId: number): Observable<CanonicalProfile> {
+    const t = Date.now();
+    return this.http.get<CanonicalProfile>(`${this.base}/cases/${caseId}/beneficiary/profile`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/beneficiary/profile`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/beneficiary/profile`, err, t); throw err; })
+    );
+  }
+
   getMyProfile(): Observable<CanonicalProfile> {
     const t = Date.now();
     return this.http.get<CanonicalProfile>(`${this.base}/profile/me`).pipe(
@@ -357,6 +366,13 @@ export class ImmigrationService {
     return this.http.put<CanonicalProfile>(`${this.base}/profile/me`, req).pipe(
       tap(() => this.logger.apiCall(this.source, 'PUT', '/immigration/profile/me', t)),
       catchError(err => { this.logger.apiError(this.source, 'PUT', '/immigration/profile/me', err, t); throw err; })
+    );
+  }
+
+  downloadCaseProfileDoc(caseId: number, docId: number): Observable<Blob> {
+    return this.http.get(
+      `${this.base}/cases/${caseId}/profile/documents/${docId}/download`,
+      { responseType: 'blob' }
     );
   }
 

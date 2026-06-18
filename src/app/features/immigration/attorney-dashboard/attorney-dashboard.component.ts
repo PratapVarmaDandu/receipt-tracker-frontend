@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImmOrgService } from '../../../services/imm-org.service';
-import { ImmOrg, ImmOrgMember, OrgPartnership } from '../../../models/imm-org.model';
+import { ImmOrg, ImmOrgMember, OrgPartnership, PartnershipInviteRequest } from '../../../models/imm-org.model';
 import { ImmigrationCase, CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS } from '../../../services/immigration.service';
 import { LoggerService } from '../../../services/logger.service';
 
@@ -32,6 +32,12 @@ export class AttorneyDashboardComponent implements OnInit {
   inviting = false;
   inviteResult: string | null = null;
   inviteError: string | null = null;
+
+  showInviteEmployer = false;
+  employerInviteEmail = '';
+  sendingEmployerInvite = false;
+  employerInviteResult: string | null = null;
+  employerInviteError: string | null = null;
 
   readonly caseTypeLabels = CASE_TYPE_LABELS;
   readonly statusLabels = STATUS_LABELS;
@@ -170,5 +176,32 @@ export class AttorneyDashboardComponent implements OnInit {
 
   openCase(id: number): void {
     this.router.navigate(['/immigration/cases', id]);
+  }
+
+  sendEmployerInvite(): void {
+    if (!this.selectedOrg || !this.employerInviteEmail.trim()) return;
+    this.sendingEmployerInvite = true;
+    this.employerInviteError = null;
+    this.employerInviteResult = null;
+    const req: PartnershipInviteRequest = {
+      lawFirmOrgId: this.selectedOrg.id,
+      employerEmail: this.employerInviteEmail.trim()
+    };
+    this.immOrgService.inviteEmployer(req).subscribe({
+      next: p => {
+        this.sendingEmployerInvite = false;
+        this.employerInviteEmail = '';
+        const link = p.inviteToken
+          ? `${window.location.origin}/immigration/employer/onboard/${p.inviteToken}`
+          : '(check backend console for link)';
+        this.employerInviteResult = `Invite sent! Share this link with the employer: ${link}`;
+        this.loadPartnerships();
+      },
+      error: err => {
+        this.sendingEmployerInvite = false;
+        this.employerInviteError = err?.error?.error || 'Failed to send invite';
+        this.logger.error(this.source, 'sendEmployerInvite failed', err);
+      }
+    });
   }
 }

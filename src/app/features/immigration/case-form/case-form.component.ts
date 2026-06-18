@@ -3,11 +3,13 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ImmigrationService, CASE_TYPE_LABELS, CASE_TYPE_GROUPS } from '../../../services/immigration.service';
 import { ImmOrgService } from '../../../services/imm-org.service';
-import { ImmOrg, ImmOrgMember } from '../../../models/imm-org.model';
+import { ImmOrg, ImmOrgMember, OrgPartnership } from '../../../models/imm-org.model';
 import { LoggerService } from '../../../services/logger.service';
 
 const DEPENDENT_TYPES = ['H4', 'H4_EAD'];
 const H4_EAD_TYPES    = ['H4_EAD'];
+
+interface PartnerOrg { id: number; name: string; }
 
 @Component({
   selector: 'app-case-form',
@@ -33,7 +35,12 @@ export class CaseFormComponent implements OnInit {
 
   // Org data
   myOrgs: ImmOrg[] = [];
+  partnerships: OrgPartnership[] = [];
   lawFirmMembers: ImmOrgMember[] = [];
+
+  // Derived lists built from partnerships
+  partnerLawFirms: PartnerOrg[] = [];    // for employer: law firms they have partnership with
+  partnerEmployerOrgs: PartnerOrg[] = []; // for attorney: employers linked via partnership
 
   // Parent case list (for H4/H4-EAD)
   parentCases: { id: number; label: string; i140Approved: boolean }[] = [];
@@ -43,14 +50,30 @@ export class CaseFormComponent implements OnInit {
 
   get employerOrgs(): ImmOrg[] { return this.myOrgs.filter(o => o.orgType === 'EMPLOYER'); }
   get lawFirmOrgs():  ImmOrg[] { return this.myOrgs.filter(o => o.orgType === 'LAW_FIRM'); }
+
+  /** Caller is in a law firm but not an employer org */
+  get isAttorney(): boolean { return this.lawFirmOrgs.length > 0 && this.employerOrgs.length === 0; }
+  /** Caller is in an employer org but not a law firm */
+  get isEmployer(): boolean { return this.employerOrgs.length > 0 && this.lawFirmOrgs.length === 0; }
+
   get needsParentCase(): boolean { return DEPENDENT_TYPES.includes(this.caseType); }
   get isH4Ead(): boolean { return H4_EAD_TYPES.includes(this.caseType); }
 
-  // H4-EAD warning: parent case must have I-140 approved
   get parentCaseI140Warning(): boolean {
     if (!this.isH4Ead || !this.parentCaseId) return false;
     const parent = this.parentCases.find(p => p.id === this.parentCaseId);
     return parent != null && !parent.i140Approved;
+  }
+
+  // For attorney: the name of their own law firm (auto-set, shown read-only)
+  get myLawFirmName(): string {
+    return this.lawFirmOrgs[0]?.name ?? '';
+  }
+
+  // For attorney: their own member name (self-assigned)
+  get myMemberLabel(): string {
+    const org = this.lawFirmOrgs[0];
+    return org ? `Self (me)` : '';
   }
 
   constructor(
@@ -64,23 +87,20 @@ export class CaseFormComponent implements OnInit {
   ngOnInit(): void {
     this.logger.trace(this.source, '>>> ngOnInit()');
 
-    // Pre-fill beneficiary email from query param (e.g. from employer dashboard)
     const emailParam = this.route.snapshot.queryParamMap.get('email');
     if (emailParam) this.beneficiaryEmail = emailParam;
 
     forkJoin({
       orgs: this.immOrgService.listMine(),
-      cases: this.immigrationService.listCases()
+      cases: this.immigrationService.listCases(),
+      partnerships: this.immOrgService.listPartnerships()
     }).subscribe({
-      next: ({ orgs, cases }) => {
+      next: ({ orgs, cases, partnerships }) => {
         this.myOrgs = orgs;
+        this.partnerships = partnerships.filter(p => p.status === 'ACTIVE');
         this.loading = false;
 
-        // Auto-select single org
-        if (this.employerOrgs.length === 1) this.employerImmOrgId = this.employerOrgs[0].id;
-        if (this.lawFirmOrgs.length === 1)  this.lawFirmImmOrgId  = this.lawFirmOrgs[0].id;
-
-        // Build parent case list (H1B cases accessible to this user)
+        // Build parent case list
         this.parentCases = cases
           .filter(c => ['H1B_INITIAL', 'H1B_EXTENSION', 'H1B_TRANSFER'].includes(c.caseType))
           .map(c => ({
@@ -91,6 +111,40 @@ export class CaseFormComponent implements OnInit {
 
         if (orgs.length === 0) {
           this.loadError = 'You must belong to an employer or law firm organization to open cases.';
+          return;
+        }
+
+        if (this.isEmployer) {
+          // Auto-select employer
+          if (this.employerOrgs.length === 1) this.employerImmOrgId = this.employerOrgs[0].id;
+          // Build partner law firms from partnerships
+          const myEmployerIds = new Set(this.employerOrgs.map(o => o.id));
+          const seen = new Set<number>();
+          this.partnerships.forEach(p => {
+            if (p.employerOrgId != null && myEmployerIds.has(p.employerOrgId) && !seen.has(p.lawFirmOrgId)) {
+              seen.add(p.lawFirmOrgId);
+              this.partnerLawFirms.push({ id: p.lawFirmOrgId, name: p.lawFirmOrgName });
+            }
+          });
+        }
+
+        if (this.isAttorney) {
+          // Auto-select own law firm
+          const myLawFirm = this.lawFirmOrgs[0];
+          if (myLawFirm) {
+            this.lawFirmImmOrgId = myLawFirm.id;
+            this.assignedAttorneyMemberId = myLawFirm.myMemberId;
+            this.loadLawFirmMembers(myLawFirm.id);
+          }
+          // Build partner employer orgs from active partnerships only (pending invites have no employerOrgId)
+          const myLawFirmIds = new Set(this.lawFirmOrgs.map(o => o.id));
+          const seen = new Set<number>();
+          this.partnerships.forEach(p => {
+            if (p.employerOrgId != null && myLawFirmIds.has(p.lawFirmOrgId) && !seen.has(p.employerOrgId)) {
+              seen.add(p.employerOrgId);
+              this.partnerEmployerOrgs.push({ id: p.employerOrgId, name: p.employerOrgName });
+            }
+          });
         }
       },
       error: err => {
@@ -105,10 +159,12 @@ export class CaseFormComponent implements OnInit {
     this.assignedAttorneyMemberId = null;
     this.lawFirmMembers = [];
     if (!this.lawFirmImmOrgId) return;
-    this.immOrgService.listMembers(this.lawFirmImmOrgId).subscribe({
-      next: members => {
-        this.lawFirmMembers = members.filter(m => m.status === 'ACTIVE');
-      },
+    this.loadLawFirmMembers(this.lawFirmImmOrgId);
+  }
+
+  private loadLawFirmMembers(orgId: number): void {
+    this.immOrgService.listMembers(orgId).subscribe({
+      next: members => { this.lawFirmMembers = members.filter(m => m.status === 'ACTIVE'); },
       error: () => {}
     });
   }
@@ -116,6 +172,14 @@ export class CaseFormComponent implements OnInit {
   submit(): void {
     if (!this.caseType || !this.beneficiaryEmail.trim()) return;
     if (this.isH4Ead && this.parentCaseI140Warning) return;
+    if (this.isEmployer && !this.lawFirmImmOrgId) {
+      this.submitError = 'Please select a law firm.';
+      return;
+    }
+    if (this.isAttorney && !this.employerImmOrgId) {
+      this.submitError = 'Please select the sponsoring employer.';
+      return;
+    }
 
     this.submitting = true;
     this.submitError = null;

@@ -117,7 +117,7 @@
         <p class="text-muted small mb-0">Add all passports — most recent issue date is used as current.</p>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('passport')"
+        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('passport','attorney')"
                 [disabled]="!form.passports.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
@@ -191,7 +191,7 @@
         <p class="text-muted small mb-0">Each US entry with its I-94 record.</p>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('travel')"
+        <button class="btn btn-sm btn-outline-secondary" (click)="openShare('travel','attorney')"
                 [disabled]="!form.travelEntries.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
@@ -274,7 +274,7 @@
       <div class="section-title-row">
         <h5 class="section-title mb-0">Education</h5>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('education')"
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('education','attorney')"
                   [disabled]="!form.education.length">
             <i class="bi bi-share me-1"></i>Share
           </button>
@@ -324,7 +324,7 @@
       <div class="section-title-row">
         <h5 class="section-title mb-0">Employment History</h5>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('employment')"
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('employment','employer')"
                   [disabled]="!form.employment.length">
             <i class="bi bi-share me-1"></i>Share
           </button>
@@ -378,7 +378,7 @@
       <div class="section-title-row">
         <h5 class="section-title mb-0">Dependents</h5>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('dependent')"
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('dependent','attorney')"
                   [disabled]="!form.dependents.length">
             <i class="bi bi-share me-1"></i>Share
           </button>
@@ -424,7 +424,7 @@
       <div class="section-title-row">
         <h5 class="section-title mb-0">Prior Visas</h5>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('priorVisa')"
+          <button class="btn btn-sm btn-outline-secondary" (click)="openShare('priorVisa','attorney')"
                   [disabled]="!form.priorVisas.length">
             <i class="bi bi-share me-1"></i>Share
           </button>
@@ -524,15 +524,19 @@
   <div class="share-panel mt-3 mb-1 p-3">
     <div class="d-flex align-items-center justify-content-between mb-2">
       <span class="fw-semibold" style="font-size:.9rem">
-        <i class="bi bi-share me-1"></i>Share with employer or immigration team
+        <i class="bi bi-share me-1"></i>Share with immigration team
       </span>
       <button class="btn-close" style="font-size:.75rem" (click)="closeShare()"></button>
     </div>
     <div *ngIf="!sharePanel?.shareUrl">
       <div class="row g-2">
         <div class="col-md-7">
-          <input class="form-control form-control-sm" type="email"
-                 placeholder="Recipient email" [(ngModel)]="sharePanel!.email">
+          <!-- Read-only when auto-populated from case context -->
+          <input *ngIf="sharePanel?.emailReadonly" class="form-control form-control-sm"
+                 type="email" [value]="sharePanel!.email" readonly
+                 style="background:#f8fafc; cursor:default;">
+          <input *ngIf="!sharePanel?.emailReadonly" class="form-control form-control-sm"
+                 type="email" placeholder="Recipient email" [(ngModel)]="sharePanel!.email">
         </div>
         <div class="col-md-3">
           <select class="form-select form-select-sm" [(ngModel)]="sharePanel!.expiry">

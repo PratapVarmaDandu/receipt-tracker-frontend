@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   ImmOrg, ImmOrgMember, OrgPartnership,
-  CreateImmOrgRequest, InviteMemberRequest, CreatePartnershipRequest
+  CreateImmOrgRequest, InviteMemberRequest, CreatePartnershipRequest,
+  PartnershipInviteRequest, PartnershipJoinInfo, EmployerOnboardRequest
 } from '../models/imm-org.model';
 import { ImmigrationCase } from './immigration.service';
 
@@ -65,5 +66,17 @@ export class ImmOrgService {
 
   listCasesByOrg(orgId: number): Observable<ImmigrationCase[]> {
     return this.http.get<ImmigrationCase[]>(`${BASE}/api/immigration/cases/by-org/${orgId}`, OPTS);
+  }
+
+  inviteEmployer(req: PartnershipInviteRequest): Observable<OrgPartnership> {
+    return this.http.post<OrgPartnership>(`${BASE}/api/immigration/partnerships/invite`, req, OPTS);
+  }
+
+  getOnboardInfo(token: string): Observable<PartnershipJoinInfo> {
+    return this.http.get<PartnershipJoinInfo>(`${BASE}/api/immigration/partnerships/onboard/${token}`, OPTS);
+  }
+
+  completeOnboarding(token: string, req: EmployerOnboardRequest): Observable<OrgPartnership> {
+    return this.http.post<OrgPartnership>(`${BASE}/api/immigration/partnerships/onboard/${token}`, req, OPTS);
   }
 }

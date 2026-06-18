@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
-  ImmigrationService, CanonicalProfile, Address,
+  ImmigrationService, ImmigrationCase, CanonicalProfile, Address,
   PassportEntry, TravelEntry, Education, Employment, Dependent, PriorVisa
 } from '../../../services/immigration.service';
 import { DocumentService } from '../../../services/document.service';
@@ -56,12 +57,16 @@ export class CanonicalProfileComponent implements OnInit {
   selectedDocId: Record<string, number | null> = {};
 
   // ── Share panel ────────────────────────────────────────────────────────────
-  sharePanel: { section: string; email: string; expiry: number; sharing: boolean; shareUrl: string | null } | null = null;
+  sharePanel: { section: string; email: string; emailReadonly: boolean; expiry: number; sharing: boolean; shareUrl: string | null } | null = null;
   shareError: string | null = null;
+
+  // ── Case context (populated when navigated from a case, for auto-fill) ────
+  caseContext: ImmigrationCase | null = null;
 
   constructor(
     private immigrationService: ImmigrationService,
     private documentService: DocumentService,
+    private route: ActivatedRoute,
     private logger: LoggerService
   ) {}
 
@@ -69,6 +74,13 @@ export class CanonicalProfileComponent implements OnInit {
     this.logger.trace(this.source, '>>> ngOnInit()');
     this.load();
     this.loadVaultDocs();
+    const caseId = this.route.snapshot.queryParamMap.get('caseId');
+    if (caseId) {
+      this.immigrationService.getCase(Number(caseId)).subscribe({
+        next: c => { this.caseContext = c; },
+        error: () => {}
+      });
+    }
   }
 
   load(): void {
@@ -86,6 +98,11 @@ export class CanonicalProfileComponent implements OnInit {
   setTab(id: TabId): void { this.activeTab = id; }
 
   save(): void {
+    const errors = this.validateDates();
+    if (errors.length) {
+      this.saveError = errors.join(' | ');
+      return;
+    }
     this.saving = true;
     this.saveError = null;
     this.savedOk = false;
@@ -193,8 +210,20 @@ export class CanonicalProfileComponent implements OnInit {
   }
 
   // ── Share section ─────────────────────────────────────────────────────────
-  openShare(section: string): void {
-    this.sharePanel = { section, email: '', expiry: 30, sharing: false, shareUrl: null };
+  openShare(section: string, recipient: 'attorney' | 'employer'): void {
+    let email = '';
+    let emailReadonly = false;
+    if (this.caseContext) {
+      if (recipient === 'attorney' && this.caseContext.assignedAttorneyEmail) {
+        email = this.caseContext.assignedAttorneyEmail;
+        emailReadonly = true;
+      } else if (recipient === 'employer' && this.caseContext.beneficiaryEmail) {
+        // Use employer org name as hint; employer contact email not in DTO — leave editable
+        email = '';
+        emailReadonly = false;
+      }
+    }
+    this.sharePanel = { section, email, emailReadonly, expiry: 30, sharing: false, shareUrl: null };
     this.shareError = null;
   }
   closeShare(): void { this.sharePanel = null; this.shareError = null; }
@@ -250,6 +279,43 @@ export class CanonicalProfileComponent implements OnInit {
       dependent: 'Dependents', priorVisa: 'Prior Visas',
     };
     return map[section] || section;
+  }
+
+  // ── Validation ────────────────────────────────────────────────────────────
+  private isValidDate(v: string | undefined): boolean {
+    if (!v || !v.trim()) return true; // empty is ok — field is optional
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v));
+  }
+
+  private validateDates(): string[] {
+    const errs: string[] = [];
+    if (!this.isValidDate(this.form.dateOfBirth))
+      errs.push('Date of Birth must be YYYY-MM-DD');
+    if (!this.isValidDate(this.form.currentVisaExpiry))
+      errs.push('Visa Expiry must be YYYY-MM-DD');
+    this.form.passports.forEach((p, i) => {
+      if (!this.isValidDate(p.issueDate))
+        errs.push(`Passport #${i + 1} Issue Date must be YYYY-MM-DD`);
+      if (!this.isValidDate(p.expiryDate))
+        errs.push(`Passport #${i + 1} Expiry Date must be YYYY-MM-DD`);
+    });
+    this.form.travelEntries.forEach((t, i) => {
+      if (!this.isValidDate(t.entryDate))
+        errs.push(`US Entry #${i + 1} Entry Date must be YYYY-MM-DD`);
+      if (!this.isValidDate(t.admittedUntil))
+        errs.push(`US Entry #${i + 1} Admitted Until must be YYYY-MM-DD`);
+    });
+    this.form.dependents.forEach((d, i) => {
+      if (!this.isValidDate(d.dateOfBirth))
+        errs.push(`Dependent #${i + 1} Date of Birth must be YYYY-MM-DD`);
+    });
+    this.form.priorVisas.forEach((v, i) => {
+      if (!this.isValidDate(v.issueDate))
+        errs.push(`Prior Visa #${i + 1} Issue Date must be YYYY-MM-DD`);
+      if (!this.isValidDate(v.expiryDate))
+        errs.push(`Prior Visa #${i + 1} Expiry Date must be YYYY-MM-DD`);
+    });
+    return errs;
   }
 
   // ── Private ────────────────────────────────────────────────────────────────

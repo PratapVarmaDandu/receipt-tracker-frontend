@@ -1,15 +1,15 @@
 <div class="page-header">
-  <h2><i class="bi bi-plus-lg me-2"></i>New Immigration Case</h2>
-  <a routerLink="/immigration" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i>Back
+  <a routerLink="/immigration" class="btn-back">
+    <i class="bi bi-arrow-left"></i> Cases
   </a>
+  <h2 class="mb-0"><i class="bi bi-plus-lg me-2"></i>New Immigration Case</h2>
 </div>
 
 <div *ngIf="loading" class="text-center py-5 text-muted">
   <i class="bi bi-arrow-repeat spin me-2"></i>Loading…
 </div>
 
-<div *ngIf="loadError && !loading" class="alert alert-danger">
+<div *ngIf="loadError && !loading" class="alert alert-danger mt-3">
   <i class="bi bi-exclamation-triangle me-2"></i>{{ loadError }}
   <div class="mt-2">
     <a routerLink="/immigration/employer" class="btn btn-sm btn-outline-primary me-2">Set up Employer Org</a>
@@ -17,89 +17,139 @@
   </div>
 </div>
 
-<div *ngIf="!loading && !loadError" class="card case-form-card">
-  <div *ngIf="submitError" class="alert alert-danger mb-3">{{ submitError }}</div>
+<div *ngIf="!loading && !loadError" class="case-form-card">
+  <div *ngIf="submitError" class="alert alert-danger">{{ submitError }}</div>
 
-  <!-- Beneficiary email -->
-  <div class="mb-3">
-    <label class="form-label">Employee / Beneficiary Email <span class="text-danger">*</span></label>
-    <input class="form-control" type="email" [(ngModel)]="beneficiaryEmail"
-           placeholder="employee@company.com"
-           [disabled]="submitting">
-    <div class="form-text text-muted">
-      An invitation will be sent to this email if they haven't used the system before.
+  <!-- ── Beneficiary ──────────────────────────────────────────────── -->
+  <div class="form-section">
+    <div class="form-section__title">Beneficiary</div>
+    <div class="mb-3">
+      <label class="form-label">Employee / Applicant Email <span class="text-danger">*</span></label>
+      <input class="form-control" type="email" [(ngModel)]="beneficiaryEmail"
+             placeholder="employee@company.com" [disabled]="submitting">
+      <div class="form-text">An invitation email will be sent if they haven't used the system yet.</div>
     </div>
   </div>
 
-  <!-- Case type (grouped) -->
-  <div class="mb-3">
-    <label class="form-label">Case Type <span class="text-danger">*</span></label>
-    <select class="form-select" [(ngModel)]="caseType" [disabled]="submitting">
-      <option value="">— Select —</option>
-      <optgroup *ngFor="let group of caseTypeGroups" [label]="group.label">
-        <option *ngFor="let t of group.types" [value]="t">{{ caseTypeLabels[t] }}</option>
-      </optgroup>
-    </select>
-  </div>
-
-  <!-- Parent case (H4 / H4-EAD) -->
-  <div *ngIf="needsParentCase" class="mb-3">
-    <label class="form-label">
-      Primary H-1B Case
-      <span class="text-danger">*</span>
-      <span class="text-muted ms-1" style="font-size:.8rem">(the spouse's H-1B case this dependent case links to)</span>
-    </label>
-    <select class="form-select" [(ngModel)]="parentCaseId" [disabled]="submitting">
-      <option [ngValue]="null">— Select H-1B case —</option>
-      <option *ngFor="let p of parentCases" [ngValue]="p.id">
-        {{ p.label }}{{ p.i140Approved ? ' ✓ I-140 Approved' : '' }}
-      </option>
-    </select>
-    <div *ngIf="parentCases.length === 0" class="form-text text-warning">
-      No H-1B cases found. Create the primary H-1B case first.
+  <!-- ── Case Type ───────────────────────────────────────────────── -->
+  <div class="form-section">
+    <div class="form-section__title">Case Type</div>
+    <div class="mb-3">
+      <label class="form-label">Visa / Case Type <span class="text-danger">*</span></label>
+      <select class="form-select" [(ngModel)]="caseType" [disabled]="submitting">
+        <option value="">— Select —</option>
+        <optgroup *ngFor="let group of caseTypeGroups" [label]="group.label">
+          <option *ngFor="let t of group.types" [value]="t">{{ caseTypeLabels[t] }}</option>
+        </optgroup>
+      </select>
     </div>
-    <!-- H4-EAD warning -->
-    <div *ngIf="isH4Ead && parentCaseI140Warning" class="alert alert-warning mt-2 mb-0 py-2">
-      <i class="bi bi-exclamation-triangle me-1"></i>
-      H-4 EAD requires an approved I-140 on the primary H-1B case.
-      The selected case does not have an approved I-140 yet.
+
+    <!-- Parent case (H4 / H4-EAD) -->
+    <div *ngIf="needsParentCase" class="mb-3">
+      <label class="form-label">
+        Primary H-1B Case <span class="text-danger">*</span>
+        <span class="text-muted ms-1" style="font-size:.8rem">(the spouse's H-1B case this links to)</span>
+      </label>
+      <select class="form-select" [(ngModel)]="parentCaseId" [disabled]="submitting">
+        <option [ngValue]="null">— Select H-1B case —</option>
+        <option *ngFor="let p of parentCases" [ngValue]="p.id">
+          {{ p.label }}{{ p.i140Approved ? ' ✓ I-140 Approved' : '' }}
+        </option>
+      </select>
+      <div *ngIf="parentCases.length === 0" class="form-text text-warning">
+        No H-1B cases found. Create the primary H-1B case first.
+      </div>
+      <div *ngIf="isH4Ead && parentCaseI140Warning" class="alert alert-warning mt-2 py-2 mb-0">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        H-4 EAD requires an approved I-140 on the selected H-1B case.
+      </div>
     </div>
   </div>
 
-  <!-- Employer org -->
-  <div *ngIf="employerOrgs.length > 0" class="mb-3">
-    <label class="form-label">Sponsoring Employer</label>
-    <select class="form-select" [(ngModel)]="employerImmOrgId" [disabled]="submitting">
-      <option [ngValue]="null">— None —</option>
-      <option *ngFor="let o of employerOrgs" [ngValue]="o.id">{{ o.name }}</option>
-    </select>
+  <!-- ── Parties (EMPLOYER view) ─────────────────────────────────── -->
+  <div *ngIf="isEmployer" class="form-section">
+    <div class="form-section__title">Parties</div>
+
+    <!-- Employer: auto-selected, shown as tag -->
+    <div class="mb-3">
+      <label class="form-label">Sponsoring Employer</label>
+      <div class="org-tag org-tag--employer">
+        <i class="bi bi-building me-1"></i>
+        <span *ngFor="let o of employerOrgs; let last = last">{{ o.name }}<span *ngIf="!last">, </span></span>
+        <span class="org-tag__badge">Your org</span>
+      </div>
+    </div>
+
+    <!-- Law firm from partnerships (required) -->
+    <div class="mb-3">
+      <label class="form-label">
+        Law Firm <span class="text-danger">*</span>
+        <span *ngIf="partnerLawFirms.length === 0" class="ms-1 text-warning" style="font-size:.8rem">
+          — No active partnerships. <a routerLink="/immigration/employer">Set up partnership</a> first.
+        </span>
+      </label>
+      <select class="form-select" [(ngModel)]="lawFirmImmOrgId"
+              (ngModelChange)="onLawFirmChange()" [disabled]="submitting || partnerLawFirms.length === 0">
+        <option [ngValue]="null">— Select law firm —</option>
+        <option *ngFor="let o of partnerLawFirms" [ngValue]="o.id">{{ o.name }}</option>
+      </select>
+    </div>
+
+    <!-- Attorney from law firm members (optional) -->
+    <div *ngIf="lawFirmImmOrgId && lawFirmMembers.length > 0" class="mb-3 ps-3 border-start border-2">
+      <label class="form-label">Assign Attorney / Paralegal <span class="text-muted">(optional — law firm can assign internally)</span></label>
+      <select class="form-select" [(ngModel)]="assignedAttorneyMemberId" [disabled]="submitting">
+        <option [ngValue]="null">— Unassigned —</option>
+        <option *ngFor="let m of lawFirmMembers" [ngValue]="m.id">{{ m.email }}</option>
+      </select>
+    </div>
   </div>
 
-  <!-- Law firm + attorney assignment -->
-  <div *ngIf="lawFirmOrgs.length > 0" class="mb-3">
-    <label class="form-label">Law Firm</label>
-    <select class="form-select" [(ngModel)]="lawFirmImmOrgId"
-            (ngModelChange)="onLawFirmChange()" [disabled]="submitting">
-      <option [ngValue]="null">— None —</option>
-      <option *ngFor="let o of lawFirmOrgs" [ngValue]="o.id">{{ o.name }}</option>
-    </select>
+  <!-- ── Parties (ATTORNEY view) ─────────────────────────────────── -->
+  <div *ngIf="isAttorney" class="form-section">
+    <div class="form-section__title">Parties</div>
+
+    <!-- Law firm: auto-set to own firm (read-only) -->
+    <div class="mb-3">
+      <label class="form-label">Law Firm</label>
+      <div class="org-tag org-tag--attorney">
+        <i class="bi bi-person-workspace me-1"></i>{{ myLawFirmName }}
+        <span class="org-tag__badge">Your firm</span>
+      </div>
+    </div>
+
+    <!-- Attorney: self (read-only display, but value is set) -->
+    <div class="mb-3 ps-3 border-start border-2">
+      <label class="form-label">Assigned Attorney</label>
+      <div class="org-tag org-tag--self">
+        <i class="bi bi-person-check me-1"></i>You (initial attorney)
+        <span class="org-tag__badge">Can transfer later</span>
+      </div>
+    </div>
+
+    <!-- Employer: from partnerships (required) -->
+    <div class="mb-3">
+      <label class="form-label">
+        Sponsoring Employer <span class="text-danger">*</span>
+        <span *ngIf="partnerEmployerOrgs.length === 0" class="ms-1 text-warning" style="font-size:.8rem">
+          — No employer partnerships. <a routerLink="/immigration/attorney">Set up partnership</a> first.
+        </span>
+      </label>
+      <select class="form-select" [(ngModel)]="employerImmOrgId"
+              [disabled]="submitting || partnerEmployerOrgs.length === 0">
+        <option [ngValue]="null">— Select employer —</option>
+        <option *ngFor="let o of partnerEmployerOrgs" [ngValue]="o.id">{{ o.name }}</option>
+      </select>
+    </div>
   </div>
 
-  <div *ngIf="lawFirmImmOrgId && lawFirmMembers.length > 0" class="mb-3 ps-3 border-start border-2">
-    <label class="form-label">Assign Attorney / Paralegal <span class="text-muted">(optional)</span></label>
-    <select class="form-select" [(ngModel)]="assignedAttorneyMemberId" [disabled]="submitting">
-      <option [ngValue]="null">— Unassigned —</option>
-      <option *ngFor="let m of lawFirmMembers" [ngValue]="m.id">{{ m.email }}</option>
-    </select>
-  </div>
-
-  <!-- Actions -->
-  <div class="form-actions d-flex gap-2">
-    <button class="btn btn-secondary" (click)="cancel()" [disabled]="submitting">Cancel</button>
+  <!-- ── Actions ──────────────────────────────────────────────────── -->
+  <div class="form-actions">
+    <button class="btn btn-outline-secondary" (click)="cancel()" [disabled]="submitting">Cancel</button>
     <button class="btn btn-primary" (click)="submit()"
             [disabled]="!caseType || !beneficiaryEmail.trim() || submitting || (isH4Ead && parentCaseI140Warning)">
       <span *ngIf="submitting"><i class="bi bi-arrow-repeat spin me-1"></i>Creating…</span>
-      <span *ngIf="!submitting"><i class="bi bi-plus-lg me-1"></i>Create Case & Invite Beneficiary</span>
+      <span *ngIf="!submitting"><i class="bi bi-plus-lg me-1"></i>Create Case &amp; Invite Beneficiary</span>
     </button>
   </div>
 </div>

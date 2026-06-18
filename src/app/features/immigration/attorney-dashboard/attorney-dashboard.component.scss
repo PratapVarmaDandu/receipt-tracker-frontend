@@ -86,6 +86,20 @@
     &:hover { background: #dc2626; color: #fff; } }
 }
 
+.invite-employer-form {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.btn-xs.btn-primary {
+  background: var(--primary, #6366f1);
+  color: #fff;
+  border-color: var(--primary, #6366f1);
+  &:hover { opacity: .9; }
+}
+
 .spin {
   display: inline-block;
   animation: spin 1s linear infinite;

@@ -292,30 +292,41 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 ### `services/immigration.service.ts` — key constants
 - `CASE_TYPE_LABELS` — maps all 14 `CaseType` values to display strings: H1B family, H-4 dependents, PERM/I-140, I-485, GC EAD, GC Renewal, Naturalization, Consular
 - `CASE_TYPE_GROUPS` — exported `{ label: string; types: string[] }[]` array for `<optgroup>` dropdown; groups: "H-1B Specialty Occupation", "H-4 Dependents", "Green Card Pathway", "Green Card & Citizenship", "Other"
-- `ImmigrationCase` interface additions: `parentCaseId?: number`, `i140Approved`, `i140ApprovedDate?`, `assignedAttorneyMemberId?`, `assignedAttorneyName?`, `beneficiaryInvitePending`; beneficiary name/email are nullable
-- `CreateCaseRequest` additions: `beneficiaryEmail: string` (required), `parentCaseId?: number`, `assignedAttorneyMemberId?: number`
-- New methods: `getCaseByInviteToken(token)` — public endpoint, no auth; `acceptCaseInvite(token)` — auth required
+- `ImmigrationCase` interface — `assignedAttorneyMemberId`, `assignedAttorneyName`, `assignedAttorneyEmail` (all nullable); `beneficiaryInvitePending`; beneficiary name/email nullable
+- `CreateCaseRequest` — `beneficiaryEmail: string` (required), `parentCaseId?`, `assignedAttorneyMemberId?`
+- `getCaseBeneficiaryProfile(caseId)` — calls `GET /api/immigration/cases/{id}/beneficiary/profile`; used by case-detail Profile tab
+- `getCaseByInviteToken(token)` / `acceptCaseInvite(token)` — public and auth invite endpoints
+
+**`ImmOrg` model** — `myMemberId: number | null` added; populated only from `listMine()` (tells the frontend which `ImmOrgMember.id` the current user holds in each org); used by case-form to auto-assign attorney = self.
 
 ### `case-list/` — route `/immigration`
-- **Role picker** — shown when `!isOrgMember && cases.length === 0`; two cards: "Employer / HR" → `/immigration/employer`, "Attorney / Paralegal" → `/immigration/attorney`; footer note tells beneficiaries to check their email for invite
-- **Org member empty state** — separate `*ngIf` for `isOrgMember && cases.length === 0` with "New Case" prompt
-- **Role context bar** — always shown above the list; employer/law-firm chips for org members, beneficiary chip for non-members
+- **Header buttons**: Employer users see "Employer" + "New Case"; Attorney users see "Attorney" + "New Case"; Beneficiaries see "My Profile" only (no New Case)
+- **Role picker** — shown when `!isOrgMember && cases.length === 0`; two cards to `/immigration/employer` and `/immigration/attorney`
+- **Role context bar** — employer/law-firm chips for org members; beneficiary chip for non-members
 
 ### `case-form/` — route `/immigration/cases/new`
-- Org-member-only: redirects away if caller has no active `ImmOrgMember` record
-- `forkJoin` on init loads employer orgs + law firm orgs + cases (for parent-case selector)
-- `beneficiaryEmail` field required in all cases
-- `needsParentCase` getter — true for `H4`, `H4_EAD`; shows parent H1B case selector
-- `isH4Ead` getter — true for `H4_EAD`; shows I-140 warning alert when selected parent lacks approval
-- `parentCaseI140Warning` — computed warning text surfacing the I-140 requirement
-- `onLawFirmChange()` — loads org members of selected law firm for attorney assignment dropdown
-- `<optgroup>` grouped case type select using `CASE_TYPE_GROUPS`
+- `forkJoin` on init loads `listMine()` + `listCases()` + `listPartnerships()`
+- `isAttorney` getter — `lawFirmOrgs.length > 0 && employerOrgs.length === 0`
+- `isEmployer` getter — `employerOrgs.length > 0 && lawFirmOrgs.length === 0`
+- **Attorney flow**: law firm auto-set to own firm (read-only chip); `assignedAttorneyMemberId` = `lawFirmOrgs[0].myMemberId` (self); employer dropdown from `partnerEmployerOrgs` (required)
+- **Employer flow**: employer auto-set to own org (read-only chip); law firm dropdown from `partnerLawFirms` (required, built from ACTIVE partnerships); attorney dropdown optional from law firm members
+- `partnerLawFirms` / `partnerEmployerOrgs` — `{ id, name }[]` derived from partnerships at init; no extra API call needed (OrgPartnership DTO includes org names)
+- CSS: card with `.form-section` blocks (padded + divider), `.org-tag` chips, `.form-actions` footer on grey background
 
-### `case-detail/`, `case-join/`
-- `case-detail/` — tabbed view (Overview, Forms, Timeline, Consent, Activity, Messaging)
-- Consent tab — Grant/Revoke buttons are state-driven; Grant disabled when `latestConsent(rel)?.granted === true`; Revoke disabled when no record or already revoked — prevents duplicate log entries
-- Timeline tab — Add Event / Add Appointment inline forms; cards use `p-3` Bootstrap utility (`.card` has zero padding without it)
-- `CaseJoinComponent` — public route (`/immigration/cases/join/:token`), no `AuthGuard`; loads case info via public token endpoint; unauthenticated users see "Sign in with Google" button; on accept, validates email match and redirects to case; `accepted` boolean flips to show success state before redirect
+### `case-detail/` — route `/immigration/cases/:id`
+- Tabs: Overview, Timeline, Forms (attorney only), Documents, Messaging, **Employee Profile** (org members only)
+- Role getters: `isBeneficiary`, `isAttorney`, `isEmployer`, `isOrgMember` — all derived from `case.callerRelationship`
+- **Header**: Employer/Attorney nav buttons always visible when `isEmployer`/`isAttorney` (item 4 fix)
+- **Overview "My Profile" button**: only shown when `isBeneficiary`; navigates to `/immigration/profile?caseId=X`; org members see "View Employee Profile" button that switches to profile tab
+- **Profile tab**: calls `getCaseBeneficiaryProfile(caseId)` on first open; shows read-only bio fields (name, DOB, citizenship, visa, passports); `profileLoaded` gate prevents repeat fetches
+
+### `canonical-profile/` — route `/immigration/profile`
+- `ActivatedRoute` injected; reads `?caseId=` query param on init; loads case via `getCase(caseId)` and stores as `caseContext`
+- `openShare(section, recipient: 'attorney' | 'employer')` — pre-fills `email` from `caseContext.assignedAttorneyEmail` (attorney) or leaves blank (employer, email not in DTO); sets `emailReadonly = true` when auto-populated
+- Share panel email field: shows as `readonly` input when `sharePanel.emailReadonly`; editable otherwise
+
+### `case-join/`
+- Public route (`/immigration/cases/join/:token`), no `AuthGuard`; loads case info via public token endpoint; unauthenticated users see "Sign in with Google" button; on accept, validates email match and redirects to case; `accepted` boolean flips to show success state before redirect
 
 ### Security guardrails (enforced in this module)
 - No label, placeholder, or validation message recommends a specific form or gives legal advice

@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import {
   ImmigrationService, ImmigrationCase, FormInstance, TimelineItem, KeyDate,
-  ActivityFeedItem, ConsentRecord, ImmMessage,
+  ActivityFeedItem, ConsentRecord, ImmMessage, CanonicalProfile,
   CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS,
   FORM_STATUS_LABELS, FORM_STATUS_CSS, EVENT_TYPE_ICONS, CHANNEL_LABELS
 } from '../../../services/immigration.service';
@@ -144,12 +144,55 @@ export class CaseDetailComponent implements OnInit {
     if (tab === 'forms'     && !this.formsLoaded)    this.loadForms();
     if (tab === 'timeline'  && !this.timelineLoaded) this.loadTimeline();
     if (tab === 'messaging') this.loadMessages();
+    if (tab === 'profile')   this.loadBeneficiaryProfile();
+  }
+
+  // ── Role helpers ──────────────────────────────────────────────────────────
+  get isBeneficiary(): boolean { return this.case?.callerRelationship === 'BENEFICIARY'; }
+  get isAttorney():    boolean { return this.case?.callerRelationship === 'ATTORNEY'; }
+  get isEmployer():    boolean { return this.case?.callerRelationship === 'HR_ADMIN'; }
+  get isOrgMember():   boolean { return this.isAttorney || this.isEmployer; }
+
+  // ── Beneficiary profile (for employer / attorney view) ────────────────────
+  beneficiaryProfile: CanonicalProfile | null = null;
+  profileLoading = false;
+  profileError: string | null = null;
+  profileLoaded = false;
+  profileTab = 'bio';
+
+  setProfileTab(tab: string): void { this.profileTab = tab; }
+
+  downloadProfileDoc(docId: number, name: string): void {
+    this.immigrationService.downloadCaseProfileDoc(this.caseId, docId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name || `document-${docId}`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => {}
+    });
+  }
+
+  loadBeneficiaryProfile(): void {
+    if (this.profileLoaded || this.profileLoading) return;
+    this.profileLoading = true;
+    this.profileError = null;
+    this.immigrationService.getCaseBeneficiaryProfile(this.caseId).subscribe({
+      next: p => { this.beneficiaryProfile = p; this.profileLoading = false; this.profileLoaded = true; },
+      error: err => {
+        this.profileError = err?.error?.error || 'Profile not available yet.';
+        this.profileLoading = false;
+      }
+    });
   }
 
   // ── Scope helpers (driven by callerRelationship from the DTO) ────────────
 
   canSeeForms(): boolean {
-    return this.case?.callerRelationship === 'ATTORNEY';
+    return this.isAttorney;
   }
 
   visibleChannels(): string[] {

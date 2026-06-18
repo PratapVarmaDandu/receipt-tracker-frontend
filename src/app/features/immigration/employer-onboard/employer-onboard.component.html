@@ -1,0 +1,126 @@
+<div class="onboard-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5 text-muted">
+    <i class="bi bi-arrow-repeat spin me-2"></i>Loading invite details…
+  </div>
+
+  <!-- Error loading invite -->
+  <div *ngIf="!loading && loadError" class="onboard-card text-center">
+    <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+    <h4>Invite Not Found</h4>
+    <p class="text-muted">{{ loadError }}</p>
+    <a routerLink="/immigration" class="btn btn-outline-secondary btn-sm">Go to Immigration Portal</a>
+  </div>
+
+  <!-- Already completed -->
+  <div *ngIf="!loading && done" class="onboard-card text-center">
+    <i class="bi bi-check-circle-fill display-4 text-success mb-3"></i>
+    <h4>Partnership Active!</h4>
+    <p class="text-muted">
+      Your company is now partnered with <strong>{{ joinInfo?.lawFirmName }}</strong>.
+      You can start working on immigration cases together.
+    </p>
+    <button class="btn btn-primary" (click)="goToDashboard()">
+      <i class="bi bi-building me-2"></i>Go to Employer Dashboard
+    </button>
+  </div>
+
+  <!-- Onboarding form -->
+  <div *ngIf="!loading && !loadError && !done && joinInfo" class="onboard-card">
+
+    <div class="onboard-header">
+      <div class="law-firm-badge">
+        <i class="bi bi-building me-2"></i>{{ joinInfo.lawFirmName }}
+      </div>
+      <h3 class="mt-3 mb-1">Complete Your Company Profile</h3>
+      <p class="text-muted mb-0">
+        You've been invited to partner with <strong>{{ joinInfo.lawFirmName }}</strong> on immigration cases.
+        Fill in your company details to activate the partnership.
+      </p>
+    </div>
+
+    <div *ngIf="submitError" class="alert alert-danger mt-3">{{ submitError }}</div>
+
+    <form class="onboard-form" (ngSubmit)="submit()">
+
+      <div class="form-section">
+        <h6 class="form-section-title">Company Information</h6>
+
+        <div class="mb-3">
+          <label class="form-label required">Company Name</label>
+          <input class="form-control" [(ngModel)]="form.orgName" name="orgName"
+                 placeholder="Acme Corporation" required>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label required">Contact Person</label>
+            <input class="form-control" [(ngModel)]="form.contactName" name="contactName"
+                   placeholder="Jane Smith" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label required">Contact Email</label>
+            <input class="form-control" [(ngModel)]="form.contactEmail" name="contactEmail"
+                   type="email" placeholder="jane@acme.com" required>
+            <div class="form-text">Pre-filled from your invite. Change if needed.</div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">EIN / Tax ID</label>
+            <input class="form-control" [(ngModel)]="form.einNumber" name="einNumber"
+                   placeholder="12-3456789">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Company Website</label>
+            <input class="form-control" [(ngModel)]="form.website" name="website"
+                   placeholder="https://acme.com">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h6 class="form-section-title">Company Address</h6>
+
+        <div class="mb-3">
+          <label class="form-label required">Street Address</label>
+          <input class="form-control" [(ngModel)]="form.address" name="address"
+                 placeholder="123 Main St, Suite 400" required>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label required">City</label>
+            <input class="form-control" [(ngModel)]="form.city" name="city"
+                   placeholder="Austin" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label required">State</label>
+            <select class="form-select" [(ngModel)]="form.stateCode" name="stateCode" required>
+              <option value="">Select</option>
+              <option *ngFor="let s of US_STATES" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">ZIP Code</label>
+            <input class="form-control" [(ngModel)]="form.zipCode" name="zipCode"
+                   placeholder="78701" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a routerLink="/immigration" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg"
+                [disabled]="!isValid || submitting">
+          <span *ngIf="submitting"><i class="bi bi-arrow-repeat spin me-1"></i>Completing…</span>
+          <span *ngIf="!submitting"><i class="bi bi-check-lg me-1"></i>Complete Onboarding</span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>

@@ -54,7 +54,7 @@
   <a routerLink="/immigration" class="btn-back">
     <i class="bi bi-arrow-left"></i> Cases
   </a>
-  <div *ngIf="!caseLoading && case" class="d-flex align-items-center gap-2 flex-wrap">
+  <div *ngIf="!caseLoading && case" class="d-flex align-items-center gap-2 flex-wrap flex-1">
     <h2 class="mb-0">{{ case.caseNumber }}</h2>
     <span class="badge" [ngClass]="statusCss[case.status]">
       {{ statusLabels[case.status] || case.status }}
@@ -64,6 +64,15 @@
     </span>
   </div>
   <span *ngIf="caseLoading" class="text-muted">Loading…</span>
+  <!-- Org nav buttons — always visible for employer/attorney (item 4) -->
+  <div class="d-flex gap-2" *ngIf="!caseLoading">
+    <a *ngIf="isEmployer" routerLink="/immigration/employer" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-building me-1"></i>Employer
+    </a>
+    <a *ngIf="isAttorney" routerLink="/immigration/attorney" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-person-workspace me-1"></i>Attorney
+    </a>
+  </div>
 </div>
 
 <div *ngIf="caseError" class="alert alert-danger">{{ caseError }}</div>
@@ -75,6 +84,9 @@
   <button *ngIf="canSeeForms()" [class.active]="activeTab === 'forms'" (click)="setTab('forms')">Forms</button>
   <button [class.active]="activeTab === 'documents'"  (click)="setTab('documents')">Documents</button>
   <button [class.active]="activeTab === 'messaging'"  (click)="setTab('messaging')">Messaging</button>
+  <button *ngIf="isOrgMember" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
+    <i class="bi bi-person-vcard me-1"></i>Employee Profile
+  </button>
 </div>
 
 <div class="tab-content">
@@ -116,10 +128,13 @@
           <div class="detail-value">{{ case.createdAt | date:'medium' }}</div>
         </div>
       </div>
-      <div class="mt-3">
-        <a routerLink="/immigration/profile" class="btn btn-sm btn-outline-primary">
+      <div class="mt-3 d-flex gap-2 flex-wrap">
+        <a *ngIf="isBeneficiary" routerLink="/immigration/profile" [queryParams]="{caseId: caseId}" class="btn btn-sm btn-outline-primary">
           <i class="bi bi-person-vcard me-1"></i>View / Edit My Profile
         </a>
+        <button *ngIf="isOrgMember" class="btn btn-sm btn-outline-secondary" (click)="setTab('profile')">
+          <i class="bi bi-person-vcard me-1"></i>View Employee Profile
+        </button>
       </div>
     </div>
 
@@ -400,5 +415,318 @@
     </div>
   </div>
 
+  <!-- ── Employee Profile (read-only, for employer / attorney) ─────── -->
+  <div *ngIf="activeTab === 'profile' && isOrgMember">
+    <div *ngIf="profileLoading" class="text-muted py-3">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading profile…
+    </div>
+    <div *ngIf="profileError && !profileLoading" class="alert alert-warning">
+      <i class="bi bi-person-exclamation me-2"></i>{{ profileError }}
+    </div>
+
+    <div *ngIf="beneficiaryProfile && !profileLoading">
+
+      <!-- Profile header -->
+      <div class="profile-header mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-person-circle fs-4 text-muted"></i>
+          <div>
+            <div class="fw-semibold">{{ beneficiaryProfile.legalFirstName }} {{ beneficiaryProfile.middleName }} {{ beneficiaryProfile.legalLastName }}</div>
+            <div class="text-muted small">Employee Profile · <span class="badge bg-secondary">Read Only</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile sub-tabs -->
+      <div class="profile-subtab-bar mb-3">
+        <button [class.active]="profileTab === 'bio'"        (click)="setProfileTab('bio')">
+          <i class="bi bi-person me-1"></i>Personal Info
+        </button>
+        <button [class.active]="profileTab === 'passport'"   (click)="setProfileTab('passport')">
+          <i class="bi bi-passport me-1"></i>Passports
+        </button>
+        <button [class.active]="profileTab === 'entry'"      (click)="setProfileTab('entry')">
+          <i class="bi bi-airplane-engines me-1"></i>US Entry &amp; Status
+        </button>
+        <button [class.active]="profileTab === 'history'"    (click)="setProfileTab('history')">
+          <i class="bi bi-briefcase me-1"></i>Education &amp; Work
+        </button>
+        <button [class.active]="profileTab === 'dependents'" (click)="setProfileTab('dependents')">
+          <i class="bi bi-people me-1"></i>Dependents &amp; Visas
+        </button>
+      </div>
+
+      <!-- Personal Info -->
+      <div *ngIf="profileTab === 'bio'" class="card p-3">
+        <div class="row g-3">
+          <div class="col-md-4" *ngIf="beneficiaryProfile.dateOfBirth">
+            <div class="detail-label">Date of Birth</div>
+            <div class="detail-value">{{ beneficiaryProfile.dateOfBirth | date:'mediumDate' }}</div>
+          </div>
+          <div class="col-md-4" *ngIf="beneficiaryProfile.gender">
+            <div class="detail-label">Gender</div>
+            <div class="detail-value">{{ beneficiaryProfile.gender }}</div>
+          </div>
+          <div class="col-md-4" *ngIf="beneficiaryProfile.countryOfBirth">
+            <div class="detail-label">Country of Birth</div>
+            <div class="detail-value">{{ beneficiaryProfile.countryOfBirth }}</div>
+          </div>
+          <div class="col-md-4" *ngIf="beneficiaryProfile.citizenshipCountry">
+            <div class="detail-label">Citizenship</div>
+            <div class="detail-value">{{ beneficiaryProfile.citizenshipCountry }}</div>
+          </div>
+          <div class="col-md-4" *ngIf="beneficiaryProfile.phone">
+            <div class="detail-label">Phone</div>
+            <div class="detail-value">{{ beneficiaryProfile.phone }}</div>
+          </div>
+          <ng-container *ngIf="beneficiaryProfile.currentAddress as addr">
+            <div class="col-12" *ngIf="addr.line1 || addr.city">
+              <div class="detail-label">Current Address</div>
+              <div class="detail-value">
+                <span *ngIf="addr.line1">{{ addr.line1 }}<br></span>
+                <span *ngIf="addr.line2">{{ addr.line2 }}<br></span>
+                <span *ngIf="addr.city">{{ addr.city }}<span *ngIf="addr.state">, {{ addr.state }}</span> {{ addr.zip }}</span>
+                <span *ngIf="addr.country"><br>{{ addr.country }}</span>
+              </div>
+            </div>
+          </ng-container>
+          <div class="col-12" *ngIf="beneficiaryProfile.notes">
+            <div class="detail-label">Notes</div>
+            <div class="detail-value">{{ beneficiaryProfile.notes }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Passports -->
+      <div *ngIf="profileTab === 'passport'" class="card p-3">
+        <div *ngIf="!beneficiaryProfile.passports?.length" class="text-muted">No passports on file.</div>
+        <div *ngFor="let p of beneficiaryProfile.passports; let i = index"
+             class="profile-item" [class.mt-3]="i > 0">
+          <div class="profile-item-title">Passport {{ i + 1 }}</div>
+          <div class="row g-2 mt-1">
+            <div class="col-md-3" *ngIf="p.country">
+              <div class="detail-label">Country</div>
+              <div class="detail-value">{{ p.country }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="p.number">
+              <div class="detail-label">Number</div>
+              <div class="detail-value detail-mono">{{ p.number }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="p.issueDate">
+              <div class="detail-label">Issue Date</div>
+              <div class="detail-value">{{ p.issueDate | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="p.expiryDate">
+              <div class="detail-label">Expiry Date</div>
+              <div class="detail-value">{{ p.expiryDate | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-12" *ngIf="p.notes">
+              <div class="detail-label">Notes</div>
+              <div class="detail-value">{{ p.notes }}</div>
+            </div>
+          </div>
+          <div *ngIf="p.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of p.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'passport-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- US Entry & Status -->
+      <div *ngIf="profileTab === 'entry'" class="card p-3">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4" *ngIf="beneficiaryProfile.currentVisaType">
+            <div class="detail-label">Current Visa Type</div>
+            <div class="detail-value">{{ beneficiaryProfile.currentVisaType }}</div>
+          </div>
+          <div class="col-md-4" *ngIf="beneficiaryProfile.currentVisaExpiry">
+            <div class="detail-label">Visa Status Expiry</div>
+            <div class="detail-value">{{ beneficiaryProfile.currentVisaExpiry | date:'mediumDate' }}</div>
+          </div>
+        </div>
+        <hr *ngIf="beneficiaryProfile.travelEntries?.length" class="my-2">
+        <div *ngIf="!beneficiaryProfile.travelEntries?.length" class="text-muted">No travel entries on file.</div>
+        <div *ngFor="let t of beneficiaryProfile.travelEntries; let i = index"
+             class="profile-item" [class.mt-3]="i > 0">
+          <div class="profile-item-title">Entry {{ i + 1 }}</div>
+          <div class="row g-2 mt-1">
+            <div class="col-md-3" *ngIf="t.portOfEntry">
+              <div class="detail-label">Port of Entry</div>
+              <div class="detail-value">{{ t.portOfEntry }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="t.entryDate">
+              <div class="detail-label">Entry Date</div>
+              <div class="detail-value">{{ t.entryDate | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="t.admittedUntil">
+              <div class="detail-label">Admitted Until</div>
+              <div class="detail-value">{{ t.admittedUntil | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="t.visaClass">
+              <div class="detail-label">Visa Class</div>
+              <div class="detail-value">{{ t.visaClass }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="t.i94Number">
+              <div class="detail-label">I-94 Number</div>
+              <div class="detail-value detail-mono">{{ t.i94Number }}</div>
+            </div>
+            <div class="col-12" *ngIf="t.notes">
+              <div class="detail-label">Notes</div>
+              <div class="detail-value">{{ t.notes }}</div>
+            </div>
+          </div>
+          <div *ngIf="t.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of t.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'entry-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Education & Work -->
+      <div *ngIf="profileTab === 'history'" class="card p-3">
+        <h6 class="profile-section-title">Education</h6>
+        <div *ngIf="!beneficiaryProfile.education?.length" class="text-muted mb-3">No education records.</div>
+        <div *ngFor="let e of beneficiaryProfile.education; let i = index"
+             class="profile-item" [class.mt-2]="i > 0">
+          <div class="row g-2">
+            <div class="col-md-4" *ngIf="e.institution">
+              <div class="detail-label">Institution</div>
+              <div class="detail-value">{{ e.institution }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="e.degree">
+              <div class="detail-label">Degree</div>
+              <div class="detail-value">{{ e.degree }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="e.field">
+              <div class="detail-label">Field</div>
+              <div class="detail-value">{{ e.field }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="e.startYear || e.endYear">
+              <div class="detail-label">Years</div>
+              <div class="detail-value">{{ e.startYear || '?' }} – {{ e.endYear || 'Present' }}</div>
+            </div>
+          </div>
+          <div *ngIf="e.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of e.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'edu-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+
+        <hr class="my-3">
+        <h6 class="profile-section-title">Employment</h6>
+        <div *ngIf="!beneficiaryProfile.employment?.length" class="text-muted">No employment records.</div>
+        <div *ngFor="let j of beneficiaryProfile.employment; let i = index"
+             class="profile-item" [class.mt-2]="i > 0">
+          <div class="row g-2">
+            <div class="col-md-4" *ngIf="j.employer">
+              <div class="detail-label">Employer</div>
+              <div class="detail-value">{{ j.employer }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="j.title">
+              <div class="detail-label">Title</div>
+              <div class="detail-value">{{ j.title }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="j.country">
+              <div class="detail-label">Country</div>
+              <div class="detail-value">{{ j.country }}</div>
+            </div>
+            <div class="col-md-4" *ngIf="j.startDate || j.endDate">
+              <div class="detail-label">Period</div>
+              <div class="detail-value">{{ j.startDate || '?' }} – {{ j.endDate || 'Present' }}</div>
+            </div>
+          </div>
+          <div *ngIf="j.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of j.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'emp-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dependents & Prior Visas -->
+      <div *ngIf="profileTab === 'dependents'" class="card p-3">
+        <h6 class="profile-section-title">Dependents</h6>
+        <div *ngIf="!beneficiaryProfile.dependents?.length" class="text-muted mb-3">No dependents on file.</div>
+        <div *ngFor="let d of beneficiaryProfile.dependents; let i = index"
+             class="profile-item" [class.mt-2]="i > 0">
+          <div class="row g-2">
+            <div class="col-md-3" *ngIf="d.name">
+              <div class="detail-label">Name</div>
+              <div class="detail-value">{{ d.name }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="d.relationship">
+              <div class="detail-label">Relationship</div>
+              <div class="detail-value">{{ d.relationship }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="d.dateOfBirth">
+              <div class="detail-label">Date of Birth</div>
+              <div class="detail-value">{{ d.dateOfBirth | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="d.citizenshipCountry">
+              <div class="detail-label">Citizenship</div>
+              <div class="detail-value">{{ d.citizenshipCountry }}</div>
+            </div>
+          </div>
+          <div *ngIf="d.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of d.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'dependent-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+
+        <hr class="my-3">
+        <h6 class="profile-section-title">Prior Visas</h6>
+        <div *ngIf="!beneficiaryProfile.priorVisas?.length" class="text-muted">No prior visas on file.</div>
+        <div *ngFor="let v of beneficiaryProfile.priorVisas; let i = index"
+             class="profile-item" [class.mt-2]="i > 0">
+          <div class="row g-2">
+            <div class="col-md-3" *ngIf="v.visaType">
+              <div class="detail-label">Visa Type</div>
+              <div class="detail-value">{{ v.visaType }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="v.country">
+              <div class="detail-label">Country Issued</div>
+              <div class="detail-value">{{ v.country }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="v.issueDate">
+              <div class="detail-label">Issue Date</div>
+              <div class="detail-value">{{ v.issueDate | date:'mediumDate' }}</div>
+            </div>
+            <div class="col-md-3" *ngIf="v.expiryDate">
+              <div class="detail-label">Expiry Date</div>
+              <div class="detail-value">{{ v.expiryDate | date:'mediumDate' }}</div>
+            </div>
+          </div>
+          <div *ngIf="v.documentIds?.length" class="attachments mt-2">
+            <span class="detail-label me-2">Attachments:</span>
+            <button *ngFor="let docId of v.documentIds"
+                    class="btn btn-xs btn-outline-primary me-1"
+                    (click)="downloadProfileDoc(docId, 'visa-doc-' + docId + '.pdf')">
+              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
 </div>

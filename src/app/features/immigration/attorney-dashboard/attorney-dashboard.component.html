@@ -117,19 +117,50 @@
 
     <!-- Employer clients -->
     <div class="card p-3 mb-3">
-      <h6 class="section-title">Employer Clients</h6>
-      <div *ngIf="pendingPartnerships().length > 0" class="mb-2">
-        <div *ngFor="let p of pendingPartnerships()" class="partner-row">
-          <span>{{ p.employerOrgName }} <span class="badge bg-warning text-dark">Pending</span></span>
-          <button class="btn btn-xs btn-success" (click)="acceptPartnership(p.id)">Accept</button>
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="section-title mb-0">Employer Clients</h6>
+        <button class="btn btn-xs btn-primary" (click)="showInviteEmployer = !showInviteEmployer">
+          <i class="bi bi-building-add me-1"></i>Invite Employer
+        </button>
+      </div>
+
+      <!-- Invite employer form -->
+      <div *ngIf="showInviteEmployer" class="invite-employer-form mb-3">
+        <div *ngIf="employerInviteResult" class="alert alert-success alert-sm mb-2">{{ employerInviteResult }}</div>
+        <div *ngIf="employerInviteError" class="alert alert-danger alert-sm mb-2">{{ employerInviteError }}</div>
+        <p class="text-muted small mb-2">
+          Enter the employer's email. They'll receive a link to complete their company profile and activate the partnership.
+        </p>
+        <div class="d-flex gap-2">
+          <input class="form-control form-control-sm" [(ngModel)]="employerInviteEmail"
+                 type="email" placeholder="employer@company.com"
+                 (keydown.enter)="sendEmployerInvite()">
+          <button class="btn btn-primary btn-sm" (click)="sendEmployerInvite()"
+                  [disabled]="!employerInviteEmail.trim() || sendingEmployerInvite">
+            <span *ngIf="sendingEmployerInvite"><i class="bi bi-arrow-repeat spin"></i></span>
+            <span *ngIf="!sendingEmployerInvite">Send</span>
+          </button>
         </div>
       </div>
+
+      <!-- Pending invites -->
+      <div *ngIf="pendingPartnerships().length > 0" class="mb-2">
+        <div *ngFor="let p of pendingPartnerships()" class="partner-row">
+          <span>
+            <span *ngIf="p.employerOrgId">{{ p.employerOrgName }}</span>
+            <span *ngIf="!p.employerOrgId" class="text-muted fst-italic">{{ p.inviteEmail }}</span>
+            <span class="badge bg-warning text-dark ms-1">Pending</span>
+          </span>
+          <button *ngIf="p.employerOrgId" class="btn btn-xs btn-success" (click)="acceptPartnership(p.id)">Accept</button>
+        </div>
+      </div>
+
       <div *ngFor="let p of activePartnerships()" class="partner-row">
         <span>{{ p.employerOrgName }}</span>
         <button class="btn btn-xs btn-outline-danger" (click)="endPartnership(p.id)">End</button>
       </div>
       <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
-        No employer partnerships yet.
+        No employer partnerships yet. Use "Invite Employer" to add one.
       </div>
     </div>
 

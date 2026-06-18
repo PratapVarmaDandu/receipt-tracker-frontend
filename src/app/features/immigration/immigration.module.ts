@@ -9,15 +9,17 @@ import { CanonicalProfileComponent } from './canonical-profile/canonical-profile
 import { CaseJoinComponent } from './case-join/case-join.component';
 import { EmployerDashboardComponent } from './employer-dashboard/employer-dashboard.component';
 import { AttorneyDashboardComponent } from './attorney-dashboard/attorney-dashboard.component';
+import { EmployerOnboardComponent } from './employer-onboard/employer-onboard.component';
 
 const routes: Routes = [
-  { path: '',                component: CaseListComponent,           canActivate: [AuthGuard] },
-  { path: 'employer',        component: EmployerDashboardComponent,  canActivate: [AuthGuard] },
-  { path: 'attorney',        component: AttorneyDashboardComponent,  canActivate: [AuthGuard] },
-  { path: 'cases/new',       component: CaseFormComponent,           canActivate: [AuthGuard] },
-  { path: 'cases/join/:token', component: CaseJoinComponent },  // public
-  { path: 'cases/:id',       component: CaseDetailComponent,        canActivate: [AuthGuard] },
-  { path: 'profile',         component: CanonicalProfileComponent,  canActivate: [AuthGuard] }
+  { path: '',                        component: CaseListComponent,           canActivate: [AuthGuard] },
+  { path: 'employer/onboard/:token', component: EmployerOnboardComponent,    canActivate: [AuthGuard] },
+  { path: 'employer',                component: EmployerDashboardComponent,  canActivate: [AuthGuard] },
+  { path: 'attorney',                component: AttorneyDashboardComponent,  canActivate: [AuthGuard] },
+  { path: 'cases/new',               component: CaseFormComponent,           canActivate: [AuthGuard] },
+  { path: 'cases/join/:token',       component: CaseJoinComponent },  // public
+  { path: 'cases/:id',               component: CaseDetailComponent,        canActivate: [AuthGuard] },
+  { path: 'profile',                 component: CanonicalProfileComponent,  canActivate: [AuthGuard] }
 ];
 
 @NgModule({
@@ -28,7 +30,8 @@ const routes: Routes = [
     CanonicalProfileComponent,
     CaseJoinComponent,
     EmployerDashboardComponent,
-    AttorneyDashboardComponent
+    AttorneyDashboardComponent,
+    EmployerOnboardComponent
   ],
   imports: [SharedModule, RouterModule.forChild(routes)]
 })
