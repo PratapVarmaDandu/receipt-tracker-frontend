@@ -133,7 +133,8 @@
         </p>
         <div class="d-flex gap-2">
           <input class="form-control form-control-sm" [(ngModel)]="employerInviteEmail"
-                 type="email" placeholder="employer@company.com"
+                 type="email" name="employer-invite-email" autocomplete="off"
+                 placeholder="employer@company.com"
                  (keydown.enter)="sendEmployerInvite()">
           <button class="btn btn-primary btn-sm" (click)="sendEmployerInvite()"
                   [disabled]="!employerInviteEmail.trim() || sendingEmployerInvite">
@@ -171,6 +172,7 @@
       <div *ngIf="inviteError" class="alert alert-danger alert-sm mb-2">{{ inviteError }}</div>
       <div class="d-flex gap-2 mb-3">
         <input class="form-control form-control-sm" [(ngModel)]="inviteEmail"
+               name="team-member-email" autocomplete="off"
                placeholder="Email address" (keydown.enter)="inviteMember()">
         <button class="btn btn-primary btn-sm" (click)="inviteMember()" [disabled]="!inviteEmail.trim() || inviting">
           <span *ngIf="inviting"><i class="bi bi-arrow-repeat spin"></i></span>

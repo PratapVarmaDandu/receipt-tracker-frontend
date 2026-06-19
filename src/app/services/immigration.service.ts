@@ -25,6 +25,9 @@ export interface ImmigrationCase {
   assignedAttorneyMemberId: number | null;
   assignedAttorneyName: string | null;
   assignedAttorneyEmail: string | null;
+  assignedParalegalMemberId: number | null;
+  assignedParalegalName: string | null;
+  assignedParalegalEmail: string | null;
   beneficiaryInvitePending: boolean;
   createdById: number | null;
   createdAt: string;
@@ -462,6 +465,14 @@ export class ImmigrationService {
     );
   }
 
+  shareForm(caseId: number, formId: number, req: { recipientEmail: string; recipientType: string; expiryDays: number }): Observable<{ id: number; token: string; recipientEmail: string; recipientType: string; expiresAt: string }> {
+    const t = Date.now();
+    return this.http.post<any>(`${this.base}/cases/${caseId}/forms/${formId}/share`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/forms/${formId}/share`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/forms/${formId}/share`, err, t); throw err; })
+    );
+  }
+
   updateFormStatus(caseId: number, formId: number, status: string): Observable<FormInstance> {
     const t = Date.now();
     return this.http.put<FormInstance>(`${this.base}/cases/${caseId}/forms/${formId}/status`, { status }).pipe(
@@ -521,6 +532,30 @@ export class ImmigrationService {
     return this.http.post<ImmMessage>(`${this.base}/cases/${caseId}/messages/${channel}`, { content }).pipe(
       tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/messages/${channel}`, t)),
       catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/messages/${channel}`, err, t); throw err; })
+    );
+  }
+
+  assignParalegal(caseId: number, memberId: number | null): Observable<ImmigrationCase> {
+    const t = Date.now();
+    return this.http.post<ImmigrationCase>(`${this.base}/cases/${caseId}/assign-paralegal`, { memberId }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/assign-paralegal`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/assign-paralegal`, err, t); throw err; })
+    );
+  }
+
+  markMessagesRead(caseId: number, channel: string): Observable<void> {
+    const t = Date.now();
+    return this.http.post<void>(`${this.base}/cases/${caseId}/messages/${channel}/mark-read`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/messages/${channel}/mark-read`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/messages/${channel}/mark-read`, err, t); throw err; })
+    );
+  }
+
+  getUnreadCounts(caseId: number): Observable<Record<string, number>> {
+    const t = Date.now();
+    return this.http.get<Record<string, number>>(`${this.base}/cases/${caseId}/messages/unread-counts`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/messages/unread-counts`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/messages/unread-counts`, err, t); throw err; })
     );
   }
 }

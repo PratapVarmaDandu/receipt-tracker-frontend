@@ -83,7 +83,12 @@
   <button [class.active]="activeTab === 'timeline'"   (click)="setTab('timeline')">Timeline</button>
   <button *ngIf="canSeeForms()" [class.active]="activeTab === 'forms'" (click)="setTab('forms')">Forms</button>
   <button [class.active]="activeTab === 'documents'"  (click)="setTab('documents')">Documents</button>
-  <button [class.active]="activeTab === 'messaging'"  (click)="setTab('messaging')">Messaging</button>
+  <button [class.active]="activeTab === 'messaging'"  (click)="setTab('messaging')">
+    Messaging
+    <ng-container *ngIf="totalUnread() > 0">
+      <span class="msg-unread-badge">{{ totalUnread() }}</span>
+    </ng-container>
+  </button>
   <button *ngIf="isOrgMember" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
     <i class="bi bi-person-vcard me-1"></i>Employee Profile
   </button>
@@ -115,6 +120,27 @@
           <div class="detail-label">Law Firm</div>
           <div class="detail-value">{{ case.lawFirmImmOrgName || '—' }}</div>
         </div>
+        <div class="col-md-4" *ngIf="case.assignedAttorneyName || case.assignedAttorneyEmail">
+          <div class="detail-label">Attorney</div>
+          <div class="detail-value">{{ case.assignedAttorneyName || '—' }}</div>
+          <div class="text-muted" style="font-size:.8rem">{{ case.assignedAttorneyEmail }}</div>
+        </div>
+        <div class="col-md-4" *ngIf="case.assignedParalegalName || case.assignedParalegalEmail || isAttorney">
+          <div class="detail-label">Paralegal</div>
+          <div *ngIf="!isAttorney" class="detail-value">{{ case.assignedParalegalName || '—' }}</div>
+          <!-- Attorney can change the paralegal inline -->
+          <div *ngIf="isAttorney" class="d-flex align-items-center gap-2 mt-1">
+            <select class="form-select form-select-sm" [(ngModel)]="paralegalTarget" style="max-width:180px">
+              <option value="">— none —</option>
+              <option *ngFor="let m of firmMembers" [value]="m.id">{{ m.email }}</option>
+            </select>
+            <button class="btn btn-xs btn-primary" (click)="doAssignParalegal()" [disabled]="assigningParalegal">
+              <i *ngIf="assigningParalegal" class="bi bi-arrow-repeat spin"></i>
+              <i *ngIf="!assigningParalegal" class="bi bi-check"></i>
+            </button>
+          </div>
+          <div *ngIf="paralegalError" class="text-danger" style="font-size:.78rem">{{ paralegalError }}</div>
+        </div>
         <div class="col-md-4" *ngIf="case.priorityDate">
           <div class="detail-label">Priority Date</div>
           <div class="detail-value">{{ case.priorityDate | date:'mediumDate' }}</div>
@@ -128,6 +154,27 @@
           <div class="detail-value">{{ case.createdAt | date:'medium' }}</div>
         </div>
       </div>
+      <!-- Status change — attorney and HR_ADMIN only -->
+      <div *ngIf="(isAttorney || isEmployer) && allowedTransitions().length > 0" class="mt-3 p-3 bg-light rounded">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <label class="form-label mb-0 fw-semibold" style="white-space:nowrap">
+            <i class="bi bi-arrow-repeat me-1"></i>Change Status
+          </label>
+          <select class="form-select form-select-sm" [(ngModel)]="statusChangeTarget" style="max-width:240px">
+            <option value="">— select next status —</option>
+            <option *ngFor="let s of allowedTransitions()" [value]="s">{{ statusLabels[s] || s }}</option>
+          </select>
+          <button class="btn btn-sm btn-primary" (click)="doStatusUpdate()"
+                  [disabled]="!statusChangeTarget || updatingStatus">
+            <i *ngIf="updatingStatus" class="bi bi-arrow-repeat spin me-1"></i>Update
+          </button>
+          <button class="btn btn-sm btn-link p-0 ms-1" (click)="setTab('timeline')" title="Log progress event">
+            <i class="bi bi-clock-history me-1"></i>Add Timeline Event
+          </button>
+        </div>
+        <div *ngIf="statusUpdateError" class="text-danger mt-2" style="font-size:.85rem">{{ statusUpdateError }}</div>
+      </div>
+
       <div class="mt-3 d-flex gap-2 flex-wrap">
         <a *ngIf="isBeneficiary" routerLink="/immigration/profile" [queryParams]="{caseId: caseId}" class="btn btn-sm btn-outline-primary">
           <i class="bi bi-person-vcard me-1"></i>View / Edit My Profile
@@ -345,6 +392,9 @@
           <span class="badge" [ngClass]="formStatusCss[f.status]">
             {{ formStatusLabels[f.status] || f.status }}
           </span>
+          <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary" (click)="openFormShare(f)">
+            <i class="bi bi-share me-1"></i>Share
+          </button>
           <button class="btn btn-sm btn-outline-secondary" (click)="toggleFieldView(f.id)">
             <i class="bi" [ngClass]="expandedFormId === f.id ? 'bi-chevron-up' : 'bi-list-ul'"></i>
             {{ expandedFormId === f.id ? 'Hide' : 'Fields' }}
@@ -369,6 +419,52 @@
     </div>
   </div>
 
+  <!-- Form share dialog (attorney) -->
+  <div *ngIf="activeTab === 'forms' && formSharePanel" class="card p-3 mt-2 border-primary">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="mb-0"><i class="bi bi-share me-2"></i>Share "{{ formSharePanel.formLabel }}"</h6>
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeFormShare()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div *ngIf="!formSharePanel.shareUrl">
+      <div class="row g-2">
+        <div class="col-md-5">
+          <label class="form-label form-label-sm">Recipient email <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" type="email" name="form-share-email"
+                 autocomplete="off" [(ngModel)]="formSharePanel.email" placeholder="recipient@example.com">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm">Recipient type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="formSharePanel.recipientType">
+            <option value="BENEFICIARY">Beneficiary</option>
+            <option value="EMPLOYER">Employer</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label form-label-sm">Expires (days)</label>
+          <input class="form-control form-control-sm" type="number" min="1" max="30"
+                 [(ngModel)]="formSharePanel.expiryDays">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary btn-sm w-100" (click)="submitFormShare()"
+                  [disabled]="!formSharePanel.email.trim() || formSharePanel.sharing">
+            <i *ngIf="formSharePanel.sharing" class="bi bi-arrow-repeat spin me-1"></i>Send
+          </button>
+        </div>
+      </div>
+      <div *ngIf="formSharePanel.error" class="text-danger mt-2" style="font-size:.85rem">{{ formSharePanel.error }}</div>
+    </div>
+    <div *ngIf="formSharePanel.shareUrl" class="d-flex align-items-center gap-2">
+      <i class="bi bi-check-circle-fill text-success"></i>
+      <span class="text-muted small">Share link sent. Copy link:</span>
+      <input class="form-control form-control-sm" [value]="formSharePanel.shareUrl" readonly style="max-width:380px">
+      <button class="btn btn-sm btn-outline-secondary" (click)="copyFormShareUrl()">
+        <i class="bi bi-clipboard"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- ── Documents ─────────────────────────────────────────────────────── -->
   <div *ngIf="activeTab === 'documents'">
     <p class="text-muted">Document case-file integration coming soon.</p>
@@ -384,6 +480,9 @@
               [class.active]="msgChannel === ch"
               (click)="setMsgChannel(ch)">
         {{ channelLabels[ch] }}
+        <span *ngIf="(unreadCounts[ch] || 0) > 0 && msgChannel !== ch" class="msg-unread-badge">
+          {{ unreadCounts[ch] }}
+        </span>
       </button>
     </div>
 

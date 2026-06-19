@@ -7,6 +7,8 @@ import {
   CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS,
   FORM_STATUS_LABELS, FORM_STATUS_CSS, EVENT_TYPE_ICONS, CHANNEL_LABELS
 } from '../../../services/immigration.service';
+import { ImmOrgService } from '../../../services/imm-org.service';
+import { ImmOrgMember } from '../../../models/imm-org.model';
 import { LoggerService } from '../../../services/logger.service';
 
 @Component({
@@ -66,6 +68,7 @@ export class CaseDetailComponent implements OnInit {
   msgError: string | null = null;
   msgContent = '';
   sendingMsg = false;
+  unreadCounts: Record<string, number> = {};
 
   // Timeline tab state
   timeline: TimelineItem[] = [];
@@ -86,10 +89,17 @@ export class CaseDetailComponent implements OnInit {
   ];
   readonly apptTypes = ['ATTORNEY_MEETING','USCIS_INTERVIEW','BIOMETRICS','CONSULATE_INTERVIEW','OTHER'];
 
+  // ── Paralegal state ───────────────────────────────────────────────────────
+  firmMembers: ImmOrgMember[] = [];
+  paralegalTarget: number | '' = '';
+  assigningParalegal = false;
+  paralegalError: string | null = null;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private immigrationService: ImmigrationService,
+    private immOrgService: ImmOrgService,
     private logger: LoggerService
   ) {}
 
@@ -109,6 +119,9 @@ export class CaseDetailComponent implements OnInit {
         this.loadFeed();
         if (c.callerRelationship === 'BENEFICIARY') {
           this.checkAndShowConsent();
+        }
+        if (c.callerRelationship === 'ATTORNEY' && c.lawFirmImmOrgId) {
+          this.loadFirmMembers(c.lawFirmImmOrgId);
         }
       },
       error: err => {
@@ -143,7 +156,7 @@ export class CaseDetailComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'forms'     && !this.formsLoaded)    this.loadForms();
     if (tab === 'timeline'  && !this.timelineLoaded) this.loadTimeline();
-    if (tab === 'messaging') this.loadMessages();
+    if (tab === 'messaging') { this.loadMessages(); this.loadUnreadCounts(); }
     if (tab === 'profile')   this.loadBeneficiaryProfile();
   }
 
@@ -385,6 +398,125 @@ export class CaseDetailComponent implements OnInit {
     });
   }
 
+  // ── Paralegal assignment (attorney view) ─────────────────────────────────
+
+  loadFirmMembers(orgId: number): void {
+    this.immOrgService.listMembers(orgId).subscribe({
+      next: members => {
+        this.firmMembers = members.filter(m => m.status === 'ACTIVE');
+        if (this.case?.assignedParalegalMemberId) {
+          this.paralegalTarget = this.case.assignedParalegalMemberId;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  doAssignParalegal(): void {
+    this.assigningParalegal = true;
+    this.paralegalError = null;
+    const memberId = this.paralegalTarget === '' ? null : Number(this.paralegalTarget);
+    this.immigrationService.assignParalegal(this.caseId, memberId).subscribe({
+      next: updated => {
+        this.case = updated;
+        this.assigningParalegal = false;
+      },
+      error: err => {
+        this.paralegalError = err?.error?.error || 'Failed to assign paralegal';
+        this.assigningParalegal = false;
+      }
+    });
+  }
+
+  // ── Form share dialog (attorney view) ────────────────────────────────────
+
+  formSharePanel: { formId: number; formLabel: string; email: string; recipientType: string; expiryDays: number; sharing: boolean; shareUrl: string | null; error: string | null } | null = null;
+
+  openFormShare(form: { id: number; formTypeLabel: string }): void {
+    const prefill = this.case?.assignedAttorneyEmail ? '' : '';
+    this.formSharePanel = {
+      formId: form.id,
+      formLabel: form.formTypeLabel,
+      email: prefill,
+      recipientType: 'BENEFICIARY',
+      expiryDays: 7,
+      sharing: false,
+      shareUrl: null,
+      error: null
+    };
+  }
+
+  closeFormShare(): void { this.formSharePanel = null; }
+
+  submitFormShare(): void {
+    if (!this.formSharePanel || !this.formSharePanel.email.trim()) return;
+    const p = this.formSharePanel;
+    p.sharing = true;
+    p.error = null;
+    this.immigrationService.shareForm(this.caseId, p.formId, {
+      recipientEmail: p.email.trim(),
+      recipientType: p.recipientType,
+      expiryDays: p.expiryDays
+    }).subscribe({
+      next: share => {
+        p.shareUrl = `${window.location.origin}/immigration/forms/shared/${share.token}`;
+        p.sharing = false;
+      },
+      error: err => {
+        p.error = err?.error?.error || 'Share failed';
+        p.sharing = false;
+      }
+    });
+  }
+
+  copyFormShareUrl(): void {
+    if (this.formSharePanel?.shareUrl) {
+      navigator.clipboard.writeText(this.formSharePanel.shareUrl).catch(() => {});
+    }
+  }
+
+  // ── Status change (attorney / HR_ADMIN) ──────────────────────────────────
+
+  private readonly STATUS_TRANSITIONS: Record<string, string[]> = {
+    PROSPECTIVE:         ['DATA_COLLECTION', 'WITHDRAWN'],
+    DATA_COLLECTION:     ['PETITION_FILED', 'WITHDRAWN'],
+    PETITION_FILED:      ['RFE_PENDING', 'PETITION_APPROVED', 'DENIED', 'WITHDRAWN'],
+    RFE_PENDING:         ['PETITION_APPROVED', 'DENIED', 'WITHDRAWN'],
+    PETITION_APPROVED:   ['DS160_FILED', 'INTERVIEW_SCHEDULED', 'VISA_ISSUED', 'CLOSED', 'WITHDRAWN'],
+    DS160_FILED:         ['INTERVIEW_SCHEDULED', 'DENIED', 'WITHDRAWN'],
+    INTERVIEW_SCHEDULED: ['VISA_ISSUED', 'DENIED', 'WITHDRAWN'],
+    VISA_ISSUED:         ['ADMITTED', 'CLOSED'],
+    ADMITTED:            ['CLOSED'],
+    CLOSED: [], DENIED: [], WITHDRAWN: [],
+  };
+
+  statusChangeTarget = '';
+  updatingStatus = false;
+  statusUpdateError: string | null = null;
+
+  allowedTransitions(): string[] {
+    if (!this.case) return [];
+    return this.STATUS_TRANSITIONS[this.case.status] ?? [];
+  }
+
+  doStatusUpdate(): void {
+    if (!this.statusChangeTarget || !this.case) return;
+    this.updatingStatus = true;
+    this.statusUpdateError = null;
+    this.immigrationService.updateStatus(this.caseId, this.statusChangeTarget).subscribe({
+      next: updated => {
+        this.case = updated;
+        this.statusChangeTarget = '';
+        this.updatingStatus = false;
+        this.loadFeed();
+      },
+      error: err => {
+        this.statusUpdateError = err?.error?.error || 'Status update failed';
+        this.updatingStatus = false;
+      }
+    });
+  }
+
   // ── Messaging ─────────────────────────────────────────────────────────────
 
   setMsgChannel(ch: string): void {
@@ -396,13 +528,35 @@ export class CaseDetailComponent implements OnInit {
     this.msgLoading = true;
     this.msgError = null;
     this.immigrationService.getMessages(this.caseId, this.msgChannel).subscribe({
-      next: msgs => { this.messages = msgs; this.msgLoading = false; },
+      next: msgs => {
+        this.messages = msgs;
+        this.msgLoading = false;
+        this.markChannelRead(this.msgChannel);
+      },
       error: err => {
         this.msgError = err?.error?.error || 'Failed to load messages';
         this.msgLoading = false;
         this.logger.error(this.source, 'loadMessages failed', err);
       }
     });
+  }
+
+  markChannelRead(channel: string): void {
+    this.immigrationService.markMessagesRead(this.caseId, channel).subscribe({
+      next: () => { this.unreadCounts = { ...this.unreadCounts, [channel]: 0 }; },
+      error: () => {}
+    });
+  }
+
+  loadUnreadCounts(): void {
+    this.immigrationService.getUnreadCounts(this.caseId).subscribe({
+      next: counts => { this.unreadCounts = counts; },
+      error: () => {}
+    });
+  }
+
+  totalUnread(): number {
+    return Object.values(this.unreadCounts).reduce((sum, n) => sum + (n || 0), 0);
   }
 
   sendMessage(): void {
