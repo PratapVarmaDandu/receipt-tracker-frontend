@@ -105,3 +105,39 @@
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.cap-stat {
+  flex: 1;
+  min-width: 64px;
+  text-align: center;
+  border-radius: var(--radius, 0.5rem);
+  padding: 0.5rem 0.25rem;
+
+  &__value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  &__label {
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &--selected {
+    background: #f0fdf4;
+    .cap-stat__value { color: #16a34a; }
+    .cap-stat__label { color: #15803d; }
+  }
+  &--pending {
+    background: #fefce8;
+    .cap-stat__value { color: #ca8a04; }
+    .cap-stat__label { color: #a16207; }
+  }
+  &--not-selected {
+    background: #fef2f2;
+    .cap-stat__value { color: #dc2626; }
+    .cap-stat__label { color: #b91c1c; }
+  }
+}

@@ -89,6 +89,10 @@
       <span class="msg-unread-badge">{{ totalUnread() }}</span>
     </ng-container>
   </button>
+  <button [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">
+    Tasks
+    <span *ngIf="tasksLoaded && overdueTaskCount() > 0" class="msg-unread-badge">{{ overdueTaskCount() }}</span>
+  </button>
   <button *ngIf="isOrgMember" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
     <i class="bi bi-person-vcard me-1"></i>Employee Profile
   </button>
@@ -124,6 +128,14 @@
           <div class="detail-label">Attorney</div>
           <div class="detail-value">{{ case.assignedAttorneyName || '—' }}</div>
           <div class="text-muted" style="font-size:.8rem">{{ case.assignedAttorneyEmail }}</div>
+          <!-- Bar numbers visible only to the attorney themselves -->
+          <ng-container *ngIf="isAttorney && barNumbersList().length > 0">
+            <div class="mt-1 d-flex flex-wrap gap-1">
+              <span *ngFor="let bn of barNumbersList()" class="badge bg-light text-dark border" style="font-size:.75rem">
+                {{ bn.state }}: {{ bn.barNumber }}
+              </span>
+            </div>
+          </ng-container>
         </div>
         <div class="col-md-4" *ngIf="case.assignedParalegalName || case.assignedParalegalEmail || isAttorney">
           <div class="detail-label">Paralegal</div>
@@ -173,6 +185,26 @@
           </button>
         </div>
         <div *ngIf="statusUpdateError" class="text-danger mt-2" style="font-size:.85rem">{{ statusUpdateError }}</div>
+      </div>
+
+      <!-- Clone as Extension/Renewal — attorney only -->
+      <div *ngIf="isAttorney" class="mt-3">
+        <button class="btn btn-sm btn-outline-secondary" (click)="showClonePanel = !showClonePanel">
+          <i class="bi bi-copy me-1"></i>Clone as Extension / Renewal
+        </button>
+        <div *ngIf="showClonePanel" class="mt-2 p-3 bg-light rounded d-flex align-items-center gap-2 flex-wrap">
+          <label class="form-label mb-0 fw-semibold" style="white-space:nowrap">New case type:</label>
+          <select class="form-select form-select-sm" [(ngModel)]="cloneTarget" style="max-width:280px">
+            <option value="">— select —</option>
+            <optgroup *ngFor="let g of caseTypeGroups" [label]="g.label">
+              <option *ngFor="let t of g.types" [value]="t">{{ caseTypeLabels[t] || t }}</option>
+            </optgroup>
+          </select>
+          <button class="btn btn-sm btn-primary" (click)="doClone()" [disabled]="!cloneTarget || cloning">
+            <i *ngIf="cloning" class="bi bi-arrow-repeat spin me-1"></i>Clone
+          </button>
+          <div *ngIf="cloneError" class="text-danger w-100 mt-1" style="font-size:.85rem">{{ cloneError }}</div>
+        </div>
       </div>
 
       <div class="mt-3 d-flex gap-2 flex-wrap">
@@ -235,6 +267,162 @@
         </div>
       </div>
     </div>
+
+    <!-- H-1B Cap Registration panel (FEAT-QW7) — H1B_INITIAL cases only -->
+    <div *ngIf="case && case.caseType === 'H1B_INITIAL'" class="card mt-3 p-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>H-1B Cap Registration</h6>
+        <ng-container *ngIf="isAttorney && !h1bCap && !h1bCapLoading">
+          <button class="btn btn-sm btn-outline-primary" (click)="showCapForm = !showCapForm">
+            <i class="bi bi-plus-lg me-1"></i>Register
+          </button>
+        </ng-container>
+      </div>
+
+      <div *ngIf="h1bCapLoading" class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Loading…</div>
+
+      <!-- Registration form -->
+      <div *ngIf="isAttorney && showCapForm && !h1bCap" class="p-2 bg-light rounded mb-2">
+        <div class="row g-2">
+          <div class="col-sm-3">
+            <label class="form-label form-label-sm mb-1">Year</label>
+            <input class="form-control form-control-sm" type="number" [(ngModel)]="capForm.registrationYear">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm mb-1">Confirmation #</label>
+            <input class="form-control form-control-sm" type="text" [(ngModel)]="capForm.registrationNumber" placeholder="USCIS number">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm mb-1">Registration Date <span class="text-danger">*</span></label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="capForm.registrationDate">
+          </div>
+        </div>
+        <div *ngIf="capError" class="text-danger mt-1" style="font-size:.82rem">{{ capError }}</div>
+        <div class="d-flex gap-2 mt-2">
+          <button class="btn btn-sm btn-primary" (click)="submitCap()" [disabled]="capSubmitting || !capForm.registrationDate">
+            <i *ngIf="capSubmitting" class="bi bi-arrow-repeat spin me-1"></i>Save
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="showCapForm = false">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Registration data -->
+      <ng-container *ngIf="h1bCap">
+        <div class="row g-2 mb-2">
+          <div class="col-sm-3">
+            <div class="detail-label">Year</div>
+            <div class="detail-value">{{ h1bCap.registrationYear }}</div>
+          </div>
+          <div class="col-sm-4">
+            <div class="detail-label">Confirmation #</div>
+            <div class="detail-value detail-mono">{{ h1bCap.registrationNumber || '—' }}</div>
+          </div>
+          <div class="col-sm-4">
+            <div class="detail-label">Registered On</div>
+            <div class="detail-value">{{ h1bCap.registrationDate | date:'mediumDate' }}</div>
+          </div>
+          <div class="col-sm-4">
+            <div class="detail-label">Lottery Result</div>
+            <div class="detail-value">
+              <span *ngIf="h1bCap.selectedInLottery === null" class="badge bg-secondary">Pending</span>
+              <span *ngIf="h1bCap.selectedInLottery === true"  class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Selected</span>
+              <span *ngIf="h1bCap.selectedInLottery === false" class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Not Selected</span>
+            </div>
+          </div>
+          <div class="col-sm-4" *ngIf="h1bCap.selectionDate">
+            <div class="detail-label">Selection Date</div>
+            <div class="detail-value">{{ h1bCap.selectionDate | date:'mediumDate' }}</div>
+          </div>
+        </div>
+
+        <!-- Lottery result update (attorney only, not yet set) -->
+        <ng-container *ngIf="isAttorney">
+          <button class="btn btn-sm btn-outline-secondary" (click)="showLotteryForm = !showLotteryForm">
+            <i class="bi bi-pencil me-1"></i>{{ h1bCap.selectedInLottery === null ? 'Enter Lottery Result' : 'Update Result' }}
+          </button>
+          <div *ngIf="showLotteryForm" class="mt-2 p-2 bg-light rounded d-flex align-items-center gap-3 flex-wrap">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" [value]="true"  [(ngModel)]="lotteryForm.selectedInLottery" id="lotteryYes">
+              <label class="form-check-label" for="lotteryYes">Selected</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" [value]="false" [(ngModel)]="lotteryForm.selectedInLottery" id="lotteryNo">
+              <label class="form-check-label" for="lotteryNo">Not Selected</label>
+            </div>
+            <div>
+              <input class="form-control form-control-sm" type="date" [(ngModel)]="lotteryForm.selectionDate" placeholder="Selection date (optional)" style="max-width:170px">
+            </div>
+            <button class="btn btn-sm btn-primary" (click)="submitLotteryResult()" [disabled]="lotterySubmitting">
+              <i *ngIf="lotterySubmitting" class="bi bi-arrow-repeat spin me-1"></i>Save
+            </button>
+          </div>
+          <div *ngIf="lotteryError" class="text-danger mt-1" style="font-size:.82rem">{{ lotteryError }}</div>
+        </ng-container>
+      </ng-container>
+
+      <div *ngIf="!h1bCapLoading && !h1bCap && !showCapForm" class="text-muted" style="font-size:.85rem">
+        No cap registration recorded yet.
+        <span *ngIf="!isAttorney"> The attorney will add the registration details.</span>
+      </div>
+    </div>
+
+    <!-- Family Bundle panel (FEAT-QW6) -->
+    <div *ngIf="case && case.parentCaseId" class="card mt-3 p-3">
+      <h6 class="mb-2"><i class="bi bi-diagram-2 me-2"></i>Primary Case</h6>
+      <div *ngIf="familyLoading" class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Loading…</div>
+      <ng-container *ngIf="!familyLoading && family">
+        <a [routerLink]="['/immigration/cases', family.primaryCase.id]" class="d-flex align-items-center gap-2 text-decoration-none">
+          <span class="case-number">{{ family.primaryCase.caseNumber }}</span>
+          <span class="badge" [ngClass]="statusCss[family.primaryCase.status]">
+            {{ statusLabels[family.primaryCase.status] || family.primaryCase.status }}
+          </span>
+          <span class="text-muted" style="font-size:.85rem">{{ caseTypeLabels[family.primaryCase.caseType] || family.primaryCase.caseType }}</span>
+        </a>
+      </ng-container>
+    </div>
+
+    <div *ngIf="family && family.dependentCases.length > 0" class="card mt-3 p-3">
+      <h6 class="mb-2"><i class="bi bi-people me-2"></i>Dependent Cases</h6>
+      <div *ngFor="let dep of family.dependentCases" class="d-flex align-items-center gap-2 py-1">
+        <i class="bi bi-arrow-return-right text-muted"></i>
+        <a [routerLink]="['/immigration/cases', dep.id]" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1">
+          <span class="case-number">{{ dep.caseNumber }}</span>
+          <span class="badge" [ngClass]="statusCss[dep.status]">
+            {{ statusLabels[dep.status] || dep.status }}
+          </span>
+          <span class="text-muted" style="font-size:.85rem">{{ caseTypeLabels[dep.caseType] || dep.caseType }}</span>
+          <span *ngIf="dep.beneficiaryName" class="text-muted" style="font-size:.82rem">· {{ dep.beneficiaryName }}</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Status Change History panel -->
+    <div class="card mt-3 p-3">
+      <h6 class="mb-3"><i class="bi bi-clock-history me-2"></i>Status History</h6>
+      <div *ngIf="statusHistoryLoading" class="text-muted">
+        <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
+      </div>
+      <div *ngIf="!statusHistoryLoading && statusHistory.length === 0" class="text-muted">
+        No status changes recorded yet.
+      </div>
+      <div class="sh-list">
+        <div *ngFor="let h of statusHistory" class="sh-row d-flex align-items-center gap-2">
+          <span class="sh-arrow flex-grow-1">
+            <span class="badge" [ngClass]="statusCss[h.fromStatus || ''] || 'bg-secondary'">
+              {{ statusLabel(h.fromStatus) }}
+            </span>
+            <i class="bi bi-arrow-right mx-1 text-muted"></i>
+            <span class="badge" [ngClass]="statusCss[h.toStatus] || 'bg-secondary'">
+              {{ statusLabel(h.toStatus) }}
+            </span>
+          </span>
+          <span class="text-muted sh-meta" style="font-size:.78rem;white-space:nowrap">
+            {{ h.changedByName || 'System' }} · {{ h.changedAt | date:'short' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── Timeline ──────────────────────────────────────────────────────── -->
@@ -475,7 +663,7 @@
 
     <!-- Channel tabs -->
     <div class="msg-channel-bar mb-3">
-      <button *ngFor="let ch of channels"
+      <button *ngFor="let ch of visibleChannels()"
               class="msg-channel-btn"
               [class.active]="msgChannel === ch"
               (click)="setMsgChannel(ch)">
@@ -826,6 +1014,130 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- ── Tasks (FEAT-QW8) ──────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'tasks'">
+
+    <!-- Attorney / Paralegal: add task button -->
+    <div *ngIf="isAttorney" class="d-flex justify-content-end mb-3">
+      <button class="btn btn-sm btn-outline-primary" (click)="showAddTask = !showAddTask">
+        <i class="bi bi-plus-lg me-1"></i>Add Task
+      </button>
+    </div>
+
+    <!-- Add task form -->
+    <div *ngIf="isAttorney && showAddTask" class="card mb-3 p-3">
+      <h6 class="mb-3">New Task</h6>
+      <div class="row g-2">
+        <div class="col-12">
+          <input class="form-control form-control-sm" type="text" [(ngModel)]="taskForm.title"
+                 placeholder="Task title (required)" maxlength="500">
+        </div>
+        <div class="col-12">
+          <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="taskForm.description"
+                    placeholder="Description (optional)"></textarea>
+        </div>
+        <div class="col-sm-4">
+          <label class="form-label form-label-sm mb-1">Due Date</label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="taskForm.dueDate">
+        </div>
+        <div class="col-sm-4 d-flex align-items-end">
+          <div class="form-check mb-1">
+            <input class="form-check-input" type="checkbox" [(ngModel)]="taskForm.isRequired" id="taskRequired">
+            <label class="form-check-label" for="taskRequired">Required</label>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="addTaskError" class="text-danger mt-2" style="font-size:.82rem">{{ addTaskError }}</div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-sm btn-primary" (click)="submitAddTask()" [disabled]="addingTask || !taskForm.title.trim()">
+          <i *ngIf="addingTask" class="bi bi-arrow-repeat spin me-1"></i>Create Task
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="showAddTask = false">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Task list loading -->
+    <div *ngIf="tasksLoading" class="text-muted py-3 text-center">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading tasks…
+    </div>
+    <div *ngIf="tasksError" class="alert alert-danger">{{ tasksError }}</div>
+
+    <!-- Empty state -->
+    <div *ngIf="!tasksLoading && tasks.length === 0 && !showAddTask" class="text-muted py-3 text-center">
+      No tasks yet.
+      <span *ngIf="!isAttorney"> Your attorney will create tasks for this case.</span>
+    </div>
+
+    <!-- Task rows -->
+    <div class="task-list">
+      <div *ngFor="let t of tasks"
+           class="task-row"
+           [class.task-row--done]="!!t.completedAt"
+           [class.task-row--overdue]="t.overdue">
+
+        <!-- View mode -->
+        <ng-container *ngIf="editingTaskId !== t.id">
+          <div class="task-row__body d-flex align-items-start gap-2">
+            <!-- Complete button (attorney / paralegal) -->
+            <button *ngIf="isAttorney && !t.completedAt"
+                    class="btn btn-xs btn-outline-success flex-shrink-0 mt-1"
+                    (click)="doCompleteTask(t.id)" title="Mark complete">
+              <i class="bi bi-check-lg"></i>
+            </button>
+            <i *ngIf="t.completedAt" class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+
+            <div class="flex-grow-1">
+              <div class="fw-semibold" [class.text-decoration-line-through]="!!t.completedAt">
+                {{ t.title }}
+                <span *ngIf="t.isRequired" class="badge bg-warning text-dark ms-1" style="font-size:.7rem">Required</span>
+                <span *ngIf="t.overdue" class="badge bg-danger ms-1" style="font-size:.7rem">Overdue</span>
+              </div>
+              <div *ngIf="t.description" class="text-muted" style="font-size:.85rem">{{ t.description }}</div>
+              <div class="text-muted d-flex gap-3 mt-1 flex-wrap" style="font-size:.78rem">
+                <span *ngIf="t.dueDate"><i class="bi bi-calendar3 me-1"></i>Due {{ t.dueDate | date:'mediumDate' }}</span>
+                <span *ngIf="t.assignedToName"><i class="bi bi-person me-1"></i>{{ t.assignedToName }}</span>
+                <span *ngIf="t.completedAt"><i class="bi bi-check me-1"></i>Done {{ t.completedAt | date:'short' }}{{ t.completedByName ? ' by ' + t.completedByName : '' }}</span>
+              </div>
+            </div>
+
+            <!-- Edit / Delete (attorney / paralegal only) -->
+            <div *ngIf="isAttorney && !t.completedAt" class="d-flex gap-1 flex-shrink-0">
+              <button class="btn btn-xs btn-outline-secondary" (click)="startEditTask(t)" title="Edit"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-xs btn-outline-danger"   (click)="doDeleteTask(t.id)"  title="Delete"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Edit mode (inline) -->
+        <ng-container *ngIf="isAttorney && editingTaskId === t.id">
+          <div class="row g-2">
+            <div class="col-12">
+              <input class="form-control form-control-sm" type="text" [(ngModel)]="editTaskForm.title">
+            </div>
+            <div class="col-12">
+              <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="editTaskForm.description"></textarea>
+            </div>
+            <div class="col-sm-4">
+              <input class="form-control form-control-sm" type="date" [(ngModel)]="editTaskForm.dueDate">
+            </div>
+            <div class="col-sm-4 d-flex align-items-center">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="editTaskForm.isRequired" id="editRequired-{{t.id}}">
+                <label class="form-check-label" [for]="'editRequired-' + t.id">Required</label>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-sm btn-primary" (click)="saveEditTask(t.id)">Save</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="cancelEditTask()">Cancel</button>
+          </div>
+        </ng-container>
+
+      </div>
+    </div>
+
   </div>
 
 </div>

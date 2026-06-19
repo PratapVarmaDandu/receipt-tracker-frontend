@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { ImmigrationService, CASE_TYPE_LABELS, CASE_TYPE_GROUPS } from '../../../services/immigration.service';
+import { ImmigrationService, ImmigrationCase, CASE_TYPE_LABELS, CASE_TYPE_GROUPS } from '../../../services/immigration.service';
 import { ImmOrgService } from '../../../services/imm-org.service';
 import { ImmOrg, ImmOrgMember, OrgPartnership } from '../../../models/imm-org.model';
 import { LoggerService } from '../../../services/logger.service';
@@ -32,6 +32,11 @@ export class CaseFormComponent implements OnInit {
   submitting = false;
   loadError: string | null = null;
   submitError: string | null = null;
+
+  // Conflict check state (FEAT-QW5)
+  conflictChecking = false;
+  conflictResults: ImmigrationCase[] | null = null;
+  conflictError: string | null = null;
 
   // Org data
   myOrgs: ImmOrg[] = [];
@@ -200,6 +205,28 @@ export class CaseFormComponent implements OnInit {
         this.submitError = err?.error?.error || 'Failed to create case';
         this.submitting = false;
         this.logger.error(this.source, 'createCase failed', err);
+      }
+    });
+  }
+
+  runConflictCheck(): void {
+    if (!this.beneficiaryEmail.trim() && !this.employerImmOrgId) return;
+    this.conflictChecking = true;
+    this.conflictResults = null;
+    this.conflictError = null;
+    this.immigrationService.checkConflict({
+      beneficiaryEmail: this.beneficiaryEmail.trim().toLowerCase(),
+      employerOrgId: this.employerImmOrgId
+    }).subscribe({
+      next: results => {
+        this.conflictResults = results;
+        this.conflictChecking = false;
+        this.logger.info(this.source, `Conflict check: ${results.length} match(es)`);
+      },
+      error: err => {
+        this.conflictError = err?.error?.error || 'Conflict check failed';
+        this.conflictChecking = false;
+        this.logger.error(this.source, 'conflictCheck failed', err);
       }
     });
   }

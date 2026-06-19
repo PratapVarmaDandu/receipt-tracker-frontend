@@ -74,7 +74,55 @@
 </div>
 
 <div *ngIf="!loading && cases.length > 0" class="case-list">
-  <div *ngFor="let c of cases" class="case-card" (click)="openCase(c.id)">
+  <!-- Primary cases with their dependents nested below -->
+  <ng-container *ngFor="let c of primaryCases">
+    <div class="case-card" (click)="openCase(c.id)">
+      <div class="case-card__header">
+        <span class="case-number">{{ c.caseNumber }}</span>
+        <span class="badge" [ngClass]="statusCss[c.status]">
+          {{ statusLabels[c.status] || c.status }}
+        </span>
+      </div>
+      <div class="case-card__body">
+        <div class="case-type">{{ caseTypeLabels[c.caseType] || c.caseType }}</div>
+        <div class="case-meta text-muted">
+          <span *ngIf="c.employerImmOrgName">
+            <i class="bi bi-building me-1"></i>{{ c.employerImmOrgName }}
+          </span>
+          <span *ngIf="c.lawFirmImmOrgName" class="ms-3">
+            <i class="bi bi-person-workspace me-1"></i>{{ c.lawFirmImmOrgName }}
+          </span>
+          <span *ngIf="c.callerRelationship" class="ms-3 role-badge role-badge--{{c.callerRelationship | lowercase}}">
+            {{ c.callerRelationship | titlecase }}
+          </span>
+        </div>
+      </div>
+      <div class="case-card__footer text-muted">
+        Created {{ c.createdAt | date:'mediumDate' }}
+      </div>
+    </div>
+    <!-- Dependent cases indented below their primary -->
+    <div *ngFor="let dep of dependentsOf(c.id)"
+         class="case-card case-card--dependent"
+         (click)="openCase(dep.id)">
+      <div class="case-card__header">
+        <i class="bi bi-arrow-return-right text-muted me-1"></i>
+        <span class="case-number">{{ dep.caseNumber }}</span>
+        <span class="badge" [ngClass]="statusCss[dep.status]">
+          {{ statusLabels[dep.status] || dep.status }}
+        </span>
+      </div>
+      <div class="case-card__body">
+        <div class="case-type">{{ caseTypeLabels[dep.caseType] || dep.caseType }}</div>
+        <div class="case-meta text-muted">
+          <span *ngIf="dep.beneficiaryName"><i class="bi bi-person me-1"></i>{{ dep.beneficiaryName }}</span>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Orphan dependents — parent not visible in list -->
+  <div *ngFor="let c of orphanDependents" class="case-card" (click)="openCase(c.id)">
     <div class="case-card__header">
       <span class="case-number">{{ c.caseNumber }}</span>
       <span class="badge" [ngClass]="statusCss[c.status]">
@@ -86,9 +134,6 @@
       <div class="case-meta text-muted">
         <span *ngIf="c.employerImmOrgName">
           <i class="bi bi-building me-1"></i>{{ c.employerImmOrgName }}
-        </span>
-        <span *ngIf="c.lawFirmImmOrgName" class="ms-3">
-          <i class="bi bi-person-workspace me-1"></i>{{ c.lawFirmImmOrgName }}
         </span>
         <span *ngIf="c.callerRelationship" class="ms-3 role-badge role-badge--{{c.callerRelationship | lowercase}}">
           {{ c.callerRelationship | titlecase }}

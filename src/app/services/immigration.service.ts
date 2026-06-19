@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggerService } from './logger.service';
@@ -266,7 +266,92 @@ export const CHANNEL_LABELS: Record<string, string> = {
   SHARED:                'Shared',
   ATTORNEY_BENEFICIARY:  'Attorney ↔ Beneficiary',
   ATTORNEY_EMPLOYER:     'Attorney ↔ Employer',
+  ATTORNEY_INTERNAL:     'Internal Notes',
 };
+
+export interface H1bCapRegistration {
+  id: number;
+  caseId: number;
+  caseNumber: string;
+  registrationYear: number;
+  registrationNumber: string | null;
+  selectedInLottery: boolean | null;
+  selectionDate: string | null;
+  registrationDate: string;
+  createdAt: string;
+}
+
+export interface CapSeasonSummary {
+  registrationYear: number;
+  total: number;
+  selected: number;
+  notSelected: number;
+  pendingResult: number;
+}
+
+export interface CaseTask {
+  id: number;
+  caseId: number;
+  title: string;
+  description: string | null;
+  dueDate: string | null;
+  assignedToMemberId: number | null;
+  assignedToName: string | null;
+  completedAt: string | null;
+  completedByUserId: number | null;
+  completedByName: string | null;
+  isRequired: boolean;
+  createdByUserId: number;
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  overdue: boolean;
+}
+
+export interface CreateCaseTaskRequest {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  assignedToMemberId?: number | null;
+  isRequired?: boolean;
+}
+
+export interface ConflictCheckRequest {
+  beneficiaryEmail: string;
+  employerOrgId?: number | null;
+}
+
+export interface FamilyBundle {
+  primaryCase: ImmigrationCase;
+  dependentCases: ImmigrationCase[];
+}
+
+export interface StatusHistoryItem {
+  id: number;
+  caseId: number;
+  fromStatus: string | null;
+  toStatus: string;
+  changedByUserId: number | null;
+  changedByName: string | null;
+  changedAt: string;
+  note: string | null;
+}
+
+export interface BarNumber {
+  state: string;
+  barNumber: string;
+  admittedDate?: string;
+}
+
+export interface AttorneyProfile {
+  id: number | null;
+  immOrgMemberId: number;
+  barNumbers: BarNumber[];
+  bio: string | null;
+  signatureImageKey: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
 export const STATUS_CSS: Record<string, string> = {
   PROSPECTIVE:         'status-draft',
@@ -556,6 +641,145 @@ export class ImmigrationService {
     return this.http.get<Record<string, number>>(`${this.base}/cases/${caseId}/messages/unread-counts`).pipe(
       tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/messages/unread-counts`, t)),
       catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/messages/unread-counts`, err, t); throw err; })
+    );
+  }
+
+  // ── Conflict check (FEAT-QW5) ────────────────────────────────────────────
+
+  checkConflict(req: ConflictCheckRequest): Observable<ImmigrationCase[]> {
+    const t = Date.now();
+    return this.http.post<ImmigrationCase[]>(`${this.base}/cases/conflict-check`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', '/immigration/cases/conflict-check', t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', '/immigration/cases/conflict-check', err, t); throw err; })
+    );
+  }
+
+  // ── Family bundle (FEAT-QW6) ─────────────────────────────────────────────
+
+  getCaseFamily(caseId: number): Observable<FamilyBundle> {
+    const t = Date.now();
+    return this.http.get<FamilyBundle>(`${this.base}/cases/${caseId}/family`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/family`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/family`, err, t); throw err; })
+    );
+  }
+
+  // ── Status history (FEAT-QW4) ─────────────────────────────────────────────
+
+  getStatusHistory(caseId: number): Observable<StatusHistoryItem[]> {
+    const t = Date.now();
+    return this.http.get<StatusHistoryItem[]>(`${this.base}/cases/${caseId}/status-history`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/status-history`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/status-history`, err, t); throw err; })
+    );
+  }
+
+  // ── Case clone (FEAT-QW3) ─────────────────────────────────────────────────
+
+  cloneCase(caseId: number, newCaseType: string): Observable<ImmigrationCase> {
+    const t = Date.now();
+    return this.http.post<ImmigrationCase>(`${this.base}/cases/${caseId}/clone`, { newCaseType }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/clone`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/clone`, err, t); throw err; })
+    );
+  }
+
+  // ── Attorney profile (FEAT-QW1) ───────────────────────────────────────────
+
+  getAttorneyProfile(orgId: number): Observable<AttorneyProfile> {
+    const t = Date.now();
+    return this.http.get<AttorneyProfile>(`${this.base}/orgs/${orgId}/attorney-profile`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/orgs/${orgId}/attorney-profile`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/orgs/${orgId}/attorney-profile`, err, t); throw err; })
+    );
+  }
+
+  updateAttorneyProfile(orgId: number, req: { barNumbers: BarNumber[]; bio?: string }): Observable<AttorneyProfile> {
+    const t = Date.now();
+    return this.http.put<AttorneyProfile>(`${this.base}/orgs/${orgId}/attorney-profile`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/orgs/${orgId}/attorney-profile`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/orgs/${orgId}/attorney-profile`, err, t); throw err; })
+    );
+  }
+
+  // ── H-1B cap / lottery (FEAT-QW7) ────────────────────────────────────────
+
+  getH1bCap(caseId: number): Observable<H1bCapRegistration | null> {
+    const t = Date.now();
+    return this.http.get<H1bCapRegistration>(`${this.base}/cases/${caseId}/h1b-cap`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/h1b-cap`, t)),
+      catchError(err => {
+        if (err.status === 204) return of(null);
+        this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/h1b-cap`, err, t);
+        throw err;
+      })
+    );
+  }
+
+  createH1bCap(caseId: number, req: { registrationYear: number; registrationNumber?: string; registrationDate: string }): Observable<H1bCapRegistration> {
+    const t = Date.now();
+    return this.http.post<H1bCapRegistration>(`${this.base}/cases/${caseId}/h1b-cap`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/h1b-cap`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/h1b-cap`, err, t); throw err; })
+    );
+  }
+
+  updateLotteryResult(caseId: number, req: { selectedInLottery: boolean; selectionDate?: string | null }): Observable<H1bCapRegistration> {
+    const t = Date.now();
+    return this.http.put<H1bCapRegistration>(`${this.base}/cases/${caseId}/h1b-cap/lottery-result`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/h1b-cap/lottery-result`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/h1b-cap/lottery-result`, err, t); throw err; })
+    );
+  }
+
+  getCapSeasonSummary(orgId: number, year?: number): Observable<CapSeasonSummary> {
+    const t = Date.now();
+    const params = year ? `?year=${year}` : '';
+    return this.http.get<CapSeasonSummary>(`${this.base}/orgs/${orgId}/cap-season${params}`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/orgs/${orgId}/cap-season`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/orgs/${orgId}/cap-season`, err, t); throw err; })
+    );
+  }
+
+  // ── Case tasks (FEAT-QW8) ─────────────────────────────────────────────────
+
+  listTasks(caseId: number): Observable<CaseTask[]> {
+    const t = Date.now();
+    return this.http.get<CaseTask[]>(`${this.base}/cases/${caseId}/tasks`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/tasks`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/tasks`, err, t); throw err; })
+    );
+  }
+
+  createTask(caseId: number, req: CreateCaseTaskRequest): Observable<CaseTask> {
+    const t = Date.now();
+    return this.http.post<CaseTask>(`${this.base}/cases/${caseId}/tasks`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/tasks`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/tasks`, err, t); throw err; })
+    );
+  }
+
+  updateTask(caseId: number, taskId: number, req: Partial<CreateCaseTaskRequest>): Observable<CaseTask> {
+    const t = Date.now();
+    return this.http.put<CaseTask>(`${this.base}/cases/${caseId}/tasks/${taskId}`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/tasks/${taskId}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/tasks/${taskId}`, err, t); throw err; })
+    );
+  }
+
+  completeTask(caseId: number, taskId: number): Observable<CaseTask> {
+    const t = Date.now();
+    return this.http.put<CaseTask>(`${this.base}/cases/${caseId}/tasks/${taskId}/complete`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/tasks/${taskId}/complete`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/tasks/${taskId}/complete`, err, t); throw err; })
+    );
+  }
+
+  deleteTask(caseId: number, taskId: number): Observable<void> {
+    const t = Date.now();
+    return this.http.delete<void>(`${this.base}/cases/${caseId}/tasks/${taskId}`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'DELETE', `/immigration/cases/${caseId}/tasks/${taskId}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'DELETE', `/immigration/cases/${caseId}/tasks/${taskId}`, err, t); throw err; })
     );
   }
 }

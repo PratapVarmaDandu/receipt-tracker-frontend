@@ -143,6 +143,35 @@
     </div>
   </div>
 
+  <!-- ── Conflict check (FEAT-QW5) — attorney only ────────────────── -->
+  <div *ngIf="isAttorney" class="mb-3">
+    <button class="btn btn-sm btn-outline-warning" (click)="runConflictCheck()"
+            [disabled]="conflictChecking || (!beneficiaryEmail.trim() && !employerImmOrgId)">
+      <i class="bi bi-exclamation-triangle me-1" [class.spin]="conflictChecking"></i>
+      {{ conflictChecking ? 'Checking…' : 'Conflict Check' }}
+    </button>
+    <span class="text-muted ms-2" style="font-size:.8rem">
+      Checks if this beneficiary or employer already has an open case at your firm.
+    </span>
+
+    <div *ngIf="conflictError" class="alert alert-danger mt-2 py-2">{{ conflictError }}</div>
+
+    <div *ngIf="conflictResults !== null && conflictResults.length === 0" class="alert alert-success mt-2 py-2">
+      <i class="bi bi-check-circle me-1"></i>No conflicts found.
+    </div>
+
+    <div *ngIf="conflictResults && conflictResults.length > 0" class="alert alert-warning mt-2 py-2">
+      <strong><i class="bi bi-exclamation-triangle me-1"></i>Potential conflict — {{ conflictResults.length }} existing case(s):</strong>
+      <ul class="mb-0 mt-1">
+        <li *ngFor="let c of conflictResults">
+          <strong>{{ c.caseNumber }}</strong> — {{ c.caseType }} · {{ c.status }}
+          <span *ngIf="c.beneficiaryName"> · {{ c.beneficiaryName }}</span>
+        </li>
+      </ul>
+      <div class="mt-1" style="font-size:.82rem">You may still proceed — review firm conflict-of-interest policies first.</div>
+    </div>
+  </div>
+
   <!-- ── Actions ──────────────────────────────────────────────────── -->
   <div class="form-actions">
     <button class="btn btn-outline-secondary" (click)="cancel()" [disabled]="submitting">Cancel</button>

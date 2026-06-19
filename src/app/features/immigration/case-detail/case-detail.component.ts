@@ -5,7 +5,9 @@ import {
   ImmigrationService, ImmigrationCase, FormInstance, TimelineItem, KeyDate,
   ActivityFeedItem, ConsentRecord, ImmMessage, CanonicalProfile,
   CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS,
-  FORM_STATUS_LABELS, FORM_STATUS_CSS, EVENT_TYPE_ICONS, CHANNEL_LABELS
+  FORM_STATUS_LABELS, FORM_STATUS_CSS, EVENT_TYPE_ICONS, CHANNEL_LABELS,
+  StatusHistoryItem, AttorneyProfile, CASE_TYPE_GROUPS, FamilyBundle,
+  H1bCapRegistration, CaseTask, CreateCaseTaskRequest
 } from '../../../services/immigration.service';
 import { ImmOrgService } from '../../../services/imm-org.service';
 import { ImmOrgMember } from '../../../models/imm-org.model';
@@ -42,7 +44,50 @@ export class CaseDetailComponent implements OnInit {
   readonly formStatusCss    = FORM_STATUS_CSS;
   readonly eventTypeIcons   = EVENT_TYPE_ICONS;
   readonly channelLabels    = CHANNEL_LABELS;
-  readonly channels = ['SHARED', 'ATTORNEY_BENEFICIARY', 'ATTORNEY_EMPLOYER'];
+  readonly caseTypeGroups   = CASE_TYPE_GROUPS;
+  readonly channels = ['SHARED', 'ATTORNEY_BENEFICIARY', 'ATTORNEY_EMPLOYER', 'ATTORNEY_INTERNAL'];
+
+  // Status history state (FEAT-QW4)
+  statusHistory: StatusHistoryItem[] = [];
+  statusHistoryLoading = false;
+
+  // Clone state (FEAT-QW3)
+  cloneTarget = '';
+  cloning = false;
+  cloneError: string | null = null;
+  showClonePanel = false;
+
+  // Attorney profile state (FEAT-QW1)
+  attorneyProfile: AttorneyProfile | null = null;
+  attorneyProfileLoading = false;
+
+  // Family bundle state (FEAT-QW6)
+  family: FamilyBundle | null = null;
+  familyLoading = false;
+
+  // H-1B cap state (FEAT-QW7)
+  h1bCap: H1bCapRegistration | null = null;
+  h1bCapLoading = false;
+  showCapForm = false;
+  capForm = { registrationYear: new Date().getFullYear(), registrationNumber: '', registrationDate: '' };
+  capSubmitting = false;
+  capError: string | null = null;
+  showLotteryForm = false;
+  lotteryForm = { selectedInLottery: true, selectionDate: '' };
+  lotterySubmitting = false;
+  lotteryError: string | null = null;
+
+  // Tasks tab state (FEAT-QW8)
+  tasks: CaseTask[] = [];
+  tasksLoading = false;
+  tasksLoaded = false;
+  tasksError: string | null = null;
+  showAddTask = false;
+  addingTask = false;
+  addTaskError: string | null = null;
+  taskForm: CreateCaseTaskRequest = { title: '', description: '', dueDate: '', isRequired: false };
+  editingTaskId: number | null = null;
+  editTaskForm: CreateCaseTaskRequest = { title: '', description: '', dueDate: '', isRequired: false };
 
   // Key dates state
   keyDates: KeyDate[] = [];
@@ -117,11 +162,15 @@ export class CaseDetailComponent implements OnInit {
         this.caseLoading = false;
         this.loadKeyDates();
         this.loadFeed();
+        this.loadStatusHistory();
+        this.loadFamily();
+        if (c.caseType === 'H1B_INITIAL') this.loadH1bCap();
         if (c.callerRelationship === 'BENEFICIARY') {
           this.checkAndShowConsent();
         }
         if (c.callerRelationship === 'ATTORNEY' && c.lawFirmImmOrgId) {
           this.loadFirmMembers(c.lawFirmImmOrgId);
+          this.loadAttorneyProfile(c.lawFirmImmOrgId);
         }
       },
       error: err => {
@@ -158,6 +207,7 @@ export class CaseDetailComponent implements OnInit {
     if (tab === 'timeline'  && !this.timelineLoaded) this.loadTimeline();
     if (tab === 'messaging') { this.loadMessages(); this.loadUnreadCounts(); }
     if (tab === 'profile')   this.loadBeneficiaryProfile();
+    if (tab === 'tasks'     && !this.tasksLoaded)    this.loadTasks();
   }
 
   // ── Role helpers ──────────────────────────────────────────────────────────
@@ -210,7 +260,8 @@ export class CaseDetailComponent implements OnInit {
 
   visibleChannels(): string[] {
     const rel = this.case?.callerRelationship;
-    if (rel === 'ATTORNEY') return ['SHARED', 'ATTORNEY_BENEFICIARY', 'ATTORNEY_EMPLOYER'];
+    if (rel === 'ATTORNEY') return ['SHARED', 'ATTORNEY_BENEFICIARY', 'ATTORNEY_EMPLOYER', 'ATTORNEY_INTERNAL'];
+    if (rel === 'PARALEGAL') return ['SHARED', 'ATTORNEY_BENEFICIARY', 'ATTORNEY_EMPLOYER', 'ATTORNEY_INTERNAL'];
     if (rel === 'HR_ADMIN')  return ['SHARED', 'ATTORNEY_EMPLOYER'];
     return ['SHARED', 'ATTORNEY_BENEFICIARY'];
   }
@@ -566,5 +617,169 @@ export class CaseDetailComponent implements OnInit {
       next: msg => { this.messages = [...this.messages, msg]; this.msgContent = ''; this.sendingMsg = false; },
       error: err => { this.sendingMsg = false; this.logger.error(this.source, 'sendMessage failed', err); }
     });
+  }
+
+  // ── Status history (FEAT-QW4) ─────────────────────────────────────────────
+
+  loadStatusHistory(): void {
+    this.statusHistoryLoading = true;
+    this.immigrationService.getStatusHistory(this.caseId).subscribe({
+      next: h => { this.statusHistory = h; this.statusHistoryLoading = false; },
+      error: () => { this.statusHistoryLoading = false; }
+    });
+  }
+
+  statusLabel(s: string | null): string {
+    return s ? (this.statusLabels[s] ?? s) : '—';
+  }
+
+  // ── Case clone (FEAT-QW3) ─────────────────────────────────────────────────
+
+  doClone(): void {
+    if (!this.cloneTarget) return;
+    this.cloning = true;
+    this.cloneError = null;
+    this.immigrationService.cloneCase(this.caseId, this.cloneTarget).subscribe({
+      next: newCase => {
+        this.cloning = false;
+        this.showClonePanel = false;
+        this.router.navigate(['/immigration/cases', newCase.id]);
+      },
+      error: err => {
+        this.cloneError = err?.error?.error || 'Clone failed';
+        this.cloning = false;
+        this.logger.error(this.source, 'cloneCase failed', err);
+      }
+    });
+  }
+
+  // ── Attorney profile (FEAT-QW1) ───────────────────────────────────────────
+
+  loadAttorneyProfile(orgId: number): void {
+    this.attorneyProfileLoading = true;
+    this.immigrationService.getAttorneyProfile(orgId).subscribe({
+      next: p => { this.attorneyProfile = p; this.attorneyProfileLoading = false; },
+      error: () => { this.attorneyProfileLoading = false; }
+    });
+  }
+
+  // ── H-1B cap / lottery (FEAT-QW7) ────────────────────────────────────────
+
+  loadH1bCap(): void {
+    this.h1bCapLoading = true;
+    this.immigrationService.getH1bCap(this.caseId).subscribe({
+      next: cap => { this.h1bCap = cap; this.h1bCapLoading = false; },
+      error: () => { this.h1bCapLoading = false; }
+    });
+  }
+
+  submitCap(): void {
+    if (!this.capForm.registrationDate) return;
+    this.capSubmitting = true;
+    this.capError = null;
+    this.immigrationService.createH1bCap(this.caseId, {
+      registrationYear: this.capForm.registrationYear,
+      registrationNumber: this.capForm.registrationNumber || undefined,
+      registrationDate: this.capForm.registrationDate
+    }).subscribe({
+      next: cap => { this.h1bCap = cap; this.showCapForm = false; this.capSubmitting = false; },
+      error: err => { this.capError = err?.error?.error || 'Failed to save registration'; this.capSubmitting = false; }
+    });
+  }
+
+  submitLotteryResult(): void {
+    this.lotterySubmitting = true;
+    this.lotteryError = null;
+    this.immigrationService.updateLotteryResult(this.caseId, {
+      selectedInLottery: this.lotteryForm.selectedInLottery,
+      selectionDate: this.lotteryForm.selectionDate || null
+    }).subscribe({
+      next: cap => { this.h1bCap = cap; this.showLotteryForm = false; this.lotterySubmitting = false; },
+      error: err => { this.lotteryError = err?.error?.error || 'Failed to update result'; this.lotterySubmitting = false; }
+    });
+  }
+
+  // ── Tasks (FEAT-QW8) ─────────────────────────────────────────────────────
+
+  loadTasks(): void {
+    this.tasksLoading = true;
+    this.tasksError = null;
+    this.immigrationService.listTasks(this.caseId).subscribe({
+      next: t => { this.tasks = t; this.tasksLoading = false; this.tasksLoaded = true; },
+      error: err => { this.tasksError = err?.error?.error || 'Failed to load tasks'; this.tasksLoading = false; }
+    });
+  }
+
+  overdueTaskCount(): number {
+    return this.tasks.filter(t => t.overdue && !t.completedAt).length;
+  }
+
+  submitAddTask(): void {
+    if (!this.taskForm.title?.trim()) return;
+    this.addingTask = true;
+    this.addTaskError = null;
+    this.immigrationService.createTask(this.caseId, {
+      ...this.taskForm,
+      dueDate: this.taskForm.dueDate || undefined
+    }).subscribe({
+      next: t => {
+        this.tasks = [...this.tasks, t];
+        this.showAddTask = false;
+        this.taskForm = { title: '', description: '', dueDate: '', isRequired: false };
+        this.addingTask = false;
+      },
+      error: err => { this.addTaskError = err?.error?.error || 'Failed to create task'; this.addingTask = false; }
+    });
+  }
+
+  startEditTask(t: CaseTask): void {
+    this.editingTaskId = t.id;
+    this.editTaskForm = { title: t.title, description: t.description || '', dueDate: t.dueDate || '', isRequired: t.isRequired };
+  }
+
+  cancelEditTask(): void { this.editingTaskId = null; }
+
+  saveEditTask(taskId: number): void {
+    this.immigrationService.updateTask(this.caseId, taskId, {
+      ...this.editTaskForm,
+      dueDate: this.editTaskForm.dueDate || undefined
+    }).subscribe({
+      next: updated => {
+        this.tasks = this.tasks.map(t => t.id === taskId ? updated : t);
+        this.editingTaskId = null;
+      },
+      error: err => { this.logger.error(this.source, 'updateTask failed', err); }
+    });
+  }
+
+  doCompleteTask(taskId: number): void {
+    this.immigrationService.completeTask(this.caseId, taskId).subscribe({
+      next: updated => { this.tasks = this.tasks.map(t => t.id === taskId ? updated : t); },
+      error: err => { this.logger.error(this.source, 'completeTask failed', err); }
+    });
+  }
+
+  doDeleteTask(taskId: number): void {
+    this.immigrationService.deleteTask(this.caseId, taskId).subscribe({
+      next: () => { this.tasks = this.tasks.filter(t => t.id !== taskId); },
+      error: err => { this.logger.error(this.source, 'deleteTask failed', err); }
+    });
+  }
+
+  // ── Family bundle (FEAT-QW6) ──────────────────────────────────────────────
+
+  loadFamily(): void {
+    this.familyLoading = true;
+    this.immigrationService.getCaseFamily(this.caseId).subscribe({
+      next: f => { this.family = f; this.familyLoading = false; },
+      error: () => { this.familyLoading = false; }
+    });
+  }
+
+  barNumbersList(): { state: string; barNumber: string; admittedDate?: string }[] {
+    if (!this.attorneyProfile?.barNumbers) return [];
+    return Array.isArray(this.attorneyProfile.barNumbers)
+      ? this.attorneyProfile.barNumbers as { state: string; barNumber: string; admittedDate?: string }[]
+      : [];
   }
 }

@@ -200,6 +200,12 @@
   }
 }
 
+.case-card--dependent {
+  margin-left: 2rem;
+  border-left: 3px solid var(--border-color, #e2e8f0);
+  background: var(--bg-subtle, #f8fafc);
+}
+
 .spin {
   display: inline-block;
   animation: spin 1s linear infinite;

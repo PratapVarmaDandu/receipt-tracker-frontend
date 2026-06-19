@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImmOrgService } from '../../../services/imm-org.service';
 import { ImmOrg, ImmOrgMember, OrgPartnership, PartnershipInviteRequest } from '../../../models/imm-org.model';
-import { ImmigrationCase, CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS } from '../../../services/immigration.service';
+import { ImmigrationService, ImmigrationCase, CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS, CapSeasonSummary } from '../../../services/immigration.service';
 import { LoggerService } from '../../../services/logger.service';
 
 @Component({
@@ -19,6 +19,7 @@ export class AttorneyDashboardComponent implements OnInit {
   members: ImmOrgMember[] = [];
   partnerships: OrgPartnership[] = [];
   activeFilter: string | null = null;
+  capSeason: CapSeasonSummary | null = null;
 
   loading = true;
   error: string | null = null;
@@ -45,6 +46,7 @@ export class AttorneyDashboardComponent implements OnInit {
 
   constructor(
     private immOrgService: ImmOrgService,
+    private immigrationService: ImmigrationService,
     private router: Router,
     private logger: LoggerService
   ) {}
@@ -73,9 +75,19 @@ export class AttorneyDashboardComponent implements OnInit {
   selectOrg(org: ImmOrg): void {
     this.selectedOrg = org;
     this.activeFilter = null;
+    this.capSeason = null;
     this.loadCases();
     this.loadMembers();
     this.loadPartnerships();
+    this.loadCapSeason();
+  }
+
+  loadCapSeason(): void {
+    if (!this.selectedOrg) return;
+    this.immigrationService.getCapSeasonSummary(this.selectedOrg.id).subscribe({
+      next: s => { this.capSeason = s; },
+      error: () => { /* non-fatal — widget just stays hidden */ }
+    });
   }
 
   loadCases(): void {

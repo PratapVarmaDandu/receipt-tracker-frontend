@@ -73,4 +73,21 @@ export class CaseListComponent implements OnInit {
   newCase(): void {
     this.router.navigate(['/immigration/cases/new']);
   }
+
+  // ── Family tree helpers (FEAT-QW6) ───────────────────────────────────────
+
+  get primaryCases(): ImmigrationCase[] {
+    return this.cases.filter(c => !c.parentCaseId);
+  }
+
+  /** Dependent cases whose parent IS in the current visible list. */
+  dependentsOf(caseId: number): ImmigrationCase[] {
+    return this.cases.filter(c => c.parentCaseId === caseId);
+  }
+
+  /** Dependents whose parent is NOT in this list (e.g. parent on a different page/not accessible). */
+  get orphanDependents(): ImmigrationCase[] {
+    const knownIds = new Set(this.cases.map(c => c.id));
+    return this.cases.filter(c => c.parentCaseId != null && !knownIds.has(c.parentCaseId));
+  }
 }
