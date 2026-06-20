@@ -913,8 +913,8 @@
       </div>
     </div>
 
-    <!-- Attorney: generate / regenerate panel -->
-    <div *ngIf="isAttorney" class="d-flex align-items-center gap-2 mb-3">
+    <!-- Attorney / Paralegal: generate / regenerate panel -->
+    <div *ngIf="isAttorneyOrParalegal" class="d-flex align-items-center gap-2 mb-3">
       <button class="btn btn-sm btn-outline-primary"
               (click)="showGeneratePanel = !showGeneratePanel">
         <i class="bi bi-magic me-1"></i>{{ checklist.length ? 'Add More Items' : 'Generate Checklist' }}
@@ -925,7 +925,7 @@
     </div>
 
     <!-- Generate panel -->
-    <div *ngIf="isAttorney && showGeneratePanel" class="card p-3 mb-3 bg-light">
+    <div *ngIf="isAttorneyOrParalegal && showGeneratePanel" class="card p-3 mb-3 bg-light">
       <div class="fw-semibold mb-2" style="font-size:.88rem">Select form types to include:</div>
       <div class="d-flex flex-wrap gap-3 mb-3">
         <div *ngFor="let ft of FORM_TYPE_OPTIONS" class="form-check">
@@ -950,7 +950,7 @@
     <div *ngIf="checklistLoaded && checklist.length === 0" class="text-muted text-center py-5">
       <i class="bi bi-card-checklist" style="font-size:2rem; opacity:.35"></i>
       <div class="mt-2">No checklist yet.
-        <span *ngIf="isAttorney"> Click "Generate Checklist" to create one from standard templates.</span>
+        <span *ngIf="isAttorneyOrParalegal"> Click "Generate Checklist" to create one from standard templates.</span>
       </div>
     </div>
 
@@ -1002,7 +1002,7 @@
                 <i *ngIf="updatingChecklistItem !== item.id" class="bi bi-upload me-1"></i>Mark Uploaded
               </button>
             </div>
-            <div *ngIf="isAttorney" class="d-flex align-items-center gap-2 flex-wrap">
+            <div *ngIf="isAttorneyOrParalegal" class="d-flex align-items-center gap-2 flex-wrap">
               <input class="form-control form-control-sm" style="max-width:260px"
                      placeholder="Waiver reason (required)" [(ngModel)]="waiverDraft[item.id]">
               <button class="btn btn-xs btn-outline-secondary" (click)="markWaived(item)"
@@ -1020,7 +1020,7 @@
               <span *ngIf="!item.documentId">No document linked</span>
             </div>
             <div class="d-flex gap-2">
-              <button *ngIf="isAttorney" class="btn btn-xs btn-success" (click)="markVerified(item)"
+              <button *ngIf="isAttorneyOrParalegal" class="btn btn-xs btn-success" (click)="markVerified(item)"
                       [disabled]="updatingChecklistItem === item.id">
                 <i *ngIf="updatingChecklistItem === item.id" class="bi bi-arrow-repeat spin"></i>
                 <i *ngIf="updatingChecklistItem !== item.id" class="bi bi-check-lg me-1"></i>Verify
@@ -1037,7 +1037,7 @@
             <div class="text-success mb-1">
               <i class="bi bi-check-circle-fill me-1"></i>Verified {{ item.verifiedAt | date:'mediumDate' }}
             </div>
-            <button *ngIf="isAttorney" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
+            <button *ngIf="isAttorneyOrParalegal" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
                     [disabled]="updatingChecklistItem === item.id">
               <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
             </button>
@@ -1048,7 +1048,7 @@
             <div class="text-muted mb-1">
               <i class="bi bi-x-circle me-1"></i>Waived — {{ item.waiverReason }}
             </div>
-            <button *ngIf="isAttorney" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
+            <button *ngIf="isAttorneyOrParalegal" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
                     [disabled]="updatingChecklistItem === item.id">
               <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
             </button>
@@ -1113,16 +1113,16 @@
     <!-- Error -->
     <div *ngIf="packagesError" class="alert alert-danger">{{ packagesError }}</div>
 
-    <!-- Attorney: create button -->
-    <div *ngIf="isAttorney" class="d-flex justify-content-between align-items-center mb-3">
+    <!-- Attorney / Paralegal: create button -->
+    <div *ngIf="isAttorneyOrParalegal" class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-0">Filing Packages</h6>
       <button class="btn btn-primary btn-sm" (click)="showCreatePackagePanel = !showCreatePackagePanel">
         <i class="bi bi-plus-lg me-1"></i>New Package
       </button>
     </div>
 
-    <!-- Create package panel (attorney only) -->
-    <div *ngIf="showCreatePackagePanel && isAttorney" class="card p-3 mb-3 border-primary">
+    <!-- Create package panel (attorney / paralegal) -->
+    <div *ngIf="showCreatePackagePanel && isAttorneyOrParalegal" class="card p-3 mb-3 border-primary">
       <h6 class="mb-3">New Filing Package</h6>
 
       <div class="mb-2">
@@ -1160,7 +1160,7 @@
     <div *ngIf="!packagesLoading && packages.length === 0 && !showCreatePackagePanel" class="text-center py-5 text-muted">
       <i class="bi bi-folder2 d-block mb-2" style="font-size:2rem"></i>
       No filing packages yet.
-      <span *ngIf="isAttorney"> Click <strong>New Package</strong> to begin.</span>
+      <span *ngIf="isAttorneyOrParalegal"> Click <strong>New Package</strong> to begin.</span>
     </div>
 
     <!-- Package list -->
@@ -1213,8 +1213,8 @@
             </div>
           </div>
 
-          <!-- Attorney actions -->
-          <div *ngIf="isAttorney" class="d-flex flex-wrap gap-2">
+          <!-- Attorney / Paralegal actions -->
+          <div *ngIf="isAttorneyOrParalegal" class="d-flex flex-wrap gap-2">
             <button class="btn btn-outline-primary btn-sm"
                     *ngIf="pkg.status === 'DRAFT'"
                     [disabled]="sendingQuestionnaires === pkg.id"
@@ -1223,17 +1223,18 @@
               {{ sendingQuestionnaires === pkg.id ? 'Sending…' : 'Send Questionnaires' }}
             </button>
 
+            <!-- APPROVE_FORMS scope — attorney only -->
             <button class="btn btn-success btn-sm"
-                    *ngIf="pkg.status === 'ANSWERS_COLLECTED' || pkg.status === 'ATTORNEY_REVIEW'"
+                    *ngIf="isAttorney && (pkg.status === 'ANSWERS_COLLECTED' || pkg.status === 'ATTORNEY_REVIEW')"
                     [disabled]="approvingPackage === pkg.id"
                     (click)="doApprovePackage(pkg)">
               <i class="bi bi-check-circle me-1"></i>
               {{ approvingPackage === pkg.id ? 'Approving…' : 'Approve Answers' }}
             </button>
 
-            <!-- Generate PDF (APPROVED or GENERATED status) -->
+            <!-- Generate PDF — APPROVE_FORMS scope, attorney only -->
             <button class="btn btn-primary btn-sm"
-                    *ngIf="pkg.status === 'APPROVED' || pkg.status === 'GENERATED'"
+                    *ngIf="isAttorney && (pkg.status === 'APPROVED' || pkg.status === 'GENERATED')"
                     [disabled]="generatingPdf === pkg.id"
                     (click)="doGeneratePdf(pkg); loadPackets(pkg)">
               <span *ngIf="generatingPdf === pkg.id" class="spinner-border spinner-border-sm me-1"></span>
@@ -1631,14 +1632,14 @@
   <div *ngIf="activeTab === 'tasks'">
 
     <!-- Attorney / Paralegal: add task button -->
-    <div *ngIf="isAttorney" class="d-flex justify-content-end mb-3">
+    <div *ngIf="isAttorneyOrParalegal" class="d-flex justify-content-end mb-3">
       <button class="btn btn-sm btn-outline-primary" (click)="showAddTask = !showAddTask">
         <i class="bi bi-plus-lg me-1"></i>Add Task
       </button>
     </div>
 
     <!-- Add task form -->
-    <div *ngIf="isAttorney && showAddTask" class="card mb-3 p-3">
+    <div *ngIf="isAttorneyOrParalegal && showAddTask" class="card mb-3 p-3">
       <h6 class="mb-3">New Task</h6>
       <div class="row g-2">
         <div class="col-12">
@@ -1678,7 +1679,7 @@
     <!-- Empty state -->
     <div *ngIf="!tasksLoading && tasks.length === 0 && !showAddTask" class="text-muted py-3 text-center">
       No tasks yet.
-      <span *ngIf="!isAttorney"> Your attorney will create tasks for this case.</span>
+      <span *ngIf="!isAttorneyOrParalegal"> Your attorney will create tasks for this case.</span>
     </div>
 
     <!-- Task rows -->
@@ -1692,7 +1693,7 @@
         <ng-container *ngIf="editingTaskId !== t.id">
           <div class="task-row__body d-flex align-items-start gap-2">
             <!-- Complete button (attorney / paralegal) -->
-            <button *ngIf="isAttorney && !t.completedAt"
+            <button *ngIf="isAttorneyOrParalegal && !t.completedAt"
                     class="btn btn-xs btn-outline-success flex-shrink-0 mt-1"
                     (click)="doCompleteTask(t.id)" title="Mark complete">
               <i class="bi bi-check-lg"></i>
@@ -1714,7 +1715,7 @@
             </div>
 
             <!-- Edit / Delete (attorney / paralegal only) -->
-            <div *ngIf="isAttorney && !t.completedAt" class="d-flex gap-1 flex-shrink-0">
+            <div *ngIf="isAttorneyOrParalegal && !t.completedAt" class="d-flex gap-1 flex-shrink-0">
               <button class="btn btn-xs btn-outline-secondary" (click)="startEditTask(t)" title="Edit"><i class="bi bi-pencil"></i></button>
               <button class="btn btn-xs btn-outline-danger"   (click)="doDeleteTask(t.id)"  title="Delete"><i class="bi bi-trash"></i></button>
             </div>
@@ -1722,7 +1723,7 @@
         </ng-container>
 
         <!-- Edit mode (inline) -->
-        <ng-container *ngIf="isAttorney && editingTaskId === t.id">
+        <ng-container *ngIf="isAttorneyOrParalegal && editingTaskId === t.id">
           <div class="row g-2">
             <div class="col-12">
               <input class="form-control form-control-sm" type="text" [(ngModel)]="editTaskForm.title">

@@ -457,10 +457,12 @@ export class CaseDetailComponent implements OnInit {
   }
 
   // ── Role helpers ──────────────────────────────────────────────────────────
-  get isBeneficiary(): boolean { return this.case?.callerRelationship === 'BENEFICIARY'; }
-  get isAttorney():    boolean { return this.case?.callerRelationship === 'ATTORNEY'; }
-  get isEmployer():    boolean { return this.case?.callerRelationship === 'HR_ADMIN'; }
-  get isOrgMember():   boolean { return this.isAttorney || this.isEmployer; }
+  get isBeneficiary():        boolean { return this.case?.callerRelationship === 'BENEFICIARY'; }
+  get isAttorney():           boolean { return this.case?.callerRelationship === 'ATTORNEY'; }
+  get isParalegal():          boolean { return this.case?.callerRelationship === 'PARALEGAL'; }
+  get isEmployer():           boolean { return this.case?.callerRelationship === 'HR_ADMIN'; }
+  get isAttorneyOrParalegal():boolean { return this.isAttorney || this.isParalegal; }
+  get isOrgMember():          boolean { return this.isAttorney || this.isParalegal || this.isEmployer; }
 
   // ── Beneficiary profile (for employer / attorney view) ────────────────────
   beneficiaryProfile: CanonicalProfile | null = null;
