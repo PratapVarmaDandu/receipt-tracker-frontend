@@ -22,10 +22,10 @@
 | `ShopModule` | `shop` | Shop, CartSidebar, Checkout, OrderConfirmation |
 | `AdminModule` | `admin` | Admin, AdminDashboard, AdminMembers, AdminSquare, AdminClover, AdminOrders, AdminJoin |
 | `PlatformModule` | `platform` | Platform, PlatformSquareConfig |
-| `ImmigrationModule` | `immigration` | CaseList, CaseDetail, CaseForm, CanonicalProfile, CaseJoin |
+| `ImmigrationModule` | `immigration` | CaseList, CaseDetail, CaseForm, CanonicalProfile, CaseJoin, DataRequest, PackageQuestionnaire, FormVersions |
 
 ### Public routes (no AuthGuard)
-`/share/:token` (ShareResponse in AppModule), `/group/join/:token` (JoinGroup in GroupsModule), `/documents/shared/:token` (DocumentAccess in DocumentsModule), `/garage/join/:token` (VehicleJoin in GarageModule), `/admin/join/:token` (AdminJoin in AdminModule), `/immigration/cases/join/:token` (CaseJoin in ImmigrationModule)
+`/share/:token` (ShareResponse in AppModule), `/group/join/:token` (JoinGroup in GroupsModule), `/documents/shared/:token` (DocumentAccess in DocumentsModule), `/garage/join/:token` (VehicleJoin in GarageModule), `/admin/join/:token` (AdminJoin in AdminModule), `/immigration/cases/join/:token` (CaseJoin in ImmigrationModule), `/immigration/data-request/:token` (DataRequest in ImmigrationModule — GET public, submit requires auth), `/immigration/packages/questionnaire/:token` (PackageQuestionnaire in ImmigrationModule — GET public, submit requires auth)
 
 ## State management
 - No NgRx, no signals — `BehaviorSubject` in services only
@@ -296,6 +296,9 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 - `CreateCaseRequest` — `beneficiaryEmail: string` (required), `parentCaseId?`, `assignedAttorneyMemberId?`
 - `getCaseBeneficiaryProfile(caseId)` — calls `GET /api/immigration/cases/{id}/beneficiary/profile`; used by case-detail Profile tab
 - `getCaseByInviteToken(token)` / `acceptCaseInvite(token)` — public and auth invite endpoints
+- `listRfes(caseId)` / `createRfe(caseId, req)` / `updateRfe(caseId, rfeId, req)` / `respondRfe(caseId, rfeId)` — RFE CRUD + respond endpoints
+- `getUscisHistory(caseId)` / `checkUscisNow(caseId)` — USCIS poll history and on-demand check
+- Interfaces: `CaseRfe` (id, caseId, status, issuedDate, responseDeadline, uscisCategory, uscisNote, respondedAt, daysUntilDeadline), `CreateRfeRequest`, `UscisStatusResult` (id, caseId, polledAt, rawStatusText, detectedStatus, statusChanged)
 
 **`ImmOrg` model** — `myMemberId: number | null` added; populated only from `listMine()` (tells the frontend which `ImmOrgMember.id` the current user holds in each org); used by case-form to auto-assign attorney = self.
 
@@ -319,6 +322,9 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 - **Header**: Employer/Attorney nav buttons always visible when `isEmployer`/`isAttorney` (item 4 fix)
 - **Overview "My Profile" button**: only shown when `isBeneficiary`; navigates to `/immigration/profile?caseId=X`; org members see "View Employee Profile" button that switches to profile tab
 - **Profile tab**: calls `getCaseBeneficiaryProfile(caseId)` on first open; shows read-only bio fields (name, DOB, citizenship, visa, passports); `profileLoaded` gate prevents repeat fetches
+- **RFE alert banner** (Overview top): red banner shown when `openRfe !== null` (first RFE with status `OPEN`); shows issued date, deadline, days-left countdown; attorney-only "Log RFE Response" button calls `doRespondRfe(rfeId)`; attorney-only "Log RFE" button + inline form (issuedDate, responseDeadline, uscisCategory, uscisNote) shown when no open RFE
+- **USCIS status panel** (Overview, between Key Dates and Activity Feed): only rendered when `case.receiptNumber` exists; shows `detectedStatus`, `polledAt`, `statusChanged` badge, collapsible history list; attorney-only "Check Now" button calls `checkUscisNow()`; `uscisLastCheck` getter returns first item of `uscisHistory`
+- `loadCase()` also calls `loadRfes()` and (if `case.receiptNumber`) `loadUscisHistory()` on init
 
 ### `canonical-profile/` — route `/immigration/profile`
 - `ActivatedRoute` injected; reads `?caseId=` query param on init; loads case via `getCase(caseId)` and stores as `caseContext`
@@ -328,10 +334,89 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 ### `case-join/`
 - Public route (`/immigration/cases/join/:token`), no `AuthGuard`; loads case info via public token endpoint; unauthenticated users see "Sign in with Google" button; on accept, validates email match and redirects to case; `accepted` boolean flips to show success state before redirect
 
+### `data-request/` — route `/immigration/data-request/:token` (FEAT-M7)
+- **No `AuthGuard`** — GET prefill is public; auth is only required on submit
+- Wizard component; `activeSections` getter filters `SECTION_ORDER` by `publicInfo.sections`; `steps` getter appends `'review'`
+- 7 content sections: `personalInfo`, `passportI94`, `currentStatus`, `employment`, `familyDependents`, `eadInfo`, `notificationPreferences` + `review` step
+- Section labels live in `SECTION_LABELS` constant; order defined by `SECTION_ORDER`
+- States: loading → error / expired / already-submitted → wizard → post-submit success
+- Auth gate: shown on review step when `!currentUser`; stores `postLoginRedirect` in localStorage and navigates to `/login`
+- Scan button on passport section: `<label>` wrapping `<input type="file" hidden>`; calls `onPassportFilePick(i, event)` which uploads to `/api/documents/upload` (IMMIGRATION category) via `HttpClient` directly (not through a service); attaches returned `doc.id` to `form.passportI94.passports[i].documentIds[]`
+- `prefillForm()` copies `publicInfo.prefillData` (CanonicalProfile) into the local form object before wizard opens
+- `doSubmit()` builds a sections payload from only the active sections, calls `immigrationService.submitDataRequest(token, payload)`
+- `AppComponent.isLoginPage` returns `true` for `/immigration/data-request/` prefix (hides sidebar/header)
+- Declared in `ImmigrationModule`; no `AuthGuard` on the route
+- `environment.backendUrl` used for absolute URL in document upload (avoids proxy issues on the public route)
+
+### `case-detail/` — FEAT-M7 additions
+- "Request Profile Data" button (attorney only) in the action buttons row (Overview tab) — toggles `showRequestDataPanel` + calls `loadDataRequests()` on first open
+- Data requests panel card (attorney + `showRequestDataPanel`): send form (target relationship select, expiry days select, section checkboxes), past requests list with status badges and copy/open link buttons
+- New state: `dataRequests`, `dataRequestsLoaded`, `showRequestDataPanel`, `sendingRequest`, `requestSent`, `requestError`, `newRequestForm`, `ALL_SECTIONS`
+- New methods: `loadDataRequests()`, `sendDataRequest()`, `isSectionSelected(id)`, `toggleSection(id)`, `dataRequestLink(token)`, `copyRequestLink(token)`, `dataRequestStatusCss(status)`
+- `ProfileDataRequest` and `CreateDataRequestRequest` interfaces imported from `immigration.service.ts`
+
+### `case-detail/` — FEAT-M8 checklist additions
+- "Checklist" tab in nav — loads on tab activation via `loadChecklist()` (lazy, `checklistLoaded` gate); badge shows count of pending required items; green ✓ when `allClearForPdf`
+- `allClearForPdf` getter: all required items have status ≠ PENDING
+- `groupChecklist()` builds `checklistByCategory: Record<string, ChecklistItem[]>` (object keyed by category string); `checklistCategories` getter returns `Object.keys()`
+- Traffic-light per category: `categoryCss(items)` / `categoryIcon(items)` — red when any required PENDING; amber when some UPLOADED; green otherwise
+- Generate panel (attorney only): `FORM_TYPE_OPTIONS` constant (I129/I485/I140_EB2/I140_EB3/PERM); `toggleFormType(id)` / `isFormTypeSelected(id)` for checkbox state; `runGenerateChecklist()` calls backend
+- Items list: `expandedChecklistItem: number|null` tracks open item; `toggleChecklistItem(id)` toggles; inline form shows different actions per status:
+  - PENDING: doc picker `<select>` from `checklistVaultDocs` + "Mark Uploaded" → `markUploaded(item)`; waiver reason input + "Waive" → `markWaived(item)` (attorney only)
+  - UPLOADED: "Verify" → `markVerified(item)` (attorney only) + "Revert"
+  - VERIFIED: date shown, attorney can revert
+  - WAIVED: reason shown, attorney can revert
+- `revertToPending(item)` — sets status PENDING, clears documentId + waiverReason
+- `checklistVaultDocs` loaded via `HttpClient.get('/api/documents?size=200')` (non-fatal — empty list = no picker options); `HttpClient` injected in constructor alongside existing services
+- `waiverDraft: Record<number, string>` — per-item waiver reason before submit
+- `docPickerSelection: Record<number, number|null>` — per-item doc picker state
+- New interfaces in `immigration.service.ts`: `ChecklistItem`, `GenerateChecklistRequest`, `UpdateChecklistItemRequest`; methods: `generateChecklist`, `getChecklist`, `updateChecklistItem`
+
 ### Security guardrails (enforced in this module)
 - No label, placeholder, or validation message recommends a specific form or gives legal advice
 - No real PII in any test fixture or seed — use `John Doe`, `Acme Corp`, `Dewey Cheatham & Howe LLP`
 - `documentIds` arrays in JSON are loose cross-feature references — no FK constraints (per app-wide cross-phase FK rule)
+
+### `package-questionnaire/` — route `/immigration/packages/questionnaire/:token` (Filing Package System)
+- **No `AuthGuard`** — GET spec is public; auth is required only on submit
+- Reads `QuestionnairePublicSpec` from `GET /api/immigration/packages/questionnaires/{token}`
+- States: loading → error | expired | alreadySubmitted → wizard (sections) → submitted success | login prompt
+- `prefillAnswers()` copies non-sensitive prefill values into `answers` map; sets `verified[key] = false` for each — user must check verify box before submit is accepted
+- Dynamic renderer: `*ngFor` over `spec.sections` → section tabs; `*ngFor` over `section.questions`; per-type rendering via `*ngIf` on `q.type`: TEXT→`<input>`, DATE→date input, NUMBER→number input, TEXT_SENSITIVE→password input with show/hide toggle, BOOLEAN→yes/no radios, SELECT→`<select>` from `q.options[]`, TEXTAREA→`<textarea>`
+- Pre-fill chip: shown when `isPrefilled(q)` (non-null `prefillValue` and not TEXT_SENSITIVE); includes Verify checkbox — unchecked prefills block submit with error
+- Progress bar per section: `sectionProgress(section)` = answered / total * 100
+- `doSubmit()`: checks `currentUser` (shows login prompt if null, stores `postLoginRedirect`); validates required fields; validates unverified prefills; calls `immigrationService.submitPublicQuestionnaire(token, answers)`
+- "Scan Passport" not implemented in this component — see data-request component for pattern
+- `AppComponent.isLoginPage` returns `true` for `/immigration/packages/questionnaire/` prefix (hides sidebar/header)
+- Declared in `ImmigrationModule`; no `AuthGuard` on route
+
+### `case-detail/` — Filing Package System additions
+- "Filing Packages" tab: visible only to `isOrgMember` (attorney + employer); lazy-loaded via `setTab('packages')` → `loadPackages()` (gate `packagesLoaded`)
+- State: `packages: FilingPackage[]`, `packagesLoaded`, `packagesLoading`, `packagesError`, `showCreatePackagePanel`, `newPackageName`, `newPackageFormTypes`, `creatingPackage`, `createPackageError`, `sendingQuestionnaires`, `approvingPackage`, `expandedPackage`, `packets: Record<number, GeneratedPdfPacket[]>`, `generatingPdf`, `generatePdfError`, `pendingReviewConflict`, `approvingPacket`
+- Attorney-only actions: create package, send questionnaires, approve answers, **generate PDF** (APPROVED/GENERATED status), **download ZIP**, **approve packet**
+- Package list: status badge, form type chips, per-owner completeness progress bars, questionnaire list; when status=APPROVED → "Generate PDF Packet" button; 409 PENDING_REVIEW_EXISTS → override confirmation prompt; status=GENERATED → packet table (generated-at, form count, DRAFT/ATTORNEY_APPROVED/FILED badge, Download + Approve buttons)
+- `loadPackets(pkg)` auto-called after `loadPackages()` for packages with status GENERATED or ATTORNEY_APPROVED; called manually from "Refresh Packets" button
+- Methods: `togglePackageFormType()`, `isPackageFormTypeSelected()`, `loadPackages()`, `loadPackets()`, `doCreatePackage()`, `doSendQuestionnaires()`, `doApprovePackage()`, `doGeneratePdf(pkg, override?)`, `downloadPacket()`, `doApprovePacket()`, `packageStatusCss()`, `questionnaireLink()`, `packageCompletenessEntries()`
+- `FilingPackage`, `FilingPackageQuestionnaire`, `CreatePackageRequest`, `GeneratedPdfPacket`, `FormVersionUsed`, `GenerationAuditEntry`, `QuestionnairePublicSpec`, `QuestionnaireSection`, `QuestionnaireQuestion`, `ReviewSummary`, `ReviewOwnerGroup`, `ReviewAnswerSummary` interfaces in `immigration.service.ts`
+- Service methods: `createPackage()`, `listPackages()`, `getPackage()`, `sendQuestionnaires()`, `getReviewSummary()`, `approvePackageAnswers()`, `overridePackageAnswer()`, `generatePdfPacket(caseId, packageId, overridePendingReview?)`, `listPdfPackets(caseId, packageId)`, `downloadPdfPacket(caseId, packageId, packetId)` (opens new tab), `approvePdfPacket(caseId, packageId, packetId)`, `getPublicQuestionnaire()`, `submitPublicQuestionnaire()`
+- `ScanResult` and `FieldExtraction` interfaces in `immigration.service.ts`; service methods: `scanProfileDocument(file)`, `scanCaseDocument(caseId, file)` — both return `Observable<ScanResult>`
+
+**Document Scan (Phase 6)** — `CanonicalProfileComponent` (passport + entry tabs) and `PackageQuestionnaireComponent`:
+- "Scan Passport" / "Scan I-94" label-buttons (`<label><input type=file class=d-none>`) trigger `onScanFileSelected()` → `immigrationService.scanProfileDocument(file)` → `ScanResult`
+- Review modal (`modal-backdrop-custom`): per-field checkboxes, confidence bar (green/amber), `needsReview` badge, masked `passportNumber` field, passport/travel-entry target selector for multi-entry profiles
+- `applyScanToProfile()` maps `ScanResult.extractedFields` → `form` fields using canonical field names (`p.number`, `p.country`, `t.visaClass`, etc.); `dismissScan()` clears modal without applying
+- Questionnaire: `isPassportSection(section)` returns true when section contains passport/name question keys → shows "Scan Passport" button; `applyScanToQuestionnaire()` maps to `answers` map via hard-coded key mapping
+- 503 from backend if Vision AI disabled → user sees error alert; data **never saved** — user must click "Apply" then "Save"
+- Confidence threshold: 0.85 — fields below this get `needsReview=true` (amber bar + Review badge); pre-selected for unchecking
+
+### `form-versions/` (`/immigration/admin/form-versions`)
+- `FormVersionsComponent` — admin page for ATTORNEY+OWNER members; groups form versions by formType; shows PENDING_REVIEW badge count and current approved edition per group
+- Expand group → list of versions per edition with PENDING_REVIEW | APPROVED | DEPRECATED badges
+- Expand version → split panel: left (canonical question context hint), right (AcroForm field names extracted from PDF); file upload input for new `{FormType}.json` mapping → calls `uploadFormVersionMapping()` → sets fieldMappingVerified; "Approve Edition" button enabled only after mapping verified → calls `approveFormVersion()`; audit trail below
+- `FormVersion`, `FormVersionAuditEvent`, `FORM_VERSION_STATUS_CSS` interfaces in `immigration.service.ts`
+- Service methods: `getFormVersions()`, `getFormVersion(id)`, `approveFormVersion(id)`, `uploadFormVersionMapping(id, file)`
+- Nav link "Form Versions" added to attorney-dashboard header (links to this page)
+- Route: `admin/form-versions` with AuthGuard; NOT a public route — listed in module but not in `app.component.ts` isLoginPage check
 
 ## Don't
 - Don't convert components to standalone — everything is NgModule-based
@@ -340,6 +425,8 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 - Don't remove `withCredentials: true` from `CredentialsInterceptor` — breaks session auth
 - Don't declare new components in `AppModule` — declare them in their feature module under `src/app/features/`; only shell components (used directly by AppComponent) belong in AppModule
 - Don't create Angular enums for `StoreType`/`ReceiptDocType` — they're string unions by design (match backend strings directly)
-- Don't add `AuthGuard` to `/share/:token` or `/group/join/:token` — users visit before logging in
+- Don't add `AuthGuard` to `/share/:token`, `/group/join/:token`, `/immigration/data-request/:token`, or `/immigration/packages/questionnaire/:token` — users visit before logging in
 - Don't use the `replace` pipe in templates — it doesn't exist in Angular; use a component method instead
 - Don't swallow errors in `submitInviteeAction` — re-throw so the real backend message (e.g. "This invite is not for your account") surfaces in the UI
+- Don't use arrow functions in Angular template interpolations (e.g. `{{ list.filter(i => ...) }}`) — NG5002 parser error; extract to a component method or getter instead
+- Don't return prefillValue for TEXT_SENSITIVE questions on the public questionnaire GET — users must re-enter sensitive data; never send ciphertext over an unauthenticated endpoint

@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import {
   ImmigrationService, ImmigrationCase, CanonicalProfile, Address,
-  PassportEntry, TravelEntry, Education, Employment, Dependent, PriorVisa
+  PassportEntry, TravelEntry, Education, Employment, Dependent, PriorVisa,
+  ScanResult, FieldExtraction
 } from '../../../services/immigration.service';
 import { DocumentService } from '../../../services/document.service';
 import { DocFile, CreateDocumentShareRequest } from '../../../models/document.model';
@@ -62,6 +63,14 @@ export class CanonicalProfileComponent implements OnInit {
 
   // ── Case context (populated when navigated from a case, for auto-fill) ────
   caseContext: ImmigrationCase | null = null;
+
+  // ── Document Scan ─────────────────────────────────────────────────────────
+  scanLoading = false;
+  scanError: string | null = null;
+  scanResult: ScanResult | null = null;
+  scanApplySelections: Record<string, boolean> = {};
+  scanPassportIndex = 0;   // which passport entry to apply scanned data to
+  scanTravelIndex = 0;     // which travel entry to apply I-94 data to
 
   constructor(
     private immigrationService: ImmigrationService,
@@ -279,6 +288,159 @@ export class CanonicalProfileComponent implements OnInit {
       dependent: 'Dependents', priorVisa: 'Prior Visas',
     };
     return map[section] || section;
+  }
+
+  // ── Document Scan methods ─────────────────────────────────────────────────
+  triggerScanFile(input: HTMLInputElement): void { input.click(); }
+
+  onScanFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    input.value = '';
+    this.scanLoading = true;
+    this.scanError = null;
+    this.scanResult = null;
+    this.immigrationService.scanProfileDocument(file).subscribe({
+      next: result => {
+        this.scanLoading = false;
+        this.scanResult = result;
+        this.scanApplySelections = {};
+        for (const key of Object.keys(result.extractedFields)) {
+          this.scanApplySelections[key] = !result.extractedFields[key].needsReview;
+        }
+      },
+      error: err => {
+        this.scanLoading = false;
+        this.scanError = err?.error?.message || err?.error?.error || 'Scan failed';
+        this.logger.error(this.source, 'scan failed', err);
+      }
+    });
+  }
+
+  scanFieldKeys(): string[] {
+    return this.scanResult ? Object.keys(this.scanResult.extractedFields) : [];
+  }
+
+  scanFieldLabel(key: string): string {
+    const labels: Record<string, string> = {
+      lastName: 'Last Name', firstName: 'First Name', middleName: 'Middle Name',
+      nationality: 'Nationality', dateOfBirth: 'Date of Birth', gender: 'Gender',
+      passportNumber: 'Passport Number', issuingCountry: 'Issuing Country',
+      issueDate: 'Issue Date', expiryDate: 'Expiry Date', placeOfBirth: 'Place of Birth',
+      i94Number: 'I-94 Number', countryOfCitizenship: 'Country of Citizenship',
+      portOfEntry: 'Port of Entry', entryDate: 'Entry Date', admittedUntil: 'Admitted Until',
+      visaClass: 'Visa Class', travelDocumentNumber: 'Travel Document Number',
+      receiptNumber: 'Receipt Number', noticeType: 'Notice Type',
+      beneficiaryName: 'Beneficiary Name', petitionerName: 'Petitioner Name',
+      classOfAdmission: 'Class of Admission', validFrom: 'Valid From', validThrough: 'Valid Through',
+      priorityDate: 'Priority Date', visaType: 'Visa Type', issuingPost: 'Issuing Post',
+      entries: 'Entries Allowed', controlNumber: 'Control Number',
+      sevisId: 'SEVIS ID', schoolName: 'School Name', programStartDate: 'Program Start',
+      programEndDate: 'Program End', educationLevel: 'Education Level', fieldOfStudy: 'Field of Study',
+      countryOfBirth: 'Country of Birth', uscisNumber: 'USCIS Number',
+      cardExpiryDate: 'Card Expiry Date', categoryCode: 'Category Code', cardNumber: 'Card Number',
+    };
+    return labels[key] || key;
+  }
+
+  isSensitiveScanField(key: string): boolean {
+    return key === 'passportNumber';
+  }
+
+  maskScanValue(value: string): string {
+    if (value.length <= 3) return '***';
+    return '***' + value.slice(-3);
+  }
+
+  applyScanToProfile(): void {
+    if (!this.scanResult) return;
+    const f = this.scanResult.extractedFields;
+    const dt = this.scanResult.docTypeDetected;
+
+    if (dt === 'PASSPORT') {
+      if (f['lastName'] && this.scanApplySelections['lastName'])
+        this.form.legalLastName = f['lastName'].value;
+      if (f['firstName'] && this.scanApplySelections['firstName'])
+        this.form.legalFirstName = f['firstName'].value;
+      if (f['middleName'] && this.scanApplySelections['middleName'])
+        this.form.middleName = f['middleName'].value;
+      if (f['dateOfBirth'] && this.scanApplySelections['dateOfBirth'])
+        this.form.dateOfBirth = f['dateOfBirth'].value;
+      if (f['placeOfBirth'] && this.scanApplySelections['placeOfBirth'])
+        this.form.countryOfBirth = f['placeOfBirth'].value;
+      if (f['nationality'] && this.scanApplySelections['nationality'])
+        this.form.citizenshipCountry = f['nationality'].value;
+      if (f['gender'] && this.scanApplySelections['gender'])
+        this.form.gender = f['gender'].value;
+
+      // Apply passport-specific fields to the selected passport entry
+      const idx = this.scanPassportIndex;
+      if (idx >= 0 && idx < this.form.passports.length) {
+        const p = this.form.passports[idx];
+        if (f['passportNumber'] && this.scanApplySelections['passportNumber'])
+          p.number = f['passportNumber'].value;
+        if (f['issuingCountry'] && this.scanApplySelections['issuingCountry'])
+          p.country = f['issuingCountry'].value;
+        if (f['issueDate'] && this.scanApplySelections['issueDate'])
+          p.issueDate = f['issueDate'].value;
+        if (f['expiryDate'] && this.scanApplySelections['expiryDate'])
+          p.expiryDate = f['expiryDate'].value;
+      }
+    } else if (dt === 'I94_PRINTOUT') {
+      if (f['lastName'] && this.scanApplySelections['lastName'])
+        this.form.legalLastName = f['lastName'].value;
+      if (f['firstName'] && this.scanApplySelections['firstName'])
+        this.form.legalFirstName = f['firstName'].value;
+      if (f['dateOfBirth'] && this.scanApplySelections['dateOfBirth'])
+        this.form.dateOfBirth = f['dateOfBirth'].value;
+      if (f['countryOfCitizenship'] && this.scanApplySelections['countryOfCitizenship'])
+        this.form.citizenshipCountry = f['countryOfCitizenship'].value;
+      if (f['visaClass'] && this.scanApplySelections['visaClass'])
+        this.form.currentVisaType = f['visaClass'].value;
+
+      // Apply to travel entry
+      const idx = this.scanTravelIndex;
+      if (idx >= 0 && idx < this.form.travelEntries.length) {
+        const t = this.form.travelEntries[idx];
+        if (f['i94Number'] && this.scanApplySelections['i94Number'])
+          t.i94Number = f['i94Number'].value;
+        if (f['portOfEntry'] && this.scanApplySelections['portOfEntry'])
+          t.portOfEntry = f['portOfEntry'].value;
+        if (f['entryDate'] && this.scanApplySelections['entryDate'])
+          t.entryDate = f['entryDate'].value;
+        if (f['admittedUntil'] && this.scanApplySelections['admittedUntil'])
+          t.admittedUntil = f['admittedUntil'].value;
+        if (f['visaClass'] && this.scanApplySelections['visaClass'])
+          t.visaClass = f['visaClass'].value;
+      }
+    } else if (dt === 'US_VISA_STAMP') {
+      if (f['lastName'] && this.scanApplySelections['lastName'])
+        this.form.legalLastName = f['lastName'].value;
+      if (f['firstName'] && this.scanApplySelections['firstName'])
+        this.form.legalFirstName = f['firstName'].value;
+      if (f['dateOfBirth'] && this.scanApplySelections['dateOfBirth'])
+        this.form.dateOfBirth = f['dateOfBirth'].value;
+      if (f['nationality'] && this.scanApplySelections['nationality'])
+        this.form.citizenshipCountry = f['nationality'].value;
+      if (f['visaType'] && this.scanApplySelections['visaType'])
+        this.form.currentVisaType = f['visaType'].value;
+      if (f['expiryDate'] && this.scanApplySelections['expiryDate'])
+        this.form.currentVisaExpiry = f['expiryDate'].value;
+    }
+
+    this.scanResult = null;
+    this.scanApplySelections = {};
+  }
+
+  dismissScan(): void {
+    this.scanResult = null;
+    this.scanError = null;
+    this.scanApplySelections = {};
+  }
+
+  confidencePercent(conf: number): number {
+    return Math.round(conf * 100);
   }
 
   // ── Validation ────────────────────────────────────────────────────────────

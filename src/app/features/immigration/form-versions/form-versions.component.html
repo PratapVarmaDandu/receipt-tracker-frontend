@@ -1,0 +1,147 @@
+<div class="fv-page">
+  <div class="fv-header">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <a routerLink="/immigration/attorney" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Attorney Dashboard
+      </a>
+    </div>
+    <h2>Form Version Tracking</h2>
+    <p class="fv-subtitle">
+      USCIS form editions are checked monthly. Review PDF field changes and verify the field
+      mapping before approving a new edition for use in filing packages.
+    </p>
+  </div>
+
+  <div *ngIf="loading" class="fv-loading">
+    <span class="spinner-border spinner-border-sm"></span> Loading form versions&hellip;
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="!loading && groups.length === 0 && !error" class="fv-empty">
+    <p>No form versions recorded yet. The monthly scheduler runs on the 1st of each month.</p>
+  </div>
+
+  <div class="fv-groups" *ngIf="!loading && groups.length > 0">
+    <div class="fv-group-card" *ngFor="let g of groups">
+      <!-- Group header -->
+      <div class="fv-group-header" (click)="toggleGroup(g)">
+        <div class="fv-group-title">
+          <span class="form-number">{{ g.formType.replace('I', 'I-') }}</span>
+          <span class="form-display">{{ g.displayName }}</span>
+        </div>
+        <div class="fv-group-meta">
+          <span class="badge bg-warning text-dark" *ngIf="pendingCount(g) > 0">
+            {{ pendingCount(g) }} pending
+          </span>
+          <span class="badge bg-success" *ngIf="approvedVersion(g)">
+            Approved: {{ approvedVersion(g)!.editionDate }}
+          </span>
+          <span class="fv-chevron bi" [class.bi-chevron-down]="!g.expanded" [class.bi-chevron-up]="g.expanded"></span>
+        </div>
+      </div>
+
+      <!-- Version list -->
+      <div class="fv-version-list" *ngIf="g.expanded">
+        <div class="fv-version-row" *ngFor="let v of g.versions">
+          <!-- Version summary row -->
+          <div class="fv-version-summary" (click)="toggleVersion(v.id)">
+            <span class="edition-badge">Edition {{ v.editionDate }}</span>
+            <span class="status-badge" [ngClass]="statusCss[v.status] || 'status-muted'">
+              {{ statusLabel(v.status) }}
+            </span>
+            <span class="mapping-badge" *ngIf="v.fieldMappingVerified">
+              <i class="bi bi-check-circle text-success"></i> Mapping verified
+            </span>
+            <span class="mapping-badge text-warning" *ngIf="!v.fieldMappingVerified && v.status === 'PENDING_REVIEW'">
+              <i class="bi bi-exclamation-circle"></i> Awaiting mapping
+            </span>
+            <span class="fv-version-date text-muted">{{ v.createdAt | date:'MMM d, y' }}</span>
+            <span class="bi ms-auto" [class.bi-chevron-down]="!isExpanded(v.id)" [class.bi-chevron-up]="isExpanded(v.id)"></span>
+          </div>
+
+          <!-- Review panel -->
+          <div class="fv-review-panel" *ngIf="isExpanded(v.id)">
+            <div class="fv-review-columns">
+
+              <!-- LEFT: Canonical questions for this form type -->
+              <div class="fv-col">
+                <h6>Canonical Questions</h6>
+                <p class="fv-col-hint">
+                  Questions mapped from this form's current classpath mapping.
+                  Upload a new mapping file below to update for this edition.
+                </p>
+                <div class="fv-field-chip" *ngIf="v.pdfFieldNames.length === 0">
+                  <em class="text-muted">No AcroForm fields extracted (PDF may not have been downloaded).</em>
+                </div>
+              </div>
+
+              <!-- RIGHT: PDF AcroForm field names -->
+              <div class="fv-col">
+                <h6>PDF AcroForm Fields ({{ v.pdfFieldNames.length }})</h6>
+                <p class="fv-col-hint">
+                  Field names extracted from the downloaded USCIS PDF edition {{ v.editionDate }}.
+                  Compare against the canonical mapping and upload an updated JSON if fields changed.
+                </p>
+                <div class="fv-fields-scroll">
+                  <div class="fv-field-chip" *ngFor="let fn of v.pdfFieldNames">{{ fn }}</div>
+                  <div *ngIf="v.pdfFieldNames.length === 0" class="text-muted fst-italic">
+                    No fields available.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mapping upload + approve (PENDING_REVIEW only) -->
+            <div class="fv-actions" *ngIf="v.status === 'PENDING_REVIEW'">
+              <div class="fv-upload-section">
+                <label class="form-label fw-semibold">Upload Updated Mapping File</label>
+                <p class="fv-col-hint mb-2">
+                  Upload an updated <code>{{ v.formType }}.json</code> in the same format as
+                  <code>form-field-mappings/{{ v.formType }}.json</code>. All questionKey values must exist
+                  in the canonical question registry.
+                </p>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="file" class="form-control" accept=".json"
+                         [disabled]="uploadingId === v.id"
+                         (change)="onFileSelected($event, v.id)">
+                  <span *ngIf="uploadingId === v.id" class="spinner-border spinner-border-sm text-primary"></span>
+                </div>
+                <div *ngIf="uploadError[v.id]" class="alert alert-danger mt-2 py-1">
+                  {{ uploadError[v.id] }}
+                </div>
+              </div>
+
+              <div class="fv-approve-section">
+                <button class="btn btn-success"
+                        [disabled]="!v.fieldMappingVerified || approvingId === v.id"
+                        (click)="doApprove(v.id)">
+                  <span *ngIf="approvingId === v.id" class="spinner-border spinner-border-sm me-1"></span>
+                  Approve Edition {{ v.editionDate }}
+                </button>
+                <span *ngIf="!v.fieldMappingVerified" class="text-muted ms-2 small">
+                  Upload and verify a mapping file before approving.
+                </span>
+                <div *ngIf="approveError[v.id]" class="alert alert-danger mt-2 py-1">
+                  {{ approveError[v.id] }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Audit trail -->
+            <div class="fv-audit" *ngIf="v.recentAudit && v.recentAudit.length > 0">
+              <h6>Audit Trail</h6>
+              <div class="fv-audit-row" *ngFor="let a of v.recentAudit">
+                <span class="audit-action" [ngClass]="auditActionCss(a.action)">
+                  {{ auditActionLabel(a.action) }}
+                </span>
+                <span class="audit-detail text-muted">{{ a.detail }}</span>
+                <span class="audit-date text-muted ms-auto">{{ a.createdAt | date:'MMM d, y HH:mm' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

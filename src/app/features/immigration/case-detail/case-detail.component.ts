@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { forkJoin, Observable } from 'rxjs';
 import {
   ImmigrationService, ImmigrationCase, FormInstance, TimelineItem, KeyDate,
@@ -7,7 +8,11 @@ import {
   CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS,
   FORM_STATUS_LABELS, FORM_STATUS_CSS, EVENT_TYPE_ICONS, CHANNEL_LABELS,
   StatusHistoryItem, AttorneyProfile, CASE_TYPE_GROUPS, FamilyBundle,
-  H1bCapRegistration, CaseTask, CreateCaseTaskRequest
+  H1bCapRegistration, CaseTask, CreateCaseTaskRequest,
+  CaseRfe, CreateRfeRequest, UscisStatusResult, PriorityDateStatus,
+  ProfileDataRequest, CreateDataRequestRequest,
+  ChecklistItem, GenerateChecklistRequest, UpdateChecklistItemRequest,
+  FilingPackage, GeneratedPdfPacket
 } from '../../../services/immigration.service';
 import { ImmOrgService } from '../../../services/imm-org.service';
 import { ImmOrgMember } from '../../../models/imm-org.model';
@@ -77,6 +82,242 @@ export class CaseDetailComponent implements OnInit {
   lotterySubmitting = false;
   lotteryError: string | null = null;
 
+  // RFE state (FEAT-M2)
+  rfes: CaseRfe[] = [];
+  rfesLoading = false;
+  rfesLoaded = false;
+  showRfeForm = false;
+  rfeForm: CreateRfeRequest = { issuedDate: '', responseDeadline: '', uscisCategory: '', uscisNote: '' };
+  rfeSubmitting = false;
+  rfeError: string | null = null;
+  respondingRfeId: number | null = null;
+
+  // USCIS polling state (FEAT-M3)
+  uscisHistory: UscisStatusResult[] = [];
+  uscisLoading = false;
+  checkingUscis = false;
+  uscisError: string | null = null;
+
+  // Priority date status (FEAT-M5)
+  priorityDateStatus: PriorityDateStatus | null = null;
+  priorityDateLoading = false;
+
+  // Case report download (FEAT-M6)
+  downloadingReport = false;
+  downloadingTimeline = false;
+
+  // Data requests (FEAT-M7)
+  dataRequests: ProfileDataRequest[] = [];
+  dataRequestsLoaded = false;
+  showRequestDataPanel = false;
+  sendingRequest = false;
+  requestSent = false;
+  requestError: string | null = null;
+  newRequestForm: CreateDataRequestRequest = {
+    targetRelationship: 'BENEFICIARY',
+    sections: ['personalInfo', 'passportI94', 'currentStatus'],
+    expiryDays: 14
+  };
+
+  readonly ALL_SECTIONS = [
+    { id: 'personalInfo',           label: 'Personal Info' },
+    { id: 'passportI94',            label: 'Passport & I-94' },
+    { id: 'currentStatus',          label: 'Current Status' },
+    { id: 'employment',             label: 'Employment' },
+    { id: 'familyDependents',       label: 'Family / Dependents' },
+    { id: 'eadInfo',                label: 'EAD Info' },
+    { id: 'notificationPreferences', label: 'Notification Preferences' }
+  ];
+
+  // Checklist (FEAT-M8)
+  checklist: ChecklistItem[] = [];
+  checklistLoaded = false;
+  generatingChecklist = false;
+  checklistError: string | null = null;
+  showGeneratePanel = false;
+  generateFormTypes: string[] = [];
+  checklistByCategory: Record<string, ChecklistItem[]> = {};
+  expandedChecklistItem: number | null = null;
+  updatingChecklistItem: number | null = null;
+  checklistVaultDocs: { id: number; title: string }[] = [];
+  checklistVaultDocsLoaded = false;
+  waiverDraft: Record<number, string> = {};
+  docPickerSelection: Record<number, number | null> = {};
+
+  readonly FORM_TYPE_OPTIONS = [
+    { id: 'I129',     label: 'I-129 (H-1B Petition)' },
+    { id: 'I485',     label: 'I-485 (Adjustment of Status)' },
+    { id: 'I140_EB2', label: 'I-140 EB-2' },
+    { id: 'I140_EB3', label: 'I-140 EB-3' },
+    { id: 'PERM',     label: 'PERM' },
+  ];
+
+  // Filing Packages tab state (Filing Package System)
+  packages: FilingPackage[] = [];
+  packagesLoaded = false;
+  packagesLoading = false;
+  packagesError: string | null = null;
+  showCreatePackagePanel = false;
+  newPackageName = '';
+  newPackageFormTypes: string[] = [];
+  creatingPackage = false;
+  createPackageError: string | null = null;
+  sendingQuestionnaires: number | null = null;  // packageId being sent
+  approvingPackage: number | null = null;       // packageId being approved
+  expandedPackage: number | null = null;
+
+  // PDF generation state — keyed by packageId
+  packets: Record<number, GeneratedPdfPacket[]> = {};
+  generatingPdf: number | null = null;          // packageId
+  generatePdfError: Record<number, string> = {};
+  pendingReviewConflict: number | null = null;  // packageId awaiting override confirmation
+  approvingPacket: number | null = null;        // packetId
+
+  loadPackets(pkg: FilingPackage): void {
+    this.immigrationService.listPdfPackets(this.caseId, pkg.id).subscribe({
+      next: pts => { this.packets[pkg.id] = pts; },
+      error: () => {}
+    });
+  }
+
+  doGeneratePdf(pkg: FilingPackage, override = false): void {
+    this.generatingPdf = pkg.id;
+    this.generatePdfError[pkg.id] = '';
+    this.pendingReviewConflict = null;
+    this.immigrationService.generatePdfPacket(this.caseId, pkg.id, override).subscribe({
+      next: packet => {
+        this.packets[pkg.id] = [packet, ...(this.packets[pkg.id] || [])];
+        const idx = this.packages.findIndex(p => p.id === pkg.id);
+        if (idx >= 0) this.packages[idx].status = 'GENERATED';
+        this.generatingPdf = null;
+      },
+      error: err => {
+        const msg: string = err.error?.message || err.message || 'Failed to generate PDF';
+        if (msg.startsWith('PENDING_REVIEW_EXISTS')) {
+          this.pendingReviewConflict = pkg.id;
+        } else {
+          this.generatePdfError[pkg.id] = msg;
+        }
+        this.generatingPdf = null;
+      }
+    });
+  }
+
+  downloadPacket(caseId: number, packageId: number, packetId: number): void {
+    this.immigrationService.downloadPdfPacket(caseId, packageId, packetId);
+  }
+
+  doApprovePacket(caseId: number, packageId: number, packetId: number): void {
+    this.approvingPacket = packetId;
+    this.immigrationService.approvePdfPacket(caseId, packageId, packetId).subscribe({
+      next: updated => {
+        const list = this.packets[packageId] || [];
+        const idx = list.findIndex(p => p.id === packetId);
+        if (idx >= 0) list[idx] = updated;
+        this.approvingPacket = null;
+      },
+      error: () => { this.approvingPacket = null; }
+    });
+  }
+
+  togglePackageFormType(id: string): void {
+    const idx = this.newPackageFormTypes.indexOf(id);
+    if (idx >= 0) this.newPackageFormTypes.splice(idx, 1);
+    else this.newPackageFormTypes.push(id);
+  }
+
+  isPackageFormTypeSelected(id: string): boolean {
+    return this.newPackageFormTypes.includes(id);
+  }
+
+  loadPackages(): void {
+    if (this.packagesLoaded) return;
+    this.packagesLoading = true;
+    this.immigrationService.listPackages(this.caseId).subscribe({
+      next: pkgs => {
+        this.packages = pkgs;
+        this.packagesLoaded = true;
+        this.packagesLoading = false;
+        pkgs.filter(p => p.status === 'GENERATED' || p.status === 'ATTORNEY_APPROVED')
+            .forEach(p => this.loadPackets(p));
+      },
+      error: err => {
+        this.packagesError = err.error?.message || 'Failed to load filing packages';
+        this.packagesLoading = false;
+      }
+    });
+  }
+
+  doCreatePackage(): void {
+    if (!this.newPackageName.trim() || this.newPackageFormTypes.length === 0) {
+      this.createPackageError = 'Package name and at least one form type are required.';
+      return;
+    }
+    this.creatingPackage = true;
+    this.createPackageError = null;
+    this.immigrationService.createPackage(this.caseId, {
+      name: this.newPackageName.trim(),
+      selectedFormTypes: [...this.newPackageFormTypes]
+    }).subscribe({
+      next: pkg => {
+        this.packages.unshift(pkg);
+        this.showCreatePackagePanel = false;
+        this.newPackageName = '';
+        this.newPackageFormTypes = [];
+        this.creatingPackage = false;
+      },
+      error: err => {
+        this.createPackageError = err.error?.message || 'Failed to create package';
+        this.creatingPackage = false;
+      }
+    });
+  }
+
+  doSendQuestionnaires(pkg: FilingPackage): void {
+    this.sendingQuestionnaires = pkg.id;
+    this.immigrationService.sendQuestionnaires(this.caseId, pkg.id).subscribe({
+      next: updated => {
+        const idx = this.packages.findIndex(p => p.id === pkg.id);
+        if (idx >= 0) this.packages[idx] = updated;
+        this.sendingQuestionnaires = null;
+      },
+      error: () => { this.sendingQuestionnaires = null; }
+    });
+  }
+
+  doApprovePackage(pkg: FilingPackage): void {
+    this.approvingPackage = pkg.id;
+    this.immigrationService.approvePackageAnswers(this.caseId, pkg.id).subscribe({
+      next: updated => {
+        const idx = this.packages.findIndex(p => p.id === pkg.id);
+        if (idx >= 0) this.packages[idx] = updated;
+        this.approvingPackage = null;
+      },
+      error: () => { this.approvingPackage = null; }
+    });
+  }
+
+  packageStatusCss(status: string): string {
+    switch (status) {
+      case 'DRAFT':               return 'badge-draft';
+      case 'QUESTIONNAIRES_SENT': return 'badge-sent';
+      case 'ANSWERS_COLLECTED':   return 'badge-collected';
+      case 'ATTORNEY_REVIEW':     return 'badge-review';
+      case 'APPROVED':            return 'badge-approved';
+      case 'GENERATED':           return 'badge-generated';
+      case 'FILED':               return 'badge-filed';
+      default:                    return 'badge-draft';
+    }
+  }
+
+  questionnaireLink(token: string): string {
+    return `/immigration/packages/questionnaire/${token}`;
+  }
+
+  packageCompletenessEntries(pkg: FilingPackage): { owner: string; pct: number }[] {
+    return Object.entries(pkg.completenessPercent || {}).map(([owner, pct]) => ({ owner, pct }));
+  }
+
   // Tasks tab state (FEAT-QW8)
   tasks: CaseTask[] = [];
   tasksLoading = false;
@@ -145,7 +386,8 @@ export class CaseDetailComponent implements OnInit {
     private router: Router,
     private immigrationService: ImmigrationService,
     private immOrgService: ImmOrgService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -164,7 +406,10 @@ export class CaseDetailComponent implements OnInit {
         this.loadFeed();
         this.loadStatusHistory();
         this.loadFamily();
+        this.loadRfes();
         if (c.caseType === 'H1B_INITIAL') this.loadH1bCap();
+        if (c.receiptNumber) this.loadUscisHistory();
+        if (this.isEbCaseType(c.caseType)) this.loadPriorityDateStatus();
         if (c.callerRelationship === 'BENEFICIARY') {
           this.checkAndShowConsent();
         }
@@ -203,11 +448,12 @@ export class CaseDetailComponent implements OnInit {
 
   setTab(tab: string): void {
     this.activeTab = tab;
-    if (tab === 'forms'     && !this.formsLoaded)    this.loadForms();
-    if (tab === 'timeline'  && !this.timelineLoaded) this.loadTimeline();
+    if (tab === 'forms'     && !this.formsLoaded)     this.loadForms();
+    if (tab === 'timeline'  && !this.timelineLoaded)  this.loadTimeline();
     if (tab === 'messaging') { this.loadMessages(); this.loadUnreadCounts(); }
-    if (tab === 'profile')   this.loadBeneficiaryProfile();
-    if (tab === 'tasks'     && !this.tasksLoaded)    this.loadTasks();
+    if (tab === 'profile')    this.loadBeneficiaryProfile();
+    if (tab === 'tasks'     && !this.tasksLoaded)     this.loadTasks();
+    if (tab === 'packages'  && !this.packagesLoaded)  this.loadPackages();
   }
 
   // ── Role helpers ──────────────────────────────────────────────────────────
@@ -781,5 +1027,346 @@ export class CaseDetailComponent implements OnInit {
     return Array.isArray(this.attorneyProfile.barNumbers)
       ? this.attorneyProfile.barNumbers as { state: string; barNumber: string; admittedDate?: string }[]
       : [];
+  }
+
+  // ── RFE (FEAT-M2) ────────────────────────────────────────────────────────
+
+  get openRfe(): CaseRfe | null {
+    return this.rfes.find(r => r.status === 'OPEN') ?? null;
+  }
+
+  loadRfes(): void {
+    this.rfesLoading = true;
+    this.immigrationService.listRfes(this.caseId).subscribe({
+      next: r => { this.rfes = r; this.rfesLoading = false; this.rfesLoaded = true; },
+      error: () => { this.rfesLoading = false; }
+    });
+  }
+
+  submitRfe(): void {
+    if (!this.rfeForm.issuedDate) return;
+    this.rfeSubmitting = true;
+    this.rfeError = null;
+    this.immigrationService.createRfe(this.caseId, this.rfeForm).subscribe({
+      next: rfe => {
+        this.rfes = [rfe, ...this.rfes];
+        this.showRfeForm = false;
+        this.rfeForm = { issuedDate: '', responseDeadline: '', uscisCategory: '', uscisNote: '' };
+        this.rfeSubmitting = false;
+        this.loadKeyDates();
+      },
+      error: err => {
+        this.rfeError = err?.error?.error || 'Failed to log RFE';
+        this.rfeSubmitting = false;
+      }
+    });
+  }
+
+  doRespondRfe(rfeId: number): void {
+    this.respondingRfeId = rfeId;
+    this.immigrationService.respondRfe(this.caseId, rfeId).subscribe({
+      next: updated => {
+        this.rfes = this.rfes.map(r => r.id === rfeId ? updated : r);
+        this.respondingRfeId = null;
+      },
+      error: err => {
+        this.logger.error(this.source, 'respondRfe failed', err);
+        this.respondingRfeId = null;
+      }
+    });
+  }
+
+  // ── USCIS polling (FEAT-M3) ──────────────────────────────────────────────
+
+  get uscisLastCheck(): UscisStatusResult | null {
+    return this.uscisHistory.length > 0 ? this.uscisHistory[0] : null;
+  }
+
+  loadUscisHistory(): void {
+    this.uscisLoading = true;
+    this.immigrationService.getUscisHistory(this.caseId).subscribe({
+      next: h => { this.uscisHistory = h; this.uscisLoading = false; },
+      error: () => { this.uscisLoading = false; }
+    });
+  }
+
+  checkUscisNow(): void {
+    this.checkingUscis = true;
+    this.uscisError = null;
+    this.immigrationService.checkUscisNow(this.caseId).subscribe({
+      next: result => {
+        this.uscisHistory = [result, ...this.uscisHistory];
+        this.checkingUscis = false;
+      },
+      error: err => {
+        this.uscisError = err?.error?.error || 'USCIS check failed';
+        this.checkingUscis = false;
+      }
+    });
+  }
+
+  // ── Data requests (FEAT-M7) ──────────────────────────────────────────────
+
+  loadDataRequests(): void {
+    if (this.dataRequestsLoaded) return;
+    this.immigrationService.listDataRequests(this.caseId).subscribe({
+      next: reqs => { this.dataRequests = reqs; this.dataRequestsLoaded = true; },
+      error: () => {}
+    });
+  }
+
+  isSectionSelected(id: string): boolean {
+    return this.newRequestForm.sections.includes(id);
+  }
+
+  toggleSection(id: string): void {
+    const idx = this.newRequestForm.sections.indexOf(id);
+    if (idx >= 0) {
+      this.newRequestForm.sections = this.newRequestForm.sections.filter(s => s !== id);
+    } else {
+      this.newRequestForm.sections = [...this.newRequestForm.sections, id];
+    }
+  }
+
+  sendDataRequest(): void {
+    if (!this.newRequestForm.sections.length) return;
+    this.sendingRequest = true;
+    this.requestError = null;
+    this.immigrationService.createDataRequest(this.caseId, this.newRequestForm).subscribe({
+      next: req => {
+        this.dataRequests = [req, ...this.dataRequests];
+        this.dataRequestsLoaded = true;
+        this.showRequestDataPanel = false;
+        this.requestSent = true;
+        this.sendingRequest = false;
+        this.newRequestForm = {
+          targetRelationship: 'BENEFICIARY',
+          sections: ['personalInfo', 'passportI94', 'currentStatus'],
+          expiryDays: 14
+        };
+      },
+      error: err => {
+        this.requestError = err?.error?.error || 'Failed to send request';
+        this.sendingRequest = false;
+      }
+    });
+  }
+
+  dataRequestLink(token: string): string {
+    return `${window.location.origin}/immigration/data-request/${token}`;
+  }
+
+  copyRequestLink(token: string): void {
+    navigator.clipboard.writeText(this.dataRequestLink(token)).catch(() => {});
+  }
+
+  dataRequestStatusCss(status: string): string {
+    return status === 'SUBMITTED' ? 'bg-success'
+         : status === 'EXPIRED'   ? 'bg-secondary'
+         : 'bg-warning text-dark';
+  }
+
+  // ── Checklist (FEAT-M8) ──────────────────────────────────────────────────
+
+  loadChecklist(): void {
+    if (this.checklistLoaded) return;
+    this.immigrationService.getChecklist(this.caseId).subscribe({
+      next: items => {
+        this.checklist = items;
+        this.checklistLoaded = true;
+        this.groupChecklist();
+        this.loadChecklistVaultDocs();
+      },
+      error: err => { this.checklistError = err?.error?.error || 'Failed to load checklist'; }
+    });
+  }
+
+  groupChecklist(): void {
+    this.checklistByCategory = {};
+    for (const item of this.checklist) {
+      if (!this.checklistByCategory[item.category]) {
+        this.checklistByCategory[item.category] = [];
+      }
+      this.checklistByCategory[item.category].push(item);
+    }
+  }
+
+  get checklistCategories(): string[] {
+    return Object.keys(this.checklistByCategory);
+  }
+
+  get allClearForPdf(): boolean {
+    return this.checklist.length > 0 &&
+      this.checklist.filter(i => i.required).every(i => i.status !== 'PENDING');
+  }
+
+  get pendingRequiredCount(): number {
+    return this.checklist.filter(i => i.required && i.status === 'PENDING').length;
+  }
+
+  get verifiedChecklistCount(): number {
+    return this.checklist.filter(i => i.status === 'VERIFIED').length;
+  }
+
+  categoryHandledCount(items: ChecklistItem[]): number {
+    return items.filter(i => i.status === 'VERIFIED' || i.status === 'UPLOADED').length;
+  }
+
+  isFormTypeSelected(id: string): boolean {
+    return this.generateFormTypes.includes(id);
+  }
+
+  toggleFormType(id: string): void {
+    const idx = this.generateFormTypes.indexOf(id);
+    if (idx >= 0) {
+      this.generateFormTypes = this.generateFormTypes.filter(f => f !== id);
+    } else {
+      this.generateFormTypes = [...this.generateFormTypes, id];
+    }
+  }
+
+  runGenerateChecklist(): void {
+    if (!this.generateFormTypes.length) return;
+    this.generatingChecklist = true;
+    this.checklistError = null;
+    this.immigrationService.generateChecklist(this.caseId, { formTypes: this.generateFormTypes }).subscribe({
+      next: items => {
+        this.checklist = items;
+        this.checklistLoaded = true;
+        this.showGeneratePanel = false;
+        this.generatingChecklist = false;
+        this.groupChecklist();
+      },
+      error: err => {
+        this.checklistError = err?.error?.error || 'Failed to generate checklist';
+        this.generatingChecklist = false;
+      }
+    });
+  }
+
+  toggleChecklistItem(itemId: number): void {
+    this.expandedChecklistItem = this.expandedChecklistItem === itemId ? null : itemId;
+  }
+
+  doUpdateChecklistItem(itemId: number, req: UpdateChecklistItemRequest): void {
+    this.updatingChecklistItem = itemId;
+    this.immigrationService.updateChecklistItem(this.caseId, itemId, req).subscribe({
+      next: updated => {
+        const idx = this.checklist.findIndex(i => i.id === updated.id);
+        if (idx >= 0) this.checklist[idx] = updated;
+        this.groupChecklist();
+        this.expandedChecklistItem = null;
+        this.updatingChecklistItem = null;
+      },
+      error: err => {
+        this.checklistError = err?.error?.error || 'Failed to update item';
+        this.updatingChecklistItem = null;
+      }
+    });
+  }
+
+  markUploaded(item: ChecklistItem): void {
+    const docId = this.docPickerSelection[item.id] ?? item.documentId ?? null;
+    this.doUpdateChecklistItem(item.id, { status: 'UPLOADED', documentId: docId });
+  }
+
+  markVerified(item: ChecklistItem): void {
+    this.doUpdateChecklistItem(item.id, { status: 'VERIFIED', documentId: item.documentId });
+  }
+
+  markWaived(item: ChecklistItem): void {
+    const reason = this.waiverDraft[item.id] || '';
+    if (!reason.trim()) { this.checklistError = 'Waiver reason is required'; return; }
+    this.doUpdateChecklistItem(item.id, { status: 'WAIVED', waiverReason: reason });
+  }
+
+  revertToPending(item: ChecklistItem): void {
+    this.doUpdateChecklistItem(item.id, { status: 'PENDING', documentId: null, waiverReason: null });
+  }
+
+  checklistStatusCss(status: string): string {
+    return status === 'VERIFIED' ? 'bg-success'
+         : status === 'UPLOADED' ? 'bg-info text-dark'
+         : status === 'WAIVED'   ? 'bg-secondary'
+         : 'bg-warning text-dark'; // PENDING
+  }
+
+  categoryCss(items: ChecklistItem[]): string {
+    if (items.some(i => i.required && i.status === 'PENDING')) return 'text-danger';
+    if (items.some(i => i.status === 'UPLOADED'))              return 'text-warning';
+    return 'text-success';
+  }
+
+  categoryIcon(items: ChecklistItem[]): string {
+    if (items.some(i => i.required && i.status === 'PENDING')) return 'bi-exclamation-circle-fill';
+    if (items.some(i => i.status === 'UPLOADED'))              return 'bi-clock-fill';
+    return 'bi-check-circle-fill';
+  }
+
+  loadChecklistVaultDocs(): void {
+    if (this.checklistVaultDocsLoaded) return;
+    this.http.get<{ content: { id: number; title: string }[] }>('/api/documents?size=200').subscribe({
+      next: page => {
+        this.checklistVaultDocs = (page.content || []).map(d => ({ id: d.id, title: d.title }));
+        this.checklistVaultDocsLoaded = true;
+      },
+      error: () => { this.checklistVaultDocsLoaded = true; } // non-fatal
+    });
+  }
+
+  // ── Priority date status (FEAT-M5) ────────────────────────────────────────
+
+  private readonly EB_CASE_TYPES = new Set(['I140_EB2', 'I140_EB3', 'I485', 'PERM', 'GC_EAD', 'GC_RENEWAL']);
+
+  isEbCaseType(caseType: string): boolean {
+    return this.EB_CASE_TYPES.has(caseType);
+  }
+
+  get isEbCase(): boolean {
+    return this.case ? this.isEbCaseType(this.case.caseType) : false;
+  }
+
+  loadPriorityDateStatus(): void {
+    this.priorityDateLoading = true;
+    this.immigrationService.getPriorityDateStatus(this.caseId).subscribe({
+      next: s => { this.priorityDateStatus = s; this.priorityDateLoading = false; },
+      error: () => { this.priorityDateLoading = false; }
+    });
+  }
+
+  // ── Case report downloads (FEAT-M6) ──────────────────────────────────────
+
+  downloadReport(): void {
+    if (this.downloadingReport) return;
+    this.downloadingReport = true;
+    this.immigrationService.downloadCaseReport(this.caseId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `case-${this.caseId}-report.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.downloadingReport = false;
+      },
+      error: () => { this.downloadingReport = false; }
+    });
+  }
+
+  downloadTimeline(): void {
+    if (this.downloadingTimeline) return;
+    this.downloadingTimeline = true;
+    this.immigrationService.downloadTimelineExport(this.caseId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `case-${this.caseId}-timeline.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.downloadingTimeline = false;
+      },
+      error: () => { this.downloadingTimeline = false; }
+    });
   }
 }

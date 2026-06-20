@@ -121,10 +121,24 @@
                 [disabled]="!form.passports.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
+        <label class="btn btn-sm btn-outline-info mb-0" [class.disabled]="scanLoading"
+               title="Scan a passport image to auto-fill fields">
+          <i class="bi bi-camera me-1"></i>
+          <span *ngIf="!scanLoading">Scan Passport</span>
+          <span *ngIf="scanLoading"><i class="bi bi-arrow-repeat spin me-1"></i>Scanning…</span>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="d-none"
+                 (change)="onScanFileSelected($event)" [disabled]="scanLoading">
+        </label>
         <button class="btn btn-sm btn-outline-primary" (click)="addPassport()">
           <i class="bi bi-plus me-1"></i>Add Passport
         </button>
       </div>
+    </div>
+
+    <!-- Scan error -->
+    <div *ngIf="scanError" class="alert alert-danger alert-dismissible mb-3">
+      {{ scanError }}
+      <button type="button" class="btn-close" (click)="dismissScan()"></button>
     </div>
 
     <!-- Share panel -->
@@ -195,10 +209,24 @@
                 [disabled]="!form.travelEntries.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
+        <label class="btn btn-sm btn-outline-info mb-0" [class.disabled]="scanLoading"
+               title="Scan an I-94 printout to auto-fill entry fields">
+          <i class="bi bi-camera me-1"></i>
+          <span *ngIf="!scanLoading">Scan I-94</span>
+          <span *ngIf="scanLoading"><i class="bi bi-arrow-repeat spin me-1"></i>Scanning…</span>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="d-none"
+                 (change)="onScanFileSelected($event)" [disabled]="scanLoading">
+        </label>
         <button class="btn btn-sm btn-outline-primary" (click)="addTravelEntry()">
           <i class="bi bi-plus me-1"></i>Add Entry
         </button>
       </div>
+    </div>
+
+    <!-- Scan error (entry tab) -->
+    <div *ngIf="scanError && activeTab === 'entry'" class="alert alert-danger alert-dismissible mb-3">
+      {{ scanError }}
+      <button type="button" class="btn-close" (click)="dismissScan()"></button>
     </div>
 
     <ng-container *ngIf="sharePanel?.section === 'travel'">
@@ -567,3 +595,79 @@
     </div>
   </div>
 </ng-template>
+
+<!-- ── Document Scan Review Modal ─────────────────────────────────────── -->
+<div *ngIf="scanResult" class="modal-backdrop-custom" (click)="dismissScan()">
+  <div class="modal-panel scan-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header-row">
+      <h5 class="mb-0">
+        <i class="bi bi-camera me-2"></i>Scan Review
+        <span class="badge bg-secondary ms-2" style="font-size:.75rem">{{ scanResult.docTypeDetected | titlecase }}</span>
+      </h5>
+      <button class="btn-close" (click)="dismissScan()"></button>
+    </div>
+
+    <p class="text-muted small mb-3">
+      Review extracted fields below. Uncheck any you don't want to apply.
+      Fields with low confidence are flagged — verify before applying.
+    </p>
+
+    <!-- Passport target selector (only for PASSPORT doc type) -->
+    <div *ngIf="scanResult.docTypeDetected === 'PASSPORT' && form.passports.length > 1" class="mb-3">
+      <label class="form-label small fw-semibold">Apply passport fields to:</label>
+      <select class="form-select form-select-sm" [(ngModel)]="scanPassportIndex">
+        <option *ngFor="let p of form.passports; let i = index" [value]="i">
+          Passport {{ i + 1 }}{{ p.number ? ' — ' + p.number : '' }}
+        </option>
+      </select>
+    </div>
+
+    <!-- I-94 target selector -->
+    <div *ngIf="scanResult.docTypeDetected === 'I94_PRINTOUT' && form.travelEntries.length > 1" class="mb-3">
+      <label class="form-label small fw-semibold">Apply I-94 fields to:</label>
+      <select class="form-select form-select-sm" [(ngModel)]="scanTravelIndex">
+        <option *ngFor="let t of form.travelEntries; let i = index" [value]="i">
+          Entry {{ i + 1 }}{{ t.entryDate ? ' — ' + t.entryDate : '' }}
+        </option>
+      </select>
+    </div>
+
+    <div class="scan-fields-list">
+      <div *ngFor="let key of scanFieldKeys()" class="scan-field-row"
+           [class.needs-review]="scanResult.extractedFields[key].needsReview">
+        <div class="scan-check">
+          <input type="checkbox" [(ngModel)]="scanApplySelections[key]" [id]="'sf-' + key">
+        </div>
+        <div class="scan-field-body">
+          <label [for]="'sf-' + key" class="scan-field-label">{{ scanFieldLabel(key) }}</label>
+          <div class="scan-field-value" [class.masked]="isSensitiveScanField(key)">
+            <span *ngIf="!isSensitiveScanField(key)">{{ scanResult.extractedFields[key].value }}</span>
+            <span *ngIf="isSensitiveScanField(key)">{{ maskScanValue(scanResult.extractedFields[key].value) }}</span>
+          </div>
+          <div class="scan-confidence">
+            <div class="confidence-bar">
+              <div class="confidence-fill"
+                   [style.width.%]="confidencePercent(scanResult.extractedFields[key].confidence)"
+                   [class.low]="scanResult.extractedFields[key].needsReview"
+                   [class.high]="!scanResult.extractedFields[key].needsReview"></div>
+            </div>
+            <span class="confidence-pct"
+                  [class.text-warning]="scanResult.extractedFields[key].needsReview"
+                  [class.text-success]="!scanResult.extractedFields[key].needsReview">
+              {{ confidencePercent(scanResult.extractedFields[key].confidence) }}%
+            </span>
+            <span *ngIf="scanResult.extractedFields[key].needsReview"
+                  class="badge bg-warning text-dark ms-1" style="font-size:.65rem">Review</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <button class="btn btn-outline-secondary btn-sm" (click)="dismissScan()">Cancel</button>
+      <button class="btn btn-primary btn-sm" (click)="applyScanToProfile()">
+        <i class="bi bi-check-lg me-1"></i>Apply to Profile
+      </button>
+    </div>
+  </div>
+</div>

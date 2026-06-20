@@ -343,6 +343,36 @@ export interface BarNumber {
   admittedDate?: string;
 }
 
+export interface CaseRfe {
+  id: number;
+  caseId: number;
+  issuedDate: string;
+  responseDeadline: string;
+  uscisCategory: string | null;
+  uscisNote: string | null;
+  status: 'OPEN' | 'RESPONDED' | 'WITHDRAWN' | 'DISMISSED';
+  respondedAt: string | null;
+  createdByUserId: number | null;
+  createdAt: string;
+  daysUntilDeadline: number;
+}
+
+export interface CreateRfeRequest {
+  issuedDate: string;
+  responseDeadline?: string;
+  uscisCategory?: string;
+  uscisNote?: string;
+}
+
+export interface UscisStatusResult {
+  id: number;
+  caseId: number;
+  polledAt: string;
+  rawStatusText: string | null;
+  detectedStatus: string | null;
+  statusChanged: boolean;
+}
+
 export interface AttorneyProfile {
   id: number | null;
   immOrgMemberId: number;
@@ -352,6 +382,287 @@ export interface AttorneyProfile {
   createdAt: string | null;
   updatedAt: string | null;
 }
+
+// ── FEAT-M4: I-9 Compliance ───────────────────────────────────────────────
+export interface I9Record {
+  id: number;
+  employerImmOrgId: number;
+  employeeEmail: string;
+  employeeName: string;
+  workAuthType: string | null;
+  documentTitle: string | null;
+  documentNumber: string | null;
+  expiryDate: string | null;
+  verifiedAt: string | null;
+  reverificationDue: string | null;
+  status: 'CURRENT' | 'EXPIRING_SOON' | 'EXPIRED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateI9RecordRequest {
+  employeeEmail: string;
+  employeeName: string;
+  workAuthType?: string;
+  documentTitle?: string;
+  documentNumber?: string;
+  expiryDate?: string | null;
+  verifiedAt?: string;
+  reverificationDue?: string | null;
+}
+
+// ── FEAT-M5: Visa Bulletin ────────────────────────────────────────────────
+export interface VisaBulletinEntry {
+  id: number;
+  bulletinYear: number;
+  bulletinMonth: number;
+  preferenceCategory: string;
+  countryOfChargeability: string;
+  finalActionDate: string | null;  // null = C (current)
+  datesForFiling: string | null;
+  scrapedAt: string;
+}
+
+export interface PriorityDateStatus {
+  priorityDate: string;
+  countryOfBirth: string | null;
+  preferenceCategory: string;
+  currentCutoff: string | null;   // null = C (current)
+  isCurrent: boolean;
+  monthsBehind: number | null;
+}
+
+// ── FEAT-M7: Intake questionnaire ────────────────────────────────────────────
+
+export interface ProfileDataRequest {
+  id: number;
+  caseId: number;
+  targetRelationship: string;
+  token: string;
+  sections: string[];
+  status: 'PENDING' | 'SUBMITTED' | 'EXPIRED';
+  submittedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface CreateDataRequestRequest {
+  targetRelationship: string;
+  sections: string[];
+  expiryDays: number;
+}
+
+export interface DataRequestPublicInfo {
+  id: number;
+  caseNumber: string;
+  beneficiaryName: string;
+  beneficiaryEmail: string;
+  targetRelationship: string;
+  sections: string[];
+  status: 'PENDING' | 'SUBMITTED' | 'EXPIRED';
+  expiresAt: string;
+  prefillData: CanonicalProfile | null;
+}
+
+// ── FEAT-M8: Evidence Checklist ──────────────────────────────────────────────
+
+export interface ChecklistItem {
+  id: number;
+  caseId: number;
+  templateId?: number;
+  itemKey: string;
+  label: string;
+  category: string;
+  required: boolean;
+  status: 'PENDING' | 'UPLOADED' | 'WAIVED' | 'VERIFIED';
+  documentId?: number;
+  waiverReason?: string;
+  verifiedByUserId?: number;
+  verifiedAt?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateChecklistRequest {
+  formTypes: string[];
+}
+
+export interface UpdateChecklistItemRequest {
+  status?: string;
+  documentId?: number | null;
+  waiverReason?: string | null;
+}
+
+// ── Filing Package System ────────────────────────────────────────────────────
+
+export interface FilingPackageQuestionnaire {
+  id: number;
+  packageId: number;
+  targetRelationship: string;  // BENEFICIARY | EMPLOYER | ATTORNEY
+  token: string;
+  status: string;              // PENDING | SUBMITTED | EXPIRED
+  submittedAt?: string;
+  expiresAt: string;
+  createdAt: string;
+  questionCount: number;
+  answeredCount: number;
+}
+
+export interface FilingPackage {
+  id: number;
+  caseId: number;
+  name: string;
+  selectedFormTypes: string[];
+  status: string;              // DRAFT | QUESTIONNAIRES_SENT | ANSWERS_COLLECTED | ATTORNEY_REVIEW | APPROVED | GENERATED | FILED
+  approvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  questionnaires: FilingPackageQuestionnaire[];
+  completenessPercent: Record<string, number>;
+}
+
+export interface CreatePackageRequest {
+  name: string;
+  selectedFormTypes: string[];
+}
+
+export interface FormVersionUsed {
+  formType: string;
+  versionId: number;
+  editionDate: string;
+}
+
+export interface GenerationAuditEntry {
+  questionKey: string;
+  pdfField: string;
+  source: string;
+  versionId: number;
+  filled: boolean;
+  formType: string;
+}
+
+export interface GeneratedPdfPacket {
+  id: number;
+  packageId: number;
+  caseId: number;
+  formVersionsUsed: FormVersionUsed[];
+  generatedAt: string;
+  generatedByUserId: number;
+  status: string;               // DRAFT | ATTORNEY_APPROVED | FILED
+  attorneyApprovedAt?: string;
+  attorneyApprovedBy?: number;
+  pdfStorageKey?: string;
+  generationAudit: GenerationAuditEntry[];
+  createdAt: string;
+}
+
+export interface FieldExtraction {
+  value: string;
+  confidence: number;
+  needsReview: boolean;
+}
+
+export interface ScanResult {
+  docTypeDetected: string;
+  extractedFields: Record<string, FieldExtraction>;
+  lowConfidenceFields: string[];
+  caseReceiptNumberSuggestion?: string;
+}
+
+export interface QuestionnaireQuestion {
+  key: string;
+  label: string;
+  sublabel?: string;
+  type: string;                // TEXT | TEXT_SENSITIVE | DATE | NUMBER | BOOLEAN | SELECT | TEXTAREA
+  required: boolean;
+  validation?: Record<string, unknown>;
+  options?: string[];
+  prefillValue?: string;
+  prefillSource?: string;      // profile | org | questionnaire | none
+}
+
+export interface QuestionnaireSection {
+  sectionId: string;
+  sectionLabel: string;
+  questions: QuestionnaireQuestion[];
+}
+
+export interface QuestionnairePublicSpec {
+  id: number;
+  packageId: number;
+  packageName: string;
+  targetRelationship: string;
+  status: string;
+  expiresAt: string;
+  submittedAt?: string;
+  formTypes: string[];
+  sections: QuestionnaireSection[];
+}
+
+export interface ReviewAnswerSummary {
+  questionKey: string;
+  label: string;
+  type: string;
+  required: boolean;
+  hasValue: boolean;
+  source: string;
+  sensitive: boolean;
+  stale: boolean;
+}
+
+export interface ReviewOwnerGroup {
+  owner: string;
+  completenessPercent: number;
+  answers: ReviewAnswerSummary[];
+}
+
+export interface ReviewSummary {
+  packageId: number;
+  packageName: string;
+  status: string;
+  totalRequired: number;
+  totalAnswered: number;
+  completenessPercent: number;
+  missingRequired: string[];
+  byOwner: ReviewOwnerGroup[];
+}
+
+// ── Phase 5: Form Version Tracking ──────────────────────────────────────────
+
+export interface FormVersionAuditEvent {
+  id: number;
+  formType: string;
+  editionDate: string | null;
+  action: string;
+  performedByUserId: number | null;
+  detail: string | null;
+  createdAt: string;
+}
+
+export interface FormVersion {
+  id: number;
+  formType: string;
+  formTypeDisplayName: string;
+  editionDate: string;
+  downloadedAt: string | null;
+  pdfStorageKey: string | null;
+  status: string;           // PENDING_REVIEW | APPROVED | DEPRECATED
+  approvedByUserId: number | null;
+  approvedAt: string | null;
+  fieldMappingVerified: boolean;
+  pdfFieldNames: string[];
+  releaseNotes: string | null;
+  hasProposedMapping: boolean;
+  createdAt: string;
+  recentAudit: FormVersionAuditEvent[] | null;
+}
+
+export const FORM_VERSION_STATUS_CSS: Record<string, string> = {
+  PENDING_REVIEW: 'status-warning',
+  APPROVED:       'status-success',
+  DEPRECATED:     'status-muted',
+};
 
 export const STATUS_CSS: Record<string, string> = {
   PROSPECTIVE:         'status-draft',
@@ -780,6 +1091,293 @@ export class ImmigrationService {
     return this.http.delete<void>(`${this.base}/cases/${caseId}/tasks/${taskId}`).pipe(
       tap(() => this.logger.apiCall(this.source, 'DELETE', `/immigration/cases/${caseId}/tasks/${taskId}`, t)),
       catchError(err => { this.logger.apiError(this.source, 'DELETE', `/immigration/cases/${caseId}/tasks/${taskId}`, err, t); throw err; })
+    );
+  }
+
+  // ── RFE (FEAT-M2) ────────────────────────────────────────────────────────
+
+  listRfes(caseId: number): Observable<CaseRfe[]> {
+    const t = Date.now();
+    return this.http.get<CaseRfe[]>(`${this.base}/cases/${caseId}/rfe`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/rfe`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/rfe`, err, t); throw err; })
+    );
+  }
+
+  createRfe(caseId: number, req: CreateRfeRequest): Observable<CaseRfe> {
+    const t = Date.now();
+    return this.http.post<CaseRfe>(`${this.base}/cases/${caseId}/rfe`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/rfe`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/rfe`, err, t); throw err; })
+    );
+  }
+
+  updateRfe(caseId: number, rfeId: number, req: Partial<CreateRfeRequest> & { status?: string }): Observable<CaseRfe> {
+    const t = Date.now();
+    return this.http.put<CaseRfe>(`${this.base}/cases/${caseId}/rfe/${rfeId}`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/rfe/${rfeId}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/rfe/${rfeId}`, err, t); throw err; })
+    );
+  }
+
+  respondRfe(caseId: number, rfeId: number): Observable<CaseRfe> {
+    const t = Date.now();
+    return this.http.put<CaseRfe>(`${this.base}/cases/${caseId}/rfe/${rfeId}/respond`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/rfe/${rfeId}/respond`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/rfe/${rfeId}/respond`, err, t); throw err; })
+    );
+  }
+
+  // ── USCIS polling (FEAT-M3) ──────────────────────────────────────────────
+
+  getUscisHistory(caseId: number): Observable<UscisStatusResult[]> {
+    const t = Date.now();
+    return this.http.get<UscisStatusResult[]>(`${this.base}/cases/${caseId}/uscis-status-history`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/uscis-status-history`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/uscis-status-history`, err, t); throw err; })
+    );
+  }
+
+  checkUscisNow(caseId: number): Observable<UscisStatusResult> {
+    const t = Date.now();
+    return this.http.post<UscisStatusResult>(`${this.base}/cases/${caseId}/uscis-check-now`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/uscis-check-now`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/uscis-check-now`, err, t); throw err; })
+    );
+  }
+
+  // ── FEAT-M5: Visa Bulletin ────────────────────────────────────────────────
+
+  getVisaBulletinLatest(): Observable<VisaBulletinEntry[]> {
+    const t = Date.now();
+    return this.http.get<VisaBulletinEntry[]>(`${this.base}/visa-bulletin/latest`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', '/immigration/visa-bulletin/latest', t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', '/immigration/visa-bulletin/latest', err, t); throw err; })
+    );
+  }
+
+  getPriorityDateStatus(caseId: number): Observable<PriorityDateStatus> {
+    const t = Date.now();
+    return this.http.get<PriorityDateStatus>(`${this.base}/cases/${caseId}/priority-date-status`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/priority-date-status`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/priority-date-status`, err, t); throw err; })
+    );
+  }
+
+  // ── FEAT-M6: Reports & Exports ────────────────────────────────────────────
+
+  downloadCaseReport(caseId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/cases/${caseId}/report`, { responseType: 'blob' });
+  }
+
+  downloadTimelineExport(caseId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/cases/${caseId}/timeline/export`, { responseType: 'blob' });
+  }
+
+  // ── FEAT-M7: Intake questionnaire ─────────────────────────────────────────
+
+  createDataRequest(caseId: number, req: CreateDataRequestRequest): Observable<ProfileDataRequest> {
+    return this.http.post<ProfileDataRequest>(`${this.base}/cases/${caseId}/data-requests`, req);
+  }
+
+  listDataRequests(caseId: number): Observable<ProfileDataRequest[]> {
+    return this.http.get<ProfileDataRequest[]>(`${this.base}/cases/${caseId}/data-requests`);
+  }
+
+  getDataRequestByToken(token: string): Observable<DataRequestPublicInfo> {
+    return this.http.get<DataRequestPublicInfo>(`${this.base}/data-requests/${token}`);
+  }
+
+  submitDataRequest(token: string, sections: Record<string, unknown>): Observable<ProfileDataRequest> {
+    return this.http.post<ProfileDataRequest>(`${this.base}/data-requests/${token}/submit`, { sections });
+  }
+
+  // ── FEAT-M8: Evidence Checklist ─────────────────────────────────────────
+
+  generateChecklist(caseId: number, req: GenerateChecklistRequest): Observable<ChecklistItem[]> {
+    const t = Date.now();
+    return this.http.post<ChecklistItem[]>(`${this.base}/cases/${caseId}/checklist/generate`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/checklist/generate`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/checklist/generate`, err, t); throw err; })
+    );
+  }
+
+  getChecklist(caseId: number): Observable<ChecklistItem[]> {
+    const t = Date.now();
+    return this.http.get<ChecklistItem[]>(`${this.base}/cases/${caseId}/checklist`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/checklist`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/checklist`, err, t); throw err; })
+    );
+  }
+
+  updateChecklistItem(caseId: number, itemId: number, req: UpdateChecklistItemRequest): Observable<ChecklistItem> {
+    const t = Date.now();
+    return this.http.put<ChecklistItem>(`${this.base}/cases/${caseId}/checklist/${itemId}`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/checklist/${itemId}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/checklist/${itemId}`, err, t); throw err; })
+    );
+  }
+
+  // ── Filing Package System ───────────────────────────────────────────────
+
+  createPackage(caseId: number, req: CreatePackageRequest): Observable<FilingPackage> {
+    const t = Date.now();
+    return this.http.post<FilingPackage>(`${this.base}/cases/${caseId}/packages`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages`, err, t); throw err; })
+    );
+  }
+
+  listPackages(caseId: number): Observable<FilingPackage[]> {
+    const t = Date.now();
+    return this.http.get<FilingPackage[]>(`${this.base}/cases/${caseId}/packages`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages`, err, t); throw err; })
+    );
+  }
+
+  getPackage(caseId: number, packageId: number): Observable<FilingPackage> {
+    const t = Date.now();
+    return this.http.get<FilingPackage>(`${this.base}/cases/${caseId}/packages/${packageId}`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}`, err, t); throw err; })
+    );
+  }
+
+  sendQuestionnaires(caseId: number, packageId: number): Observable<FilingPackage> {
+    const t = Date.now();
+    return this.http.post<FilingPackage>(`${this.base}/cases/${caseId}/packages/${packageId}/send-questionnaires`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/send-questionnaires`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/send-questionnaires`, err, t); throw err; })
+    );
+  }
+
+  getReviewSummary(caseId: number, packageId: number): Observable<ReviewSummary> {
+    const t = Date.now();
+    return this.http.get<ReviewSummary>(`${this.base}/cases/${caseId}/packages/${packageId}/review-summary`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}/review-summary`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}/review-summary`, err, t); throw err; })
+    );
+  }
+
+  approvePackageAnswers(caseId: number, packageId: number): Observable<FilingPackage> {
+    const t = Date.now();
+    return this.http.post<FilingPackage>(`${this.base}/cases/${caseId}/packages/${packageId}/approve-answers`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/approve-answers`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/approve-answers`, err, t); throw err; })
+    );
+  }
+
+  overridePackageAnswer(caseId: number, packageId: number, answerKey: string, req: { value: string; overrideReason: string }): Observable<unknown> {
+    const t = Date.now();
+    return this.http.put(`${this.base}/cases/${caseId}/packages/${packageId}/answers/${encodeURIComponent(answerKey)}`, req).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${caseId}/packages/${packageId}/answers/${answerKey}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${caseId}/packages/${packageId}/answers/${answerKey}`, err, t); throw err; })
+    );
+  }
+
+  generatePdfPacket(caseId: number, packageId: number, overridePendingReview = false): Observable<GeneratedPdfPacket> {
+    const t = Date.now();
+    return this.http.post<GeneratedPdfPacket>(
+      `${this.base}/cases/${caseId}/packages/${packageId}/generate-pdf`,
+      { overridePendingReview }
+    ).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/generate-pdf`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/generate-pdf`, err, t); throw err; })
+    );
+  }
+
+  listPdfPackets(caseId: number, packageId: number): Observable<GeneratedPdfPacket[]> {
+    const t = Date.now();
+    return this.http.get<GeneratedPdfPacket[]>(`${this.base}/cases/${caseId}/packages/${packageId}/packets`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}/packets`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages/${packageId}/packets`, err, t); throw err; })
+    );
+  }
+
+  downloadPdfPacket(caseId: number, packageId: number, packetId: number): void {
+    window.open(`/api/immigration/cases/${caseId}/packages/${packageId}/packets/${packetId}/download`, '_blank');
+  }
+
+  approvePdfPacket(caseId: number, packageId: number, packetId: number): Observable<GeneratedPdfPacket> {
+    const t = Date.now();
+    return this.http.post<GeneratedPdfPacket>(
+      `${this.base}/cases/${caseId}/packages/${packageId}/packets/${packetId}/approve`, {}
+    ).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/packets/${packetId}/approve`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages/${packageId}/packets/${packetId}/approve`, err, t); throw err; })
+    );
+  }
+
+  scanProfileDocument(file: File): Observable<ScanResult> {
+    const t = Date.now();
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<ScanResult>(`${this.base}/profile/scan`, fd).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', '/immigration/profile/scan', t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', '/immigration/profile/scan', err, t); throw err; })
+    );
+  }
+
+  scanCaseDocument(caseId: number, file: File): Observable<ScanResult> {
+    const t = Date.now();
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<ScanResult>(`${this.base}/cases/${caseId}/scan-document`, fd).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/scan-document`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/scan-document`, err, t); throw err; })
+    );
+  }
+
+  getPublicQuestionnaire(token: string): Observable<QuestionnairePublicSpec> {
+    const t = Date.now();
+    return this.http.get<QuestionnairePublicSpec>(`${this.base}/packages/questionnaires/${token}`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/packages/questionnaires/${token}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/packages/questionnaires/${token}`, err, t); throw err; })
+    );
+  }
+
+  submitPublicQuestionnaire(token: string, answers: Record<string, string>): Observable<void> {
+    const t = Date.now();
+    return this.http.post<void>(`${this.base}/packages/questionnaires/${token}/submit`, { answers }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/packages/questionnaires/${token}/submit`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/packages/questionnaires/${token}/submit`, err, t); throw err; })
+    );
+  }
+
+  // ── Phase 5: Form Version Tracking ─────────────────────────────────────────
+
+  getFormVersions(): Observable<Record<string, FormVersion[]>> {
+    const t = Date.now();
+    return this.http.get<Record<string, FormVersion[]>>(`${this.base}/form-versions`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', '/immigration/form-versions', t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', '/immigration/form-versions', err, t); throw err; })
+    );
+  }
+
+  getFormVersion(id: number): Observable<FormVersion> {
+    const t = Date.now();
+    return this.http.get<FormVersion>(`${this.base}/form-versions/${id}`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/form-versions/${id}`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/form-versions/${id}`, err, t); throw err; })
+    );
+  }
+
+  approveFormVersion(id: number): Observable<FormVersion> {
+    const t = Date.now();
+    return this.http.post<FormVersion>(`${this.base}/form-versions/${id}/approve`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/form-versions/${id}/approve`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/approve`, err, t); throw err; })
+    );
+  }
+
+  uploadFormVersionMapping(id: number, file: File): Observable<FormVersion> {
+    const t = Date.now();
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<FormVersion>(`${this.base}/form-versions/${id}/upload-mapping`, fd).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/form-versions/${id}/upload-mapping`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/upload-mapping`, err, t); throw err; })
     );
   }
 }

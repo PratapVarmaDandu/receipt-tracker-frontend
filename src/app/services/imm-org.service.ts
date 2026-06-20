@@ -7,7 +7,7 @@ import {
   CreateImmOrgRequest, InviteMemberRequest, CreatePartnershipRequest,
   PartnershipInviteRequest, PartnershipJoinInfo, EmployerOnboardRequest
 } from '../models/imm-org.model';
-import { ImmigrationCase } from './immigration.service';
+import { ImmigrationCase, I9Record, CreateI9RecordRequest } from './immigration.service';
 
 const BASE = environment.backendUrl;
 const OPTS = { withCredentials: true };
@@ -78,5 +78,29 @@ export class ImmOrgService {
 
   completeOnboarding(token: string, req: EmployerOnboardRequest): Observable<OrgPartnership> {
     return this.http.post<OrgPartnership>(`${BASE}/api/immigration/partnerships/onboard/${token}`, req, OPTS);
+  }
+
+  // ── FEAT-M4: I-9 Compliance ───────────────────────────────────────────────
+
+  createI9Record(orgId: number, req: CreateI9RecordRequest): Observable<I9Record> {
+    return this.http.post<I9Record>(`${BASE}/api/immigration/orgs/${orgId}/i9`, req, OPTS);
+  }
+
+  listI9Records(orgId: number): Observable<I9Record[]> {
+    return this.http.get<I9Record[]>(`${BASE}/api/immigration/orgs/${orgId}/i9`, OPTS);
+  }
+
+  updateI9Record(orgId: number, recordId: number, req: CreateI9RecordRequest): Observable<I9Record> {
+    return this.http.put<I9Record>(`${BASE}/api/immigration/orgs/${orgId}/i9/${recordId}`, req, OPTS);
+  }
+
+  listExpiringI9Records(orgId: number, days = 90): Observable<I9Record[]> {
+    return this.http.get<I9Record[]>(`${BASE}/api/immigration/orgs/${orgId}/i9/expiring?days=${days}`, OPTS);
+  }
+
+  // ── FEAT-M6: Org case export ──────────────────────────────────────────────
+
+  exportOrgCases(orgId: number): Observable<Blob> {
+    return this.http.get(`${BASE}/api/immigration/orgs/${orgId}/cases/export`, { ...OPTS, responseType: 'blob' });
   }
 }

@@ -487,3 +487,55 @@
 // ── Status history ────────────────────────────────────────────────────────
 .sh-list { display: flex; flex-direction: column; gap: 0.4rem; }
 .sh-row { font-size: .85rem; }
+
+// ── RFE banner (FEAT-M2) ──────────────────────────────────────────────────
+.rfe-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-left: 4px solid #dc2626;
+  border-radius: var(--radius, 0.5rem);
+  padding: 0.875rem 1rem;
+
+  &__icon {
+    font-size: 1.3rem;
+    color: #dc2626;
+    padding-top: 0.1rem;
+    flex-shrink: 0;
+  }
+  &__body { flex: 1; }
+  &__title {
+    font-weight: 700;
+    color: #991b1b;
+    font-size: 0.9rem;
+  }
+  &__meta {
+    font-size: 0.82rem;
+    color: #7f1d1d;
+    margin-top: 0.2rem;
+  }
+  &__actions { flex-shrink: 0; }
+}
+
+// ── USCIS status panel (FEAT-M3) ─────────────────────────────────────────
+.uscis-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+
+  &:first-of-type { border-top: none; }
+}
+.uscis-status__label {
+  min-width: 110px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+}
+.uscis-status__value { flex: 1; }

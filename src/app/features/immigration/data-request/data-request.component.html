@@ -1,0 +1,428 @@
+<!-- Loading -->
+<div *ngIf="loading" class="dr-shell">
+  <div class="dr-card text-center py-5 text-muted">
+    <i class="bi bi-arrow-repeat spin me-2"></i>Loading questionnaire…
+  </div>
+</div>
+
+<!-- Error / invalid token -->
+<div *ngIf="!loading && error" class="dr-shell">
+  <div class="dr-card text-center py-4">
+    <i class="bi bi-exclamation-circle display-5 text-danger"></i>
+    <p class="mt-3">{{ error }}</p>
+    <a routerLink="/immigration" class="btn btn-outline-secondary btn-sm">Back to Cases</a>
+  </div>
+</div>
+
+<!-- Expired -->
+<div *ngIf="!loading && !error && publicInfo?.status === 'EXPIRED'" class="dr-shell">
+  <div class="dr-card text-center py-4">
+    <i class="bi bi-clock-history display-5 text-warning"></i>
+    <p class="mt-3 fw-semibold">This link has expired.</p>
+    <p class="text-muted small">Please contact your attorney to request a new link.</p>
+  </div>
+</div>
+
+<!-- Already submitted -->
+<div *ngIf="!loading && !error && publicInfo?.status === 'SUBMITTED' && !submitted" class="dr-shell">
+  <div class="dr-card text-center py-4">
+    <i class="bi bi-check-circle-fill display-5 text-success"></i>
+    <p class="mt-3 fw-semibold">Your information has already been submitted.</p>
+    <p class="text-muted small">Case: {{ publicInfo?.caseNumber }}</p>
+  </div>
+</div>
+
+<!-- Success after submission -->
+<div *ngIf="submitted" class="dr-shell">
+  <div class="dr-card text-center py-5">
+    <i class="bi bi-check-circle-fill display-4 text-success"></i>
+    <h5 class="mt-3">Thank you!</h5>
+    <p class="text-muted">Your information for case <strong>{{ publicInfo?.caseNumber }}</strong> has been submitted.</p>
+    <p class="text-muted small">Your attorney will review what you've provided.</p>
+    <a routerLink="/immigration" class="btn btn-primary btn-sm mt-2">Go to My Cases</a>
+  </div>
+</div>
+
+<!-- Main form -->
+<div *ngIf="!loading && !error && publicInfo && publicInfo.status === 'PENDING' && !submitted" class="dr-shell">
+
+  <!-- Header -->
+  <div class="dr-header">
+    <div class="dr-header__logo"><i class="bi bi-file-earmark-person me-2"></i>Profile Questionnaire</div>
+    <div class="dr-header__case">Case {{ publicInfo.caseNumber }}</div>
+  </div>
+
+  <div class="dr-card">
+
+    <!-- Auth gate -->
+    <div *ngIf="!isAuthenticated && isLastStep" class="alert alert-info d-flex align-items-center gap-2 mb-3" style="font-size:.875rem">
+      <i class="bi bi-person-lock"></i>
+      <span>You need to sign in to submit. <button class="btn btn-link p-0 align-baseline" (click)="login()">Sign in with Google</button></span>
+    </div>
+
+    <!-- Progress breadcrumb -->
+    <div class="dr-steps">
+      <ng-container *ngFor="let s of steps; let i = index">
+        <button class="dr-step"
+                [class.active]="i === currentStepIndex"
+                [class.done]="i < currentStepIndex"
+                (click)="goTo(i)">
+          <span class="dr-step__num">{{ i + 1 }}</span>
+          <span class="dr-step__label">{{ stepLabel(s) }}</span>
+        </button>
+        <span *ngIf="i < steps.length - 1" class="dr-step__sep"></span>
+      </ng-container>
+    </div>
+
+    <div class="dr-section-title">{{ stepLabel(currentStep) }}</div>
+
+    <!-- ── Personal Info ──────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'personalInfo'" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Legal First Name <span class="text-danger">*</span></label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.legalFirstName">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Middle Name</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.middleName">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Legal Last Name <span class="text-danger">*</span></label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.legalLastName">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Date of Birth</label>
+        <input class="form-control" type="date" [(ngModel)]="form.personalInfo.dateOfBirth">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Country of Birth</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.countryOfBirth" placeholder="e.g. India">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Citizenship Country</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.citizenshipCountry">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Gender</label>
+        <select class="form-select" [(ngModel)]="form.personalInfo.gender">
+          <option value="">— select —</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+          <option value="Prefer not to say">Prefer not to say</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Phone</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.phone" placeholder="+1 555 000 0000">
+      </div>
+      <div class="col-12">
+        <label class="form-label">Street Address</label>
+        <input class="form-control mb-2" [(ngModel)]="form.personalInfo.currentAddress.line1" placeholder="Line 1">
+        <input class="form-control" [(ngModel)]="form.personalInfo.currentAddress.line2" placeholder="Line 2 (optional)">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">City</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.currentAddress.city">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">State</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.currentAddress.state">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">ZIP</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.currentAddress.zip">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Country</label>
+        <input class="form-control" [(ngModel)]="form.personalInfo.currentAddress.country">
+      </div>
+    </div>
+
+    <!-- ── Passport & I-94 ───────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'passportI94'">
+      <h6 class="dr-sub-title">Passports</h6>
+      <div *ngFor="let p of form.passportI94.passports; let i = index" class="dr-item-card mb-3">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-semibold small">Passport {{ i + 1 }}</span>
+          <button class="btn btn-xs btn-outline-danger" (click)="removePassport(i)"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Country</label>
+            <input class="form-control form-control-sm" [(ngModel)]="p.country">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Passport Number</label>
+            <input class="form-control form-control-sm" [(ngModel)]="p.number" placeholder="e.g. A1234567">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Issue Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="p.issueDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Expiry Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="p.expiryDate">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label form-label-sm">Notes</label>
+            <input class="form-control form-control-sm" [(ngModel)]="p.notes">
+          </div>
+        </div>
+        <!-- Scan button -->
+        <div class="mt-2 d-flex align-items-center gap-2">
+          <label class="btn btn-xs btn-outline-primary mb-0" [class.disabled]="docUploading === i">
+            <span *ngIf="docUploading === i"><i class="bi bi-arrow-repeat spin me-1"></i>Uploading…</span>
+            <span *ngIf="docUploading !== i"><i class="bi bi-camera me-1"></i>Scan Document</span>
+            <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.heic"
+                   (change)="onPassportFilePick(i, $event)">
+          </label>
+          <span *ngFor="let docId of p.documentIds" class="badge bg-success">
+            <i class="bi bi-check me-1"></i>Doc #{{ docId }}
+          </span>
+        </div>
+      </div>
+      <button class="btn btn-outline-primary btn-sm mb-4" (click)="addPassport()">
+        <i class="bi bi-plus-lg me-1"></i>Add Passport
+      </button>
+
+      <h6 class="dr-sub-title">US Entry / I-94 History</h6>
+      <div *ngFor="let t of form.passportI94.travelEntries; let i = index" class="dr-item-card mb-3">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-semibold small">Entry {{ i + 1 }}</span>
+          <button class="btn btn-xs btn-outline-danger" (click)="removeTravelEntry(i)"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Port of Entry</label>
+            <input class="form-control form-control-sm" [(ngModel)]="t.portOfEntry" placeholder="e.g. JFK">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Entry Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="t.entryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Admitted Until</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="t.admittedUntil">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Visa Class</label>
+            <input class="form-control form-control-sm" [(ngModel)]="t.visaClass" placeholder="e.g. H-1B">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label form-label-sm">I-94 Number</label>
+            <input class="form-control form-control-sm" [(ngModel)]="t.i94Number">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" (click)="addTravelEntry()">
+        <i class="bi bi-plus-lg me-1"></i>Add Entry
+      </button>
+    </div>
+
+    <!-- ── Current Status ────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'currentStatus'" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Current Visa Type</label>
+        <input class="form-control" [(ngModel)]="form.currentStatus.currentVisaType"
+               placeholder="e.g. H-1B, F-1, GC">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Status Expiry Date</label>
+        <input class="form-control" type="date" [(ngModel)]="form.currentStatus.currentVisaExpiry">
+      </div>
+      <div class="col-12">
+        <p class="text-muted small mt-1">
+          Enter your current immigration status. If you have an I-797 approval notice, use the validity end date.
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Employment ────────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'employment'">
+      <div *ngFor="let e of form.employment.employment; let i = index" class="dr-item-card mb-3">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-semibold small">Employer {{ i + 1 }}</span>
+          <button class="btn btn-xs btn-outline-danger" (click)="removeEmployment(i)"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Employer Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="e.employer" placeholder="Company name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Job Title</label>
+            <input class="form-control form-control-sm" [(ngModel)]="e.title">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Country</label>
+            <input class="form-control form-control-sm" [(ngModel)]="e.country">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Start Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="e.startDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">End Date (blank if current)</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="e.endDate">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline-primary btn-sm" (click)="addEmployment()">
+        <i class="bi bi-plus-lg me-1"></i>Add Employer
+      </button>
+    </div>
+
+    <!-- ── Family / Dependents ───────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'familyDependents'">
+      <div *ngFor="let d of form.familyDependents.dependents; let i = index" class="dr-item-card mb-3">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-semibold small">Dependent {{ i + 1 }}</span>
+          <button class="btn btn-xs btn-outline-danger" (click)="removeDependent(i)"><i class="bi bi-trash"></i></button>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Full Name</label>
+            <input class="form-control form-control-sm" [(ngModel)]="d.name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Relationship</label>
+            <select class="form-select form-select-sm" [(ngModel)]="d.relationship">
+              <option value="">— select —</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Child">Child</option>
+              <option value="Parent">Parent</option>
+              <option value="Sibling">Sibling</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Date of Birth</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="d.dateOfBirth">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Citizenship Country</label>
+            <input class="form-control form-control-sm" [(ngModel)]="d.citizenshipCountry">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-outline-primary btn-sm" (click)="addDependent()">
+        <i class="bi bi-plus-lg me-1"></i>Add Dependent
+      </button>
+      <p *ngIf="form.familyDependents.dependents.length === 0" class="text-muted small mt-2">
+        Add any dependents (spouse, children) who are part of your immigration petition.
+        Leave empty if none apply.
+      </p>
+    </div>
+
+    <!-- ── EAD Info ──────────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'eadInfo'" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">EAD Category</label>
+        <input class="form-control" [(ngModel)]="form.eadInfo.eadCategory" placeholder="e.g. C09, A17">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">EAD Expiry Date</label>
+        <input class="form-control" type="date" [(ngModel)]="form.eadInfo.eadExpiryDate">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">EAD Case Number</label>
+        <input class="form-control" [(ngModel)]="form.eadInfo.eadCaseNumber" placeholder="USCIS case number">
+      </div>
+    </div>
+
+    <!-- ── Notification Preferences ──────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'notificationPreferences'" class="row g-3">
+      <div class="col-12">
+        <p class="text-muted small mb-3">Choose how you would like to receive updates about your case.</p>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="emailNotif"
+                 [(ngModel)]="form.notificationPreferences.notificationEmailEnabled">
+          <label class="form-check-label" for="emailNotif">Email notifications</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="smsNotif"
+                 [(ngModel)]="form.notificationPreferences.notificationSmsEnabled">
+          <label class="form-check-label" for="smsNotif">SMS notifications</label>
+        </div>
+      </div>
+      <div class="col-md-6" *ngIf="form.notificationPreferences.notificationSmsEnabled">
+        <label class="form-label">Phone for SMS</label>
+        <input class="form-control" [(ngModel)]="form.notificationPreferences.notificationPhone"
+               placeholder="+1 555 000 0000">
+      </div>
+    </div>
+
+    <!-- ── Review & Submit ───────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 'review'">
+      <p class="text-muted small mb-3">
+        Review the sections below. Click any step to go back and make changes, then return here to submit.
+      </p>
+
+      <div *ngFor="let s of activeSections" class="dr-review-row">
+        <div class="d-flex align-items-center justify-content-between">
+          <span class="fw-semibold">{{ SECTION_LABELS[s] }}</span>
+          <button class="btn btn-xs btn-outline-secondary" (click)="goTo(steps.indexOf(s))">Edit</button>
+        </div>
+        <div class="text-muted small mt-1">
+          <ng-container [ngSwitch]="s">
+            <span *ngSwitchCase="'personalInfo'">
+              {{ form.personalInfo.legalFirstName }} {{ form.personalInfo.legalLastName }}
+              <ng-container *ngIf="form.personalInfo.dateOfBirth"> · {{ form.personalInfo.dateOfBirth }}</ng-container>
+            </span>
+            <span *ngSwitchCase="'passportI94'">
+              {{ form.passportI94.passports.length }} passport(s),
+              {{ form.passportI94.travelEntries.length }} entry record(s)
+            </span>
+            <span *ngSwitchCase="'currentStatus'">
+              {{ form.currentStatus.currentVisaType || 'Not provided' }}
+              <ng-container *ngIf="form.currentStatus.currentVisaExpiry">
+                · expires {{ form.currentStatus.currentVisaExpiry }}
+              </ng-container>
+            </span>
+            <span *ngSwitchCase="'employment'">
+              {{ form.employment.employment.length }} employer record(s)
+            </span>
+            <span *ngSwitchCase="'familyDependents'">
+              {{ form.familyDependents.dependents.length }} dependent(s)
+            </span>
+            <span *ngSwitchCase="'eadInfo'">
+              {{ form.eadInfo.eadCategory || 'Not provided' }}
+            </span>
+            <span *ngSwitchCase="'notificationPreferences'">
+              Email: {{ form.notificationPreferences.notificationEmailEnabled ? 'yes' : 'no' }},
+              SMS: {{ form.notificationPreferences.notificationSmsEnabled ? 'yes' : 'no' }}
+            </span>
+          </ng-container>
+        </div>
+      </div>
+
+      <div *ngIf="submitError" class="alert alert-danger mt-3">{{ submitError }}</div>
+
+      <div *ngIf="!isAuthenticated" class="alert alert-warning mt-3 d-flex align-items-center gap-2">
+        <i class="bi bi-person-lock"></i>
+        <span>You must <button class="btn btn-link p-0 align-baseline" (click)="login()">sign in</button> before submitting.</span>
+      </div>
+    </div>
+
+    <!-- Navigation buttons -->
+    <div class="dr-nav mt-4">
+      <button *ngIf="currentStepIndex > 0" class="btn btn-outline-secondary" (click)="prev()">
+        <i class="bi bi-chevron-left me-1"></i>Back
+      </button>
+      <span class="flex-grow-1"></span>
+      <button *ngIf="!isLastStep" class="btn btn-primary" (click)="next()">
+        Next <i class="bi bi-chevron-right ms-1"></i>
+      </button>
+      <button *ngIf="isLastStep" class="btn btn-success"
+              (click)="doSubmit()" [disabled]="submitting || !isAuthenticated">
+        <span *ngIf="submitting"><i class="bi bi-arrow-repeat spin me-1"></i>Submitting…</span>
+        <span *ngIf="!submitting"><i class="bi bi-send me-1"></i>Submit</span>
+      </button>
+    </div>
+
+  </div><!-- /dr-card -->
+</div><!-- /dr-shell -->

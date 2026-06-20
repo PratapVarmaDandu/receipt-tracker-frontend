@@ -1,0 +1,288 @@
+<div class="questionnaire-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="state-box">
+    <i class="bi bi-arrow-repeat spin me-2"></i>Loading questionnaire…
+  </div>
+
+  <!-- Expired -->
+  <div *ngIf="!loading && expired" class="state-box state-error">
+    <i class="bi bi-clock-history me-2"></i>
+    <strong>This link has expired.</strong>
+    <p class="mb-0 mt-2 text-muted small">Please contact your attorney for a new link.</p>
+  </div>
+
+  <!-- Already submitted -->
+  <div *ngIf="!loading && alreadySubmitted" class="state-box state-success">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <strong>Already submitted.</strong>
+    <p class="mb-0 mt-2 text-muted small">Your responses have already been recorded. Thank you!</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading && !expired && error" class="state-box state-error">
+    <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+  </div>
+
+  <!-- Submitted success -->
+  <div *ngIf="submitted" class="state-box state-success">
+    <i class="bi bi-check-circle-fill me-2 text-success"></i>
+    <strong>Submitted successfully!</strong>
+    <p class="mb-0 mt-2 text-muted small">
+      Your attorney has been notified. You may close this tab.
+    </p>
+  </div>
+
+  <!-- Login prompt -->
+  <div *ngIf="showLoginPrompt && !submitted" class="state-box">
+    <i class="bi bi-person-lock me-2"></i>
+    <strong>Sign in to submit</strong>
+    <p class="text-muted small mt-2 mb-3">
+      You need to be signed in with the account that received this invite.
+    </p>
+    <button class="btn btn-primary" (click)="goToLogin()">
+      <i class="bi bi-google me-1"></i>Sign in with Google
+    </button>
+  </div>
+
+  <!-- Main questionnaire -->
+  <div *ngIf="!loading && !error && !expired && !alreadySubmitted && !submitted && spec">
+
+    <!-- Header -->
+    <div class="q-header">
+      <div class="q-header-inner">
+        <p class="q-subtitle">{{ spec.targetRelationship | titlecase }} Questionnaire</p>
+        <h1 class="q-title">{{ spec.packageName }}</h1>
+        <p class="q-forms text-muted small">Forms: {{ spec.formTypes.join(', ') }}</p>
+
+        <!-- Overall progress -->
+        <div class="overall-progress mt-3">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" [style.width.%]="totalProgress"></div>
+          </div>
+          <span class="progress-label">{{ totalProgress }}% complete</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section tabs (desktop) -->
+    <div class="section-tabs">
+      <button
+        *ngFor="let sec of sections; let i = index"
+        class="section-tab"
+        [class.active]="activeSection === i"
+        [class.done]="sectionProgress(sec) === 100"
+        (click)="activeSection = i">
+        <span class="tab-check" *ngIf="sectionProgress(sec) === 100">
+          <i class="bi bi-check"></i>
+        </span>
+        {{ sec.sectionLabel }}
+      </button>
+    </div>
+
+    <!-- Active section -->
+    <div class="section-body" *ngIf="activeSecObj">
+      <div class="section-head">
+        <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+          <h2 class="mb-0">{{ activeSecObj.sectionLabel }}</h2>
+          <!-- Scan Passport button shown on sections that have passport_number or last_name questions -->
+          <ng-container *ngIf="isPassportSection(activeSecObj)">
+            <label class="btn btn-sm btn-outline-info mb-0" [class.disabled]="scanLoading"
+                   title="Scan a passport or visa stamp to auto-fill this section">
+              <i class="bi bi-camera me-1"></i>
+              <span *ngIf="!scanLoading">Scan Passport</span>
+              <span *ngIf="scanLoading"><i class="bi bi-arrow-repeat spin me-1"></i>Scanning…</span>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" class="d-none"
+                     (change)="onScanFileSelected($event)" [disabled]="scanLoading">
+            </label>
+          </ng-container>
+        </div>
+        <div class="section-progress-bar mt-2">
+          <div class="sp-fill" [style.width.%]="sectionProgress(activeSecObj)"></div>
+        </div>
+        <span class="sp-pct small text-muted">{{ sectionProgress(activeSecObj) }}%</span>
+      </div>
+
+      <!-- Scan error -->
+      <div *ngIf="scanError" class="alert alert-warning alert-dismissible mt-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>{{ scanError }}
+        <button type="button" class="btn-close" (click)="dismissScan()"></button>
+      </div>
+
+      <!-- Questions -->
+      <div class="question-list">
+        <div *ngFor="let q of activeSecObj.questions" class="question-card" [class.required-q]="q.required">
+
+          <label class="q-label">
+            {{ q.label }}
+            <span *ngIf="q.required" class="req-star" aria-label="required">*</span>
+          </label>
+          <p *ngIf="q.sublabel" class="q-sublabel text-muted small mb-1">{{ q.sublabel }}</p>
+
+          <!-- Pre-fill chip -->
+          <div *ngIf="isPrefilled(q)" class="prefill-chip">
+            <i class="bi bi-lightning-fill me-1"></i>Pre-filled from your profile
+            <label class="verify-label ms-3">
+              <input type="checkbox" [checked]="isVerified(q)" (change)="toggleVerify(q)" />
+              <span class="ms-1">Verify</span>
+            </label>
+          </div>
+
+          <!-- TEXT -->
+          <input
+            *ngIf="q.type === 'TEXT'"
+            type="text"
+            class="form-control"
+            [(ngModel)]="answers[q.key]"
+            [placeholder]="q.label" />
+
+          <!-- TEXT_SENSITIVE -->
+          <div *ngIf="q.type === 'TEXT_SENSITIVE'" class="input-group">
+            <input
+              [type]="sensitiveInputType(q.key)"
+              class="form-control"
+              [(ngModel)]="answers[q.key]"
+              [placeholder]="q.label"
+              autocomplete="off" />
+            <button type="button" class="btn btn-outline-secondary" (click)="toggleSensitive(q.key)">
+              <i [class]="showSensitive[q.key] ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+
+          <!-- DATE -->
+          <input
+            *ngIf="q.type === 'DATE'"
+            type="date"
+            class="form-control"
+            [(ngModel)]="answers[q.key]" />
+
+          <!-- NUMBER -->
+          <input
+            *ngIf="q.type === 'NUMBER'"
+            type="number"
+            class="form-control"
+            [(ngModel)]="answers[q.key]" />
+
+          <!-- TEXTAREA -->
+          <textarea
+            *ngIf="q.type === 'TEXTAREA'"
+            class="form-control"
+            rows="3"
+            [(ngModel)]="answers[q.key]"
+            [placeholder]="q.label"></textarea>
+
+          <!-- BOOLEAN -->
+          <div *ngIf="q.type === 'BOOLEAN'" class="bool-group">
+            <label class="bool-option">
+              <input type="radio" [name]="q.key" value="true"
+                [checked]="answers[q.key] === 'true'"
+                (change)="answers[q.key] = 'true'" />
+              <span class="ms-1">Yes</span>
+            </label>
+            <label class="bool-option ms-3">
+              <input type="radio" [name]="q.key" value="false"
+                [checked]="answers[q.key] === 'false'"
+                (change)="answers[q.key] = 'false'" />
+              <span class="ms-1">No</span>
+            </label>
+          </div>
+
+          <!-- SELECT -->
+          <select
+            *ngIf="q.type === 'SELECT'"
+            class="form-select"
+            [(ngModel)]="answers[q.key]">
+            <option value="">— Select —</option>
+            <option *ngFor="let opt of q.options" [value]="opt">{{ opt }}</option>
+          </select>
+
+        </div>
+      </div><!-- /question-list -->
+
+      <!-- Section nav -->
+      <div class="section-nav">
+        <button class="btn btn-outline-secondary" *ngIf="activeSection > 0" (click)="goPrev()">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </button>
+
+        <button class="btn btn-primary ms-auto" *ngIf="!isLastSection()" (click)="goNext()">
+          Save &amp; Continue <i class="bi bi-arrow-right ms-1"></i>
+        </button>
+
+        <!-- Submit on last section -->
+        <div *ngIf="isLastSection()" class="submit-area">
+          <div *ngIf="submitError" class="alert alert-danger py-2 mb-3">
+            <i class="bi bi-exclamation-circle me-1"></i>{{ submitError }}
+          </div>
+
+          <div *ngIf="!currentUser" class="alert alert-info py-2 mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            You'll be asked to sign in before submitting.
+          </div>
+
+          <button class="btn btn-success btn-lg" (click)="doSubmit()" [disabled]="submitting">
+            <span *ngIf="submitting">
+              <i class="bi bi-arrow-repeat spin me-1"></i>Submitting…
+            </span>
+            <span *ngIf="!submitting">
+              <i class="bi bi-send me-1"></i>Submit Questionnaire
+            </span>
+          </button>
+        </div>
+      </div>
+    </div><!-- /section-body -->
+
+  </div><!-- /main questionnaire -->
+</div>
+
+<!-- ── Scan Review Modal ─────────────────────────────────────────────────── -->
+<div *ngIf="scanResult" class="modal-backdrop-custom" (click)="dismissScan()">
+  <div class="modal-panel scan-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header-row d-flex align-items-center justify-content-between mb-3">
+      <h5 class="mb-0">
+        <i class="bi bi-camera me-2"></i>Scan Review
+        <span class="badge bg-secondary ms-2" style="font-size:.75rem">{{ scanResult.docTypeDetected }}</span>
+      </h5>
+      <button class="btn-close" (click)="dismissScan()"></button>
+    </div>
+
+    <p class="text-muted small mb-3">
+      Review extracted fields. Uncheck any you don't want to apply. Low-confidence fields are flagged — verify before applying.
+    </p>
+
+    <div class="scan-fields-list">
+      <div *ngFor="let key of scanFieldKeys()" class="scan-field-row"
+           [class.needs-review]="scanResult.extractedFields[key].needsReview">
+        <input type="checkbox" [(ngModel)]="scanApplySelections[key]" [id]="'qsf-' + key">
+        <div class="scan-field-body ms-2">
+          <label [for]="'qsf-' + key" class="scan-field-label">{{ scanFieldLabel(key) }}</label>
+          <div class="scan-field-value">
+            <span *ngIf="!isSensitiveScanField(key)">{{ scanResult.extractedFields[key].value }}</span>
+            <span *ngIf="isSensitiveScanField(key)" class="font-monospace">{{ maskScanValue(scanResult.extractedFields[key].value) }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <div class="confidence-bar flex-grow-1">
+              <div class="confidence-fill"
+                   [style.width.%]="confidencePercent(scanResult.extractedFields[key].confidence)"
+                   [class.bg-success]="!scanResult.extractedFields[key].needsReview"
+                   [class.bg-warning]="scanResult.extractedFields[key].needsReview"></div>
+            </div>
+            <span class="small" [class.text-success]="!scanResult.extractedFields[key].needsReview"
+                  [class.text-warning]="scanResult.extractedFields[key].needsReview">
+              {{ confidencePercent(scanResult.extractedFields[key].confidence) }}%
+            </span>
+            <span *ngIf="scanResult.extractedFields[key].needsReview"
+                  class="badge bg-warning text-dark" style="font-size:.65rem">Review</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end mt-3">
+      <button class="btn btn-outline-secondary btn-sm" (click)="dismissScan()">Cancel</button>
+      <button class="btn btn-primary btn-sm" (click)="applyScanToQuestionnaire()">
+        <i class="bi bi-check-lg me-1"></i>Apply to Form
+      </button>
+    </div>
+  </div>
+</div>

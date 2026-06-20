@@ -83,6 +83,14 @@
   <button [class.active]="activeTab === 'timeline'"   (click)="setTab('timeline')">Timeline</button>
   <button *ngIf="canSeeForms()" [class.active]="activeTab === 'forms'" (click)="setTab('forms')">Forms</button>
   <button [class.active]="activeTab === 'documents'"  (click)="setTab('documents')">Documents</button>
+  <button [class.active]="activeTab === 'checklist'" (click)="setTab('checklist'); loadChecklist()">
+    <i class="bi bi-card-checklist me-1"></i>Checklist
+    <span *ngIf="checklistLoaded && !allClearForPdf && checklist.length > 0"
+          class="badge bg-warning text-dark ms-1" style="font-size:.65rem">
+      {{ pendingRequiredCount }}
+    </span>
+    <span *ngIf="checklistLoaded && allClearForPdf" class="badge bg-success ms-1" style="font-size:.65rem">✓</span>
+  </button>
   <button [class.active]="activeTab === 'messaging'"  (click)="setTab('messaging')">
     Messaging
     <ng-container *ngIf="totalUnread() > 0">
@@ -92,6 +100,10 @@
   <button [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">
     Tasks
     <span *ngIf="tasksLoaded && overdueTaskCount() > 0" class="msg-unread-badge">{{ overdueTaskCount() }}</span>
+  </button>
+  <button *ngIf="isOrgMember" [class.active]="activeTab === 'packages'" (click)="setTab('packages')">
+    <i class="bi bi-folder2-open me-1"></i>Filing Packages
+    <span *ngIf="packagesLoaded && packages.length > 0" class="msg-unread-badge">{{ packages.length }}</span>
   </button>
   <button *ngIf="isOrgMember" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
     <i class="bi bi-person-vcard me-1"></i>Employee Profile
@@ -105,6 +117,71 @@
     <div *ngIf="caseLoading" class="text-muted py-3">
       <i class="bi bi-arrow-repeat spin me-1"></i>Loading…
     </div>
+
+    <!-- RFE alert banner (FEAT-M2) -->
+    <div *ngIf="!caseLoading && openRfe" class="rfe-banner mb-3">
+      <div class="rfe-banner__icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div class="rfe-banner__body">
+        <div class="rfe-banner__title">Open RFE — Response Required</div>
+        <div class="rfe-banner__meta">
+          <span *ngIf="openRfe.uscisCategory">{{ openRfe.uscisCategory }} ·</span>
+          Issued {{ openRfe.issuedDate | date:'mediumDate' }} ·
+          Deadline <strong>{{ openRfe.responseDeadline | date:'mediumDate' }}</strong>
+          <span [class.text-danger]="openRfe.daysUntilDeadline <= 14">
+            ({{ openRfe.daysUntilDeadline <= 0 ? 'OVERDUE' : openRfe.daysUntilDeadline + 'd left' }})
+          </span>
+        </div>
+      </div>
+      <div class="rfe-banner__actions">
+        <button *ngIf="isAttorney" class="btn btn-sm btn-danger"
+                (click)="doRespondRfe(openRfe.id)"
+                [disabled]="respondingRfeId === openRfe.id">
+          <i *ngIf="respondingRfeId === openRfe.id" class="bi bi-arrow-repeat spin me-1"></i>
+          Log RFE Response
+        </button>
+      </div>
+    </div>
+
+    <!-- Log RFE button (attorney, no open RFE) -->
+    <div *ngIf="!caseLoading && isAttorney && !openRfe" class="mb-3 text-end">
+      <button class="btn btn-sm btn-outline-warning" (click)="showRfeForm = !showRfeForm">
+        <i class="bi bi-file-earmark-text me-1"></i>Log RFE
+      </button>
+    </div>
+
+    <!-- RFE form -->
+    <div *ngIf="showRfeForm" class="card p-3 mb-3 border-warning">
+      <h6 class="mb-3"><i class="bi bi-file-earmark-text me-1"></i>Log Request for Evidence (RFE)</h6>
+      <div *ngIf="rfeError" class="alert alert-danger">{{ rfeError }}</div>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">Issued Date <span class="text-danger">*</span></label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="rfeForm.issuedDate">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Response Deadline <span class="text-muted">(default +87 days)</span></label>
+          <input class="form-control form-control-sm" type="date" [(ngModel)]="rfeForm.responseDeadline">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">USCIS Category</label>
+          <input class="form-control form-control-sm" type="text" [(ngModel)]="rfeForm.uscisCategory"
+                 placeholder="e.g. Specialty Occupation">
+        </div>
+        <div class="col-12">
+          <label class="form-label">USCIS Note</label>
+          <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="rfeForm.uscisNote"
+                    placeholder="Notes from the RFE letter…"></textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-sm btn-warning" (click)="submitRfe()"
+                [disabled]="rfeSubmitting || !rfeForm.issuedDate">
+          <i *ngIf="rfeSubmitting" class="bi bi-arrow-repeat spin me-1"></i>Save RFE
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="showRfeForm = false">Cancel</button>
+      </div>
+    </div>
+
     <div *ngIf="!caseLoading && case" class="card p-3">
       <div class="row g-3">
         <div class="col-md-4">
@@ -156,6 +233,25 @@
         <div class="col-md-4" *ngIf="case.priorityDate">
           <div class="detail-label">Priority Date</div>
           <div class="detail-value">{{ case.priorityDate | date:'mediumDate' }}</div>
+          <!-- Priority date status badge (FEAT-M5) -->
+          <div *ngIf="priorityDateLoading" class="text-muted small mt-1">
+            <i class="bi bi-arrow-repeat spin me-1"></i>Checking bulletin…
+          </div>
+          <ng-container *ngIf="!priorityDateLoading && priorityDateStatus">
+            <span *ngIf="priorityDateStatus.isCurrent" class="badge bg-success mt-1">
+              <i class="bi bi-check-circle me-1"></i>Current!
+            </span>
+            <span *ngIf="!priorityDateStatus.isCurrent" class="badge bg-warning text-dark mt-1">
+              <i class="bi bi-hourglass-split me-1"></i>
+              {{ priorityDateStatus.monthsBehind }} mo behind
+            </span>
+            <div *ngIf="priorityDateStatus.currentCutoff" class="text-muted mt-1" style="font-size:.75rem">
+              Bulletin cutoff: {{ priorityDateStatus.currentCutoff | date:'mediumDate' }}
+            </div>
+            <div *ngIf="!priorityDateStatus.currentCutoff" class="text-muted mt-1" style="font-size:.75rem">
+              All countries current per latest bulletin
+            </div>
+          </ng-container>
         </div>
         <div class="col-md-4" *ngIf="case.receiptNumber">
           <div class="detail-label">Receipt Number</div>
@@ -214,6 +310,22 @@
         <button *ngIf="isOrgMember" class="btn btn-sm btn-outline-secondary" (click)="setTab('profile')">
           <i class="bi bi-person-vcard me-1"></i>View Employee Profile
         </button>
+        <!-- FEAT-M6: Download buttons (attorney + employer) -->
+        <button *ngIf="isOrgMember" class="btn btn-sm btn-outline-secondary"
+                (click)="downloadReport()" [disabled]="downloadingReport">
+          <span *ngIf="downloadingReport"><i class="bi bi-arrow-repeat spin me-1"></i>Generating…</span>
+          <span *ngIf="!downloadingReport"><i class="bi bi-file-earmark-pdf me-1"></i>Case Report</span>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary"
+                (click)="downloadTimeline()" [disabled]="downloadingTimeline">
+          <span *ngIf="downloadingTimeline"><i class="bi bi-arrow-repeat spin me-1"></i>Generating…</span>
+          <span *ngIf="!downloadingTimeline"><i class="bi bi-file-earmark-pdf me-1"></i>Timeline PDF</span>
+        </button>
+        <!-- FEAT-M7: Request profile data (attorney + paralegal) -->
+        <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary"
+                (click)="showRequestDataPanel = !showRequestDataPanel; loadDataRequests()">
+          <i class="bi bi-envelope-plus me-1"></i>Request Profile Data
+        </button>
       </div>
     </div>
 
@@ -242,6 +354,42 @@
       </div>
     </div>
 
+    <!-- USCIS Status panel (FEAT-M3) — cases with a receipt number only -->
+    <div *ngIf="case && case.receiptNumber" class="card mt-3 p-3">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="mb-0"><i class="bi bi-globe-americas me-2"></i>USCIS Status</h6>
+        <button *ngIf="isAttorney" class="btn btn-sm btn-outline-secondary"
+                (click)="checkUscisNow()" [disabled]="checkingUscis">
+          <i class="bi bi-arrow-repeat me-1" [class.spin]="checkingUscis"></i>Check Now
+        </button>
+      </div>
+      <div *ngIf="uscisError" class="alert alert-danger alert-sm mb-2">{{ uscisError }}</div>
+      <div *ngIf="uscisLoading" class="text-muted"><i class="bi bi-arrow-repeat spin me-1"></i>Loading…</div>
+      <div *ngIf="!uscisLoading && !uscisLastCheck" class="text-muted" style="font-size:.85rem">
+        No USCIS checks run yet.
+        <span *ngIf="isAttorney"> Click "Check Now" to query the USCIS portal.</span>
+      </div>
+      <ng-container *ngIf="uscisLastCheck">
+        <div class="uscis-status-row">
+          <span class="uscis-status__label">Current Status</span>
+          <span class="uscis-status__value">{{ uscisLastCheck.detectedStatus || 'Unknown' }}</span>
+          <span *ngIf="uscisLastCheck.statusChanged" class="badge bg-warning text-dark ms-2">Changed</span>
+        </div>
+        <div class="uscis-status-row">
+          <span class="uscis-status__label">Last Checked</span>
+          <span class="uscis-status__value text-muted">{{ uscisLastCheck.polledAt | date:'medium' }}</span>
+        </div>
+        <details *ngIf="uscisHistory.length > 1" class="mt-2" style="font-size:.82rem">
+          <summary class="text-muted" style="cursor:pointer">History ({{ uscisHistory.length }} checks)</summary>
+          <div *ngFor="let h of uscisHistory" class="d-flex gap-2 py-1 border-top">
+            <span class="text-muted" style="white-space:nowrap">{{ h.polledAt | date:'short' }}</span>
+            <span class="flex-grow-1">{{ h.detectedStatus || '—' }}</span>
+            <span *ngIf="h.statusChanged" class="badge bg-warning text-dark">Changed</span>
+          </div>
+        </details>
+      </ng-container>
+    </div>
+
     <!-- Activity Feed panel -->
     <div class="card mt-3 p-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
@@ -265,6 +413,90 @@
           </div>
           <div *ngIf="item.detail && !item.detail.startsWith('{')" class="feed-detail text-muted">{{ item.detail }}</div>
         </div>
+      </div>
+    </div>
+
+    <!-- FEAT-M7: Data Requests panel — attorney only -->
+    <div *ngIf="isAttorney && showRequestDataPanel" class="card mt-3 p-3">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0"><i class="bi bi-envelope-plus me-2"></i>Request Profile Data</h6>
+        <button class="btn btn-sm btn-link text-muted p-0" (click)="showRequestDataPanel = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- Success flash -->
+      <div *ngIf="requestSent" class="alert alert-success alert-sm d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-check-circle-fill"></i>
+        Request sent. The recipient will receive an email with a link to complete the form.
+      </div>
+
+      <!-- Send new request form -->
+      <div class="bg-light rounded p-3 mb-3">
+        <div class="row g-2 mb-2">
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm mb-1">Send to</label>
+            <select class="form-select form-select-sm" [(ngModel)]="newRequestForm.targetRelationship">
+              <option value="BENEFICIARY">Beneficiary</option>
+              <option value="EMPLOYER">Employer contact</option>
+            </select>
+          </div>
+          <div class="col-sm-3">
+            <label class="form-label form-label-sm mb-1">Link expires in</label>
+            <select class="form-select form-select-sm" [(ngModel)]="newRequestForm.expiryDays">
+              <option [ngValue]="7">7 days</option>
+              <option [ngValue]="14">14 days</option>
+              <option [ngValue]="30">30 days</option>
+            </select>
+          </div>
+        </div>
+        <label class="form-label form-label-sm mb-1">Sections to request</label>
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          <div *ngFor="let s of ALL_SECTIONS" class="form-check form-check-inline m-0">
+            <input class="form-check-input" type="checkbox" [id]="'sec-' + s.id"
+                   [checked]="isSectionSelected(s.id)"
+                   (change)="toggleSection(s.id)">
+            <label class="form-check-label" [for]="'sec-' + s.id" style="font-size:.82rem">{{ s.label }}</label>
+          </div>
+        </div>
+        <div *ngIf="requestError" class="text-danger mb-2" style="font-size:.82rem">{{ requestError }}</div>
+        <button class="btn btn-sm btn-primary" (click)="sendDataRequest()"
+                [disabled]="sendingRequest || !newRequestForm.sections.length">
+          <i *ngIf="sendingRequest" class="bi bi-arrow-repeat spin me-1"></i>
+          <i *ngIf="!sendingRequest" class="bi bi-send me-1"></i>
+          Send Request
+        </button>
+      </div>
+
+      <!-- Past requests list -->
+      <div *ngIf="dataRequestsLoaded && dataRequests.length > 0">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-semibold" style="font-size:.88rem">Sent requests</span>
+        </div>
+        <div *ngFor="let req of dataRequests" class="border rounded p-2 mb-2 d-flex align-items-start gap-2 flex-wrap">
+          <span class="badge" [ngClass]="dataRequestStatusCss(req.status)" style="font-size:.72rem; margin-top:2px">
+            {{ req.status }}
+          </span>
+          <div class="flex-grow-1">
+            <div style="font-size:.83rem" class="fw-semibold">{{ req.targetRelationship | titlecase }}</div>
+            <div class="text-muted" style="font-size:.75rem">
+              {{ req.sections.join(', ') }} · Expires {{ req.expiresAt | date:'mediumDate' }}
+            </div>
+            <div class="text-muted" style="font-size:.75rem">Sent {{ req.createdAt | date:'short' }}</div>
+          </div>
+          <div class="d-flex gap-1 flex-shrink-0">
+            <button class="btn btn-xs btn-outline-secondary" (click)="copyRequestLink(req.token)" title="Copy link">
+              <i class="bi bi-link-45deg"></i>
+            </button>
+            <a [href]="dataRequestLink(req.token)" target="_blank"
+               class="btn btn-xs btn-outline-secondary" title="Open link">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="dataRequestsLoaded && dataRequests.length === 0" class="text-muted" style="font-size:.85rem">
+        No requests sent yet.
       </div>
     </div>
 
@@ -429,6 +661,10 @@
   <div *ngIf="activeTab === 'timeline'">
 
     <div class="d-flex gap-2 justify-content-end mb-3">
+      <button class="btn btn-sm btn-outline-secondary" (click)="downloadTimeline()" [disabled]="downloadingTimeline">
+        <span *ngIf="downloadingTimeline"><i class="bi bi-arrow-repeat spin me-1"></i></span>
+        <span *ngIf="!downloadingTimeline"><i class="bi bi-download me-1"></i>Export PDF</span>
+      </button>
       <button class="btn btn-sm btn-outline-secondary" (click)="showAddAppt = !showAddAppt; showAddEvent = false">
         <i class="bi bi-calendar-plus me-1"></i>Add Appointment
       </button>
@@ -658,6 +894,170 @@
     <p class="text-muted">Document case-file integration coming soon.</p>
   </div>
 
+  <!-- ── Checklist (FEAT-M8) ─────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'checklist'">
+
+    <!-- Error banner -->
+    <div *ngIf="checklistError" class="alert alert-danger alert-sm mb-3">
+      <i class="bi bi-exclamation-triangle me-1"></i>{{ checklistError }}
+      <button class="btn-close btn-close-sm float-end" (click)="checklistError = null"></button>
+    </div>
+
+    <!-- All-clear banner -->
+    <div *ngIf="checklistLoaded && allClearForPdf && checklist.length > 0"
+         class="alert alert-success d-flex align-items-center gap-2 mb-3">
+      <i class="bi bi-check-circle-fill fs-5"></i>
+      <div>
+        <strong>Evidence complete</strong> — all required documents are accounted for.
+        PDF generation is unlocked.
+      </div>
+    </div>
+
+    <!-- Attorney: generate / regenerate panel -->
+    <div *ngIf="isAttorney" class="d-flex align-items-center gap-2 mb-3">
+      <button class="btn btn-sm btn-outline-primary"
+              (click)="showGeneratePanel = !showGeneratePanel">
+        <i class="bi bi-magic me-1"></i>{{ checklist.length ? 'Add More Items' : 'Generate Checklist' }}
+      </button>
+      <span *ngIf="checklist.length" class="text-muted" style="font-size:.82rem">
+        {{ checklist.length }} items · {{ verifiedChecklistCount }} verified
+      </span>
+    </div>
+
+    <!-- Generate panel -->
+    <div *ngIf="isAttorney && showGeneratePanel" class="card p-3 mb-3 bg-light">
+      <div class="fw-semibold mb-2" style="font-size:.88rem">Select form types to include:</div>
+      <div class="d-flex flex-wrap gap-3 mb-3">
+        <div *ngFor="let ft of FORM_TYPE_OPTIONS" class="form-check">
+          <input class="form-check-input" type="checkbox" [id]="'ft-' + ft.id"
+                 [checked]="isFormTypeSelected(ft.id)"
+                 (change)="toggleFormType(ft.id)">
+          <label class="form-check-label" [for]="'ft-' + ft.id" style="font-size:.83rem">{{ ft.label }}</label>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary" (click)="runGenerateChecklist()"
+                [disabled]="generatingChecklist || !generateFormTypes.length">
+          <i *ngIf="generatingChecklist" class="bi bi-arrow-repeat spin me-1"></i>
+          <i *ngIf="!generatingChecklist" class="bi bi-lightning-charge me-1"></i>
+          Generate
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="showGeneratePanel = false">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="checklistLoaded && checklist.length === 0" class="text-muted text-center py-5">
+      <i class="bi bi-card-checklist" style="font-size:2rem; opacity:.35"></i>
+      <div class="mt-2">No checklist yet.
+        <span *ngIf="isAttorney"> Click "Generate Checklist" to create one from standard templates.</span>
+      </div>
+    </div>
+
+    <!-- Items grouped by category -->
+    <div *ngFor="let cat of checklistCategories" class="mb-3">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <i class="bi" [ngClass]="categoryIcon(checklistByCategory[cat])"
+           [class.text-danger]="categoryCss(checklistByCategory[cat]) === 'text-danger'"
+           [class.text-warning]="categoryCss(checklistByCategory[cat]) === 'text-warning'"
+           [class.text-success]="categoryCss(checklistByCategory[cat]) === 'text-success'"></i>
+        <span class="fw-semibold" style="font-size:.9rem">{{ cat }}</span>
+        <span class="text-muted" style="font-size:.75rem">
+          ({{ categoryHandledCount(checklistByCategory[cat]) }} / {{ checklistByCategory[cat].length }})
+        </span>
+      </div>
+
+      <div *ngFor="let item of checklistByCategory[cat]"
+           class="border rounded mb-2"
+           [class.border-danger]="item.required && item.status === 'PENDING'">
+        <!-- Item row -->
+        <div class="d-flex align-items-center gap-2 p-2 flex-wrap"
+             style="cursor:pointer" (click)="toggleChecklistItem(item.id)">
+          <span class="badge" [ngClass]="checklistStatusCss(item.status)" style="flex-shrink:0; font-size:.7rem">
+            {{ item.status }}
+          </span>
+          <span class="flex-grow-1" style="font-size:.85rem">
+            {{ item.label }}
+            <span *ngIf="item.required" class="text-danger ms-1" title="Required">*</span>
+          </span>
+          <i class="bi text-muted" style="font-size:.75rem"
+             [ngClass]="expandedChecklistItem === item.id ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </div>
+
+        <!-- Expanded actions -->
+        <div *ngIf="expandedChecklistItem === item.id" class="border-top p-2 bg-light" style="font-size:.83rem">
+
+          <!-- PENDING → show Upload + Waive actions -->
+          <ng-container *ngIf="item.status === 'PENDING'">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+              <label class="form-label mb-0 fw-semibold" style="white-space:nowrap">Link document:</label>
+              <select class="form-select form-select-sm" style="max-width:260px"
+                      [(ngModel)]="docPickerSelection[item.id]">
+                <option [ngValue]="null">— no document —</option>
+                <option *ngFor="let d of checklistVaultDocs" [ngValue]="d.id">{{ d.title }}</option>
+              </select>
+              <button class="btn btn-xs btn-success" (click)="markUploaded(item)"
+                      [disabled]="updatingChecklistItem === item.id">
+                <i *ngIf="updatingChecklistItem === item.id" class="bi bi-arrow-repeat spin"></i>
+                <i *ngIf="updatingChecklistItem !== item.id" class="bi bi-upload me-1"></i>Mark Uploaded
+              </button>
+            </div>
+            <div *ngIf="isAttorney" class="d-flex align-items-center gap-2 flex-wrap">
+              <input class="form-control form-control-sm" style="max-width:260px"
+                     placeholder="Waiver reason (required)" [(ngModel)]="waiverDraft[item.id]">
+              <button class="btn btn-xs btn-outline-secondary" (click)="markWaived(item)"
+                      [disabled]="updatingChecklistItem === item.id">
+                <i class="bi bi-x-circle me-1"></i>Waive
+              </button>
+            </div>
+          </ng-container>
+
+          <!-- UPLOADED → attorney can verify; anyone can revert -->
+          <ng-container *ngIf="item.status === 'UPLOADED'">
+            <div class="text-muted mb-2">
+              <i class="bi bi-paperclip me-1"></i>
+              <span *ngIf="item.documentId">Document ID: {{ item.documentId }}</span>
+              <span *ngIf="!item.documentId">No document linked</span>
+            </div>
+            <div class="d-flex gap-2">
+              <button *ngIf="isAttorney" class="btn btn-xs btn-success" (click)="markVerified(item)"
+                      [disabled]="updatingChecklistItem === item.id">
+                <i *ngIf="updatingChecklistItem === item.id" class="bi bi-arrow-repeat spin"></i>
+                <i *ngIf="updatingChecklistItem !== item.id" class="bi bi-check-lg me-1"></i>Verify
+              </button>
+              <button class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
+                      [disabled]="updatingChecklistItem === item.id">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+              </button>
+            </div>
+          </ng-container>
+
+          <!-- VERIFIED -->
+          <ng-container *ngIf="item.status === 'VERIFIED'">
+            <div class="text-success mb-1">
+              <i class="bi bi-check-circle-fill me-1"></i>Verified {{ item.verifiedAt | date:'mediumDate' }}
+            </div>
+            <button *ngIf="isAttorney" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
+                    [disabled]="updatingChecklistItem === item.id">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+            </button>
+          </ng-container>
+
+          <!-- WAIVED -->
+          <ng-container *ngIf="item.status === 'WAIVED'">
+            <div class="text-muted mb-1">
+              <i class="bi bi-x-circle me-1"></i>Waived — {{ item.waiverReason }}
+            </div>
+            <button *ngIf="isAttorney" class="btn btn-xs btn-outline-secondary" (click)="revertToPending(item)"
+                    [disabled]="updatingChecklistItem === item.id">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Revert
+            </button>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Messaging ──────────────────────────────────────────────────────── -->
   <div *ngIf="activeTab === 'messaging'">
 
@@ -701,6 +1101,217 @@
       </button>
     </div>
   </div>
+
+  <!-- ── Filing Packages (Filing Package System) ──────────────────── -->
+  <div *ngIf="activeTab === 'packages' && isOrgMember">
+
+    <!-- Loading -->
+    <div *ngIf="packagesLoading" class="text-muted py-3">
+      <i class="bi bi-arrow-repeat spin me-1"></i>Loading packages…
+    </div>
+
+    <!-- Error -->
+    <div *ngIf="packagesError" class="alert alert-danger">{{ packagesError }}</div>
+
+    <!-- Attorney: create button -->
+    <div *ngIf="isAttorney" class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-0">Filing Packages</h6>
+      <button class="btn btn-primary btn-sm" (click)="showCreatePackagePanel = !showCreatePackagePanel">
+        <i class="bi bi-plus-lg me-1"></i>New Package
+      </button>
+    </div>
+
+    <!-- Create package panel (attorney only) -->
+    <div *ngIf="showCreatePackagePanel && isAttorney" class="card p-3 mb-3 border-primary">
+      <h6 class="mb-3">New Filing Package</h6>
+
+      <div class="mb-2">
+        <label class="form-label small fw-semibold">Package Name</label>
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="newPackageName"
+               placeholder="e.g. H-1B Initial 2025" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Forms to Include</label>
+        <div class="d-flex flex-wrap gap-2 mt-1">
+          <label *ngFor="let ft of FORM_TYPE_OPTIONS" class="d-flex align-items-center gap-1 small">
+            <input type="checkbox"
+                   [checked]="isPackageFormTypeSelected(ft.id)"
+                   (change)="togglePackageFormType(ft.id)" />
+            {{ ft.label }}
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="createPackageError" class="alert alert-danger py-2 small mb-2">{{ createPackageError }}</div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" (click)="doCreatePackage()" [disabled]="creatingPackage">
+          <i class="bi bi-arrow-repeat spin me-1" *ngIf="creatingPackage"></i>
+          <i class="bi bi-check-lg me-1" *ngIf="!creatingPackage"></i>Create
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" (click)="showCreatePackagePanel = false; createPackageError = null">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!packagesLoading && packages.length === 0 && !showCreatePackagePanel" class="text-center py-5 text-muted">
+      <i class="bi bi-folder2 d-block mb-2" style="font-size:2rem"></i>
+      No filing packages yet.
+      <span *ngIf="isAttorney"> Click <strong>New Package</strong> to begin.</span>
+    </div>
+
+    <!-- Package list -->
+    <div *ngFor="let pkg of packages" class="card mb-3">
+      <div class="card-body">
+
+        <div class="d-flex align-items-start justify-content-between">
+          <div>
+            <span class="fw-semibold">{{ pkg.name }}</span>
+            <span class="badge ms-2" [ngClass]="packageStatusCss(pkg.status)">{{ pkg.status | titlecase }}</span>
+          </div>
+          <button class="btn btn-link btn-sm p-0" (click)="expandedPackage = expandedPackage === pkg.id ? null : pkg.id">
+            <i [class]="expandedPackage === pkg.id ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+          </button>
+        </div>
+
+        <!-- Forms chips -->
+        <div class="mt-1 mb-2">
+          <span *ngFor="let ft of pkg.selectedFormTypes" class="badge bg-secondary me-1 small">{{ ft }}</span>
+        </div>
+
+        <!-- Completeness bars -->
+        <div *ngFor="let entry of packageCompletenessEntries(pkg)" class="d-flex align-items-center gap-2 mb-1 small">
+          <span class="text-muted" style="min-width:90px">{{ entry.owner | titlecase }}</span>
+          <div class="flex-fill bg-light rounded" style="height:6px">
+            <div class="bg-primary rounded" [style.width.%]="entry.pct" style="height:6px;transition:width .3s"></div>
+          </div>
+          <span class="text-muted" style="min-width:2.5rem;text-align:right">{{ entry.pct }}%</span>
+        </div>
+
+        <!-- Expanded: questionnaire list + actions -->
+        <div *ngIf="expandedPackage === pkg.id" class="mt-3 pt-3 border-top">
+
+          <!-- Questionnaires -->
+          <div class="mb-3">
+            <div class="small fw-semibold text-muted mb-2">Questionnaires</div>
+            <div *ngFor="let q of pkg.questionnaires" class="d-flex align-items-center justify-content-between py-1 border-bottom">
+              <div>
+                <span class="small fw-semibold">{{ q.targetRelationship | titlecase }}</span>
+                <span class="badge ms-2 small" [class.bg-success]="q.status === 'SUBMITTED'"
+                      [class.bg-warning]="q.status === 'PENDING'"
+                      [class.bg-secondary]="q.status === 'EXPIRED'">
+                  {{ q.status | titlecase }}
+                </span>
+                <span class="text-muted small ms-2">{{ q.answeredCount }}/{{ q.questionCount }} answered</span>
+              </div>
+              <a [href]="questionnaireLink(q.token)" target="_blank" class="btn btn-outline-secondary btn-xs">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Link
+              </a>
+            </div>
+          </div>
+
+          <!-- Attorney actions -->
+          <div *ngIf="isAttorney" class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-primary btn-sm"
+                    *ngIf="pkg.status === 'DRAFT'"
+                    [disabled]="sendingQuestionnaires === pkg.id"
+                    (click)="doSendQuestionnaires(pkg)">
+              <i class="bi bi-envelope me-1"></i>
+              {{ sendingQuestionnaires === pkg.id ? 'Sending…' : 'Send Questionnaires' }}
+            </button>
+
+            <button class="btn btn-success btn-sm"
+                    *ngIf="pkg.status === 'ANSWERS_COLLECTED' || pkg.status === 'ATTORNEY_REVIEW'"
+                    [disabled]="approvingPackage === pkg.id"
+                    (click)="doApprovePackage(pkg)">
+              <i class="bi bi-check-circle me-1"></i>
+              {{ approvingPackage === pkg.id ? 'Approving…' : 'Approve Answers' }}
+            </button>
+
+            <!-- Generate PDF (APPROVED or GENERATED status) -->
+            <button class="btn btn-primary btn-sm"
+                    *ngIf="pkg.status === 'APPROVED' || pkg.status === 'GENERATED'"
+                    [disabled]="generatingPdf === pkg.id"
+                    (click)="doGeneratePdf(pkg); loadPackets(pkg)">
+              <span *ngIf="generatingPdf === pkg.id" class="spinner-border spinner-border-sm me-1"></span>
+              <i *ngIf="generatingPdf !== pkg.id" class="bi bi-file-earmark-pdf me-1"></i>
+              {{ generatingPdf === pkg.id ? 'Generating…' : 'Generate PDF Packet' }}
+            </button>
+
+            <button class="btn btn-outline-secondary btn-sm"
+                    *ngIf="pkg.status === 'GENERATED'"
+                    (click)="loadPackets(pkg)">
+              <i class="bi bi-arrow-repeat me-1"></i>Refresh Packets
+            </button>
+          </div>
+
+          <!-- Generate error -->
+          <div *ngIf="generatePdfError[pkg.id]" class="alert alert-danger py-1 small mt-2">
+            {{ generatePdfError[pkg.id] }}
+          </div>
+
+          <!-- PENDING_REVIEW override prompt -->
+          <div *ngIf="pendingReviewConflict === pkg.id" class="alert alert-warning py-2 small mt-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            A newer unreviewed form version exists. Generate with the current approved version anyway?
+            <div class="d-flex gap-2 mt-1">
+              <button class="btn btn-warning btn-sm" (click)="doGeneratePdf(pkg, true)">Proceed Anyway</button>
+              <button class="btn btn-outline-secondary btn-sm" (click)="pendingReviewConflict = null">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Generated packets list -->
+          <div *ngIf="packets[pkg.id] && packets[pkg.id].length > 0" class="mt-3">
+            <div class="fw-semibold small mb-1"><i class="bi bi-archive me-1"></i>Generated Packets</div>
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Generated</th>
+                    <th>Forms</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let pt of packets[pkg.id]">
+                    <td class="small text-muted">{{ pt.generatedAt | date:'MMM d, y HH:mm' }}</td>
+                    <td class="small">{{ pt.formVersionsUsed.length }} form(s)</td>
+                    <td>
+                      <span class="badge"
+                        [class.bg-secondary]="pt.status === 'DRAFT'"
+                        [class.bg-success]="pt.status === 'ATTORNEY_APPROVED'"
+                        [class.bg-primary]="pt.status === 'FILED'">
+                        {{ pt.status === 'DRAFT' ? 'Draft' : pt.status === 'ATTORNEY_APPROVED' ? 'Approved' : 'Filed' }}
+                      </span>
+                    </td>
+                    <td class="d-flex gap-1">
+                      <button class="btn btn-outline-secondary btn-xs"
+                              (click)="downloadPacket(caseId, pkg.id, pt.id)">
+                        <i class="bi bi-download me-1"></i>Download
+                      </button>
+                      <button class="btn btn-success btn-xs"
+                              *ngIf="pt.status === 'DRAFT'"
+                              [disabled]="approvingPacket === pt.id"
+                              (click)="doApprovePacket(caseId, pkg.id, pt.id)">
+                        <span *ngIf="approvingPacket === pt.id" class="spinner-border spinner-border-sm"></span>
+                        <span *ngIf="approvingPacket !== pt.id"><i class="bi bi-check-circle me-1"></i>Approve</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /packages -->
 
   <!-- ── Employee Profile (read-only, for employer / attorney) ─────── -->
   <div *ngIf="activeTab === 'profile' && isOrgMember">
