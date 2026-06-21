@@ -192,7 +192,7 @@ export class CaseDetailComponent implements OnInit {
         this.generatingPdf = null;
       },
       error: err => {
-        const msg: string = err.error?.message || err.message || 'Failed to generate PDF';
+        const msg: string = err.error?.error || err.error?.message || err.message || 'Failed to generate PDF';
         if (msg.startsWith('PENDING_REVIEW_EXISTS')) {
           this.pendingReviewConflict = pkg.id;
         } else {
@@ -242,7 +242,7 @@ export class CaseDetailComponent implements OnInit {
             .forEach(p => this.loadPackets(p));
       },
       error: err => {
-        this.packagesError = err.error?.message || 'Failed to load filing packages';
+        this.packagesError = err.error?.error || err.error?.message || 'Failed to load filing packages';
         this.packagesLoading = false;
       }
     });
@@ -267,7 +267,7 @@ export class CaseDetailComponent implements OnInit {
         this.creatingPackage = false;
       },
       error: err => {
-        this.createPackageError = err.error?.message || 'Failed to create package';
+        this.createPackageError = err.error?.error || err.error?.message || 'Failed to create package';
         this.creatingPackage = false;
       }
     });
