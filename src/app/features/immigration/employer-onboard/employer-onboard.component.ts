@@ -18,6 +18,7 @@ export class EmployerOnboardComponent implements OnInit {
   submitting = false;
   submitError: string | null = null;
   done = false;
+  submitted = false;
 
   form: EmployerOnboardRequest = {
     orgName: '',
@@ -81,6 +82,7 @@ export class EmployerOnboardComponent implements OnInit {
   }
 
   submit(): void {
+    this.submitted = true;
     if (!this.isValid || this.submitting) return;
     this.submitting = true;
     this.submitError = null;

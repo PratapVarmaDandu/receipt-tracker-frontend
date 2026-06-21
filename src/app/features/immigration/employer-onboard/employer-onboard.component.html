@@ -41,6 +41,9 @@
     </div>
 
     <div *ngIf="submitError" class="alert alert-danger mt-3">{{ submitError }}</div>
+    <div *ngIf="submitted && !isValid && !submitError" class="alert alert-warning mt-3">
+      <i class="bi bi-exclamation-circle me-2"></i>Please fill in all required fields highlighted below.
+    </div>
 
     <form class="onboard-form" (ngSubmit)="submit()">
 
@@ -50,20 +53,26 @@
         <div class="mb-3">
           <label class="form-label required">Company Name</label>
           <input class="form-control" [(ngModel)]="form.orgName" name="orgName"
-                 placeholder="Acme Corporation" required>
+                 placeholder="Acme Corporation" required
+                 [class.is-invalid]="submitted && !form.orgName.trim()">
+          <div class="invalid-feedback">Company name is required.</div>
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-md-6">
             <label class="form-label required">Contact Person</label>
             <input class="form-control" [(ngModel)]="form.contactName" name="contactName"
-                   placeholder="Jane Smith" required>
+                   placeholder="Jane Smith" required
+                   [class.is-invalid]="submitted && !form.contactName.trim()">
+            <div class="invalid-feedback">Contact person name is required.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label required">Contact Email</label>
             <input class="form-control" [(ngModel)]="form.contactEmail" name="contactEmail"
-                   type="email" placeholder="jane@acme.com" required>
-            <div class="form-text">Pre-filled from your invite. Change if needed.</div>
+                   type="email" placeholder="jane@acme.com" required
+                   [class.is-invalid]="submitted && !form.contactEmail.trim()">
+            <div class="invalid-feedback">Contact email is required.</div>
+            <div class="form-text" *ngIf="!submitted || form.contactEmail.trim()">Pre-filled from your invite. Change if needed.</div>
           </div>
         </div>
 
@@ -87,34 +96,41 @@
         <div class="mb-3">
           <label class="form-label required">Street Address</label>
           <input class="form-control" [(ngModel)]="form.address" name="address"
-                 placeholder="123 Main St, Suite 400" required>
+                 placeholder="123 Main St, Suite 400" required
+                 [class.is-invalid]="submitted && !form.address.trim()">
+          <div class="invalid-feedback">Street address is required.</div>
         </div>
 
         <div class="row g-3">
           <div class="col-md-5">
             <label class="form-label required">City</label>
             <input class="form-control" [(ngModel)]="form.city" name="city"
-                   placeholder="Austin" required>
+                   placeholder="Austin" required
+                   [class.is-invalid]="submitted && !form.city.trim()">
+            <div class="invalid-feedback">City is required.</div>
           </div>
           <div class="col-md-3">
             <label class="form-label required">State</label>
-            <select class="form-select" [(ngModel)]="form.stateCode" name="stateCode" required>
+            <select class="form-select" [(ngModel)]="form.stateCode" name="stateCode" required
+                    [class.is-invalid]="submitted && !form.stateCode">
               <option value="">Select</option>
               <option *ngFor="let s of US_STATES" [value]="s">{{ s }}</option>
             </select>
+            <div class="invalid-feedback">State is required.</div>
           </div>
           <div class="col-md-4">
             <label class="form-label required">ZIP Code</label>
             <input class="form-control" [(ngModel)]="form.zipCode" name="zipCode"
-                   placeholder="78701" required>
+                   placeholder="78701" required
+                   [class.is-invalid]="submitted && !form.zipCode.trim()">
+            <div class="invalid-feedback">ZIP code is required.</div>
           </div>
         </div>
       </div>
 
       <div class="form-actions">
         <a routerLink="/immigration" class="btn btn-outline-secondary">Cancel</a>
-        <button type="submit" class="btn btn-primary btn-lg"
-                [disabled]="!isValid || submitting">
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="submitting">
           <span *ngIf="submitting"><i class="bi bi-arrow-repeat spin me-1"></i>Completing…</span>
           <span *ngIf="!submitting"><i class="bi bi-check-lg me-1"></i>Complete Onboarding</span>
         </button>
