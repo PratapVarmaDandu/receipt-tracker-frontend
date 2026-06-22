@@ -73,7 +73,9 @@ export class AppComponent implements OnInit {
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
         const url: string = e.urlAfterRedirects || e.url;
-        this.isLoginPage = url === '/login'
+        // Strip query string / fragment so e.g. "/login?error=true" still counts as the login page
+        const path: string = url.split('?')[0].split('#')[0];
+        this.isLoginPage = path === '/login'
           || url.startsWith('/share/')
           || url.startsWith('/group/join/')
           || url.startsWith('/documents/shared/')
