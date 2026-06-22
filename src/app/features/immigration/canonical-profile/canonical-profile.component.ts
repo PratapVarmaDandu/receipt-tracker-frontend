@@ -67,6 +67,7 @@ export class CanonicalProfileComponent implements OnInit {
   // ── Document Scan ─────────────────────────────────────────────────────────
   scanLoading = false;
   scanError: string | null = null;
+  scanAppliedMsg: string | null = null;
   scanResult: ScanResult | null = null;
   scanApplySelections: Record<string, boolean> = {};
   scanPassportIndex = 0;   // which passport entry to apply scanned data to
@@ -374,19 +375,32 @@ export class CanonicalProfileComponent implements OnInit {
       if (f['gender'] && this.scanApplySelections['gender'])
         this.form.gender = f['gender'].value;
 
-      // Apply passport-specific fields to the selected passport entry
-      const idx = this.scanPassportIndex;
-      if (idx >= 0 && idx < this.form.passports.length) {
-        const p = this.form.passports[idx];
-        if (f['passportNumber'] && this.scanApplySelections['passportNumber'])
-          p.number = f['passportNumber'].value;
-        if (f['issuingCountry'] && this.scanApplySelections['issuingCountry'])
-          p.country = f['issuingCountry'].value;
-        if (f['issueDate'] && this.scanApplySelections['issueDate'])
-          p.issueDate = f['issueDate'].value;
-        if (f['expiryDate'] && this.scanApplySelections['expiryDate'])
-          p.expiryDate = f['expiryDate'].value;
-      }
+      // Apply passport-specific fields to the selected passport entry.
+      // Auto-create an entry if none exists yet (common: user scans before clicking "Add Passport").
+      if (this.form.passports.length === 0) this.addPassport();
+      let idx = this.scanPassportIndex;
+      if (idx < 0 || idx >= this.form.passports.length) idx = 0;
+      const p = this.form.passports[idx];
+      if (f['passportNumber'] && this.scanApplySelections['passportNumber'])
+        p.number = f['passportNumber'].value;
+      if (f['issuingCountry'] && this.scanApplySelections['issuingCountry'])
+        p.country = f['issuingCountry'].value;
+      if (f['issueDate'] && this.scanApplySelections['issueDate'])
+        p.issueDate = f['issueDate'].value;
+      if (f['expiryDate'] && this.scanApplySelections['expiryDate'])
+        p.expiryDate = f['expiryDate'].value;
+      // Additional passport-page fields now captured on the passport entry
+      if (f['nationality'] && this.scanApplySelections['nationality'])
+        p.nationality = f['nationality'].value;
+      if (f['dateOfBirth'] && this.scanApplySelections['dateOfBirth'])
+        p.dateOfBirth = f['dateOfBirth'].value;
+      if (f['gender'] && this.scanApplySelections['gender'])
+        p.gender = f['gender'].value;
+      if (f['placeOfBirth'] && this.scanApplySelections['placeOfBirth'])
+        p.placeOfBirth = f['placeOfBirth'].value;
+
+      this.activeTab = 'passport';
+      this.flashScanApplied();
     } else if (dt === 'I94_PRINTOUT') {
       if (f['lastName'] && this.scanApplySelections['lastName'])
         this.form.legalLastName = f['lastName'].value;
@@ -399,21 +413,24 @@ export class CanonicalProfileComponent implements OnInit {
       if (f['visaClass'] && this.scanApplySelections['visaClass'])
         this.form.currentVisaType = f['visaClass'].value;
 
-      // Apply to travel entry
-      const idx = this.scanTravelIndex;
-      if (idx >= 0 && idx < this.form.travelEntries.length) {
-        const t = this.form.travelEntries[idx];
-        if (f['i94Number'] && this.scanApplySelections['i94Number'])
-          t.i94Number = f['i94Number'].value;
-        if (f['portOfEntry'] && this.scanApplySelections['portOfEntry'])
-          t.portOfEntry = f['portOfEntry'].value;
-        if (f['entryDate'] && this.scanApplySelections['entryDate'])
-          t.entryDate = f['entryDate'].value;
-        if (f['admittedUntil'] && this.scanApplySelections['admittedUntil'])
-          t.admittedUntil = f['admittedUntil'].value;
-        if (f['visaClass'] && this.scanApplySelections['visaClass'])
-          t.visaClass = f['visaClass'].value;
-      }
+      // Apply to travel entry — auto-create one if none exists yet
+      if (this.form.travelEntries.length === 0) this.addTravelEntry();
+      let idx = this.scanTravelIndex;
+      if (idx < 0 || idx >= this.form.travelEntries.length) idx = 0;
+      const t = this.form.travelEntries[idx];
+      if (f['i94Number'] && this.scanApplySelections['i94Number'])
+        t.i94Number = f['i94Number'].value;
+      if (f['portOfEntry'] && this.scanApplySelections['portOfEntry'])
+        t.portOfEntry = f['portOfEntry'].value;
+      if (f['entryDate'] && this.scanApplySelections['entryDate'])
+        t.entryDate = f['entryDate'].value;
+      if (f['admittedUntil'] && this.scanApplySelections['admittedUntil'])
+        t.admittedUntil = f['admittedUntil'].value;
+      if (f['visaClass'] && this.scanApplySelections['visaClass'])
+        t.visaClass = f['visaClass'].value;
+
+      this.activeTab = 'entry';
+      this.flashScanApplied();
     } else if (dt === 'US_VISA_STAMP') {
       if (f['lastName'] && this.scanApplySelections['lastName'])
         this.form.legalLastName = f['lastName'].value;
@@ -427,10 +444,18 @@ export class CanonicalProfileComponent implements OnInit {
         this.form.currentVisaType = f['visaType'].value;
       if (f['expiryDate'] && this.scanApplySelections['expiryDate'])
         this.form.currentVisaExpiry = f['expiryDate'].value;
+
+      this.activeTab = 'entry';
+      this.flashScanApplied();
     }
 
     this.scanResult = null;
     this.scanApplySelections = {};
+  }
+
+  private flashScanApplied(): void {
+    this.scanAppliedMsg = 'Scanned fields applied below. Review them, then click Save to persist.';
+    setTimeout(() => this.scanAppliedMsg = null, 6000);
   }
 
   dismissScan(): void {

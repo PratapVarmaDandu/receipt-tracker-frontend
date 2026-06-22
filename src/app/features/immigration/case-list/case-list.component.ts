@@ -17,6 +17,10 @@ export class CaseListComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
+  // Pending beneficiary invites (issue 2 — in-app notification)
+  accepting: Record<number, boolean> = {};
+  acceptInviteError: string | null = null;
+
   // Org membership — drives header buttons and role bar
   myOrgs: ImmOrg[] = [];
   get hasEmployerOrg(): boolean { return this.myOrgs.some(o => o.orgType === 'EMPLOYER'); }
@@ -68,6 +72,31 @@ export class CaseListComponent implements OnInit {
 
   openCase(id: number): void {
     this.router.navigate(['/immigration/cases', id]);
+  }
+
+  // ── Pending invites (beneficiary view) ───────────────────────────────────
+
+  /** Cases the logged-in beneficiary has been invited to but not yet accepted. */
+  get pendingInvites(): ImmigrationCase[] {
+    return this.cases.filter(c => c.beneficiaryInvitePending);
+  }
+
+  acceptInvite(caseId: number, event: Event): void {
+    event.stopPropagation();
+    this.accepting[caseId] = true;
+    this.acceptInviteError = null;
+    this.immigrationService.acceptCaseInviteById(caseId).subscribe({
+      next: () => {
+        this.accepting[caseId] = false;
+        this.logger.info(this.source, `Accepted invite for case ${caseId}`);
+        this.loadCases();
+      },
+      error: err => {
+        this.accepting[caseId] = false;
+        this.acceptInviteError = err?.error?.error || 'Could not accept invite';
+        this.logger.error(this.source, 'acceptInvite failed', err);
+      }
+    });
   }
 
   newCase(): void {

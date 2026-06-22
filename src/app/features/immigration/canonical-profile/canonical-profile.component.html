@@ -22,6 +22,9 @@
 <ng-container *ngIf="!loading && !loadError">
 
   <div *ngIf="saveError" class="alert alert-danger mb-3">{{ saveError }}</div>
+  <div *ngIf="scanAppliedMsg" class="alert alert-success mb-3">
+    <i class="bi bi-check-circle me-1"></i>{{ scanAppliedMsg }}
+  </div>
 
   <p class="text-muted mb-3" style="font-size:.85rem">
     This information is used to prepare your case documents. All fields are optional
@@ -180,6 +183,27 @@
           <div class="col-md-4">
             <label class="form-label">Expiry Date</label>
             <input class="form-control" type="date" [(ngModel)]="p.expiryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Nationality</label>
+            <input class="form-control" [(ngModel)]="p.nationality" placeholder="As on passport">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Date of Birth</label>
+            <input class="form-control" type="date" [(ngModel)]="p.dateOfBirth">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Place of Birth</label>
+            <input class="form-control" [(ngModel)]="p.placeOfBirth" placeholder="City / country">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Gender</label>
+            <select class="form-select" [(ngModel)]="p.gender">
+              <option value="">— Select —</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="X">Non-binary / Other</option>
+            </select>
           </div>
           <div class="col-md-4">
             <label class="form-label">Notes</label>

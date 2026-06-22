@@ -211,3 +211,35 @@
   animation: spin 1s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.invite-banner {
+  border: 1px solid var(--primary, #6366f1);
+  background: var(--primary-subtle, #eef2ff);
+  border-radius: var(--radius, 0.5rem);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    color: var(--primary, #6366f1);
+  }
+
+  .invite-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--border-color, #e2e8f0);
+    margin-top: 0.5rem;
+
+    &__actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+  }
+}

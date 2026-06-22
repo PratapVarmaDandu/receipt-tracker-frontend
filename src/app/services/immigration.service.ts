@@ -105,6 +105,11 @@ export interface PassportEntry {
   country?: string;
   issueDate?: string;
   expiryDate?: string;
+  // Additional passport-page fields (captured from a passport scan)
+  nationality?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  placeOfBirth?: string;
   notes?: string;
   documentIds?: number[];
 }
@@ -741,6 +746,15 @@ export class ImmigrationService {
     return this.http.post<ImmigrationCase>(`${this.base}/cases/join/${token}`, {}).pipe(
       tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/join/${token}`, t)),
       catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/join/${token}`, err, t); throw err; })
+    );
+  }
+
+  // Auth required — accept an invite from the in-app banner (by case id, no token)
+  acceptCaseInviteById(caseId: number): Observable<ImmigrationCase> {
+    const t = Date.now();
+    return this.http.post<ImmigrationCase>(`${this.base}/cases/${caseId}/accept-invite`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/accept-invite`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/accept-invite`, err, t); throw err; })
     );
   }
 
