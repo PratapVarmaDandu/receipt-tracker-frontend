@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImmOrgService } from '../../../services/imm-org.service';
-import { ImmOrg, ImmOrgMember, OrgPartnership } from '../../../models/imm-org.model';
+import { ImmOrg, ImmOrgMember, OrgPartnership, UpdateImmOrgRequest } from '../../../models/imm-org.model';
 import { ImmigrationCase, CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS, I9Record, CreateI9RecordRequest } from '../../../services/immigration.service';
 import { LoggerService } from '../../../services/logger.service';
 
@@ -59,6 +59,15 @@ export class EmployerDashboardComponent implements OnInit {
   // Org CSV export state (FEAT-M6)
   exportingCsv = false;
 
+  // Tab state
+  activeTab: 'cases' | 'team' | 'i9' | 'profile' = 'cases';
+
+  // Profile tab state
+  profileForm: UpdateImmOrgRequest = {};
+  profileSaving = false;
+  profileSaveSuccess = false;
+  profileSaveError: string | null = null;
+
   constructor(
     private immOrgService: ImmOrgService,
     private router: Router,
@@ -76,7 +85,9 @@ export class EmployerDashboardComponent implements OnInit {
       next: orgs => {
         this.employerOrgs = orgs.filter(o => o.orgType === 'EMPLOYER');
         this.loading = false;
-        if (this.employerOrgs.length > 0) this.selectOrg(this.employerOrgs[0]);
+        if (this.employerOrgs.length > 0) {
+          this.selectOrg(this.employerOrgs[0]);
+        }
       },
       error: err => {
         this.error = err?.error?.error || 'Failed to load organizations';
@@ -90,9 +101,51 @@ export class EmployerDashboardComponent implements OnInit {
     this.selectedOrg = org;
     this.i9Loaded = false;
     this.i9Records = [];
+    this.activeTab = 'cases';
+    this.populateProfileForm(org);
     this.loadCases();
     this.loadMembers();
     this.loadPartnerships();
+  }
+
+  setTab(tab: 'cases' | 'team' | 'i9' | 'profile'): void {
+    this.activeTab = tab;
+    if (tab === 'i9' && !this.i9Loaded) this.loadI9Records();
+  }
+
+  populateProfileForm(org: ImmOrg): void {
+    this.profileForm = {
+      name:         org.name,
+      contactName:  org.contactName  ?? '',
+      contactEmail: org.contactEmail ?? '',
+      address:      org.address      ?? '',
+      city:         org.city         ?? '',
+      stateCode:    org.stateCode    ?? '',
+      zipCode:      org.zipCode      ?? '',
+      einNumber:    org.einNumber    ?? '',
+      website:      org.website      ?? ''
+    };
+    this.profileSaveSuccess = false;
+    this.profileSaveError = null;
+  }
+
+  saveProfile(): void {
+    if (!this.selectedOrg) return;
+    this.profileSaving = true;
+    this.profileSaveSuccess = false;
+    this.profileSaveError = null;
+    this.immOrgService.updateOrgProfile(this.selectedOrg.id, this.profileForm).subscribe({
+      next: updated => {
+        this.selectedOrg = updated;
+        this.employerOrgs = this.employerOrgs.map(o => o.id === updated.id ? updated : o);
+        this.profileSaving = false;
+        this.profileSaveSuccess = true;
+      },
+      error: err => {
+        this.profileSaving = false;
+        this.profileSaveError = err?.error?.error || 'Failed to save profile';
+      }
+    });
   }
 
   loadCases(): void {
@@ -170,11 +223,6 @@ export class EmployerDashboardComponent implements OnInit {
   }
 
   // ── I-9 Compliance (FEAT-M4) ────────────────────────────────────────────
-
-  toggleI9Section(): void {
-    this.showI9Section = !this.showI9Section;
-    if (this.showI9Section && !this.i9Loaded) this.loadI9Records();
-  }
 
   loadI9Records(): void {
     if (!this.selectedOrg) return;

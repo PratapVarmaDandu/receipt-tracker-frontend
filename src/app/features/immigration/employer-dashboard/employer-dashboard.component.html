@@ -48,34 +48,59 @@
   </select>
 </div>
 
-<div *ngIf="!loading && selectedOrg" class="row g-4">
+<div *ngIf="!loading && selectedOrg">
 
-  <!-- Stats -->
-  <div class="col-12">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-value">{{ cases.length }}</div>
-        <div class="stat-label">Sponsored Cases</div>
+  <!-- Stats row -->
+  <div class="stats-row mb-4">
+    <div class="stat-card">
+      <div class="stat-value">{{ cases.length }}</div>
+      <div class="stat-label">Sponsored Cases</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ activeMembersCount() }}</div>
+      <div class="stat-label">Team Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ partnerships.length }}</div>
+      <div class="stat-label">Law Firm Partners</div>
+    </div>
+    <div class="stat-card" *ngIf="i9Loaded">
+      <div class="stat-value" [class.text-warning]="i9SummaryExpiring > 0" [class.text-danger]="i9SummaryExpired > 0">
+        {{ i9SummaryExpired > 0 ? i9SummaryExpired : i9SummaryExpiring }}
       </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ activeMembersCount() }}</div>
-        <div class="stat-label">Team Members</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ partnerships.length }}</div>
-        <div class="stat-label">Law Firm Partners</div>
-      </div>
-      <div class="stat-card" *ngIf="i9Loaded">
-        <div class="stat-value" [class.text-warning]="i9SummaryExpiring > 0" [class.text-danger]="i9SummaryExpired > 0">
-          {{ i9SummaryExpired > 0 ? i9SummaryExpired : i9SummaryExpiring }}
-        </div>
-        <div class="stat-label">{{ i9SummaryExpired > 0 ? 'I-9 Expired' : 'I-9 Expiring Soon' }}</div>
-      </div>
+      <div class="stat-label">{{ i9SummaryExpired > 0 ? 'I-9 Expired' : 'I-9 Expiring Soon' }}</div>
     </div>
   </div>
 
-  <!-- Cases table -->
-  <div class="col-lg-8">
+  <!-- Tab nav -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'cases'" (click)="setTab('cases')">
+        <i class="bi bi-briefcase me-1"></i>Cases
+        <span class="badge bg-secondary ms-1">{{ cases.length }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'team'" (click)="setTab('team')">
+        <i class="bi bi-people me-1"></i>Team &amp; Partners
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'i9'" (click)="setTab('i9')">
+        <i class="bi bi-shield-check me-1"></i>I-9 Compliance
+        <span *ngIf="i9Loaded && i9SummaryExpired > 0" class="badge bg-danger ms-1">{{ i9SummaryExpired }}</span>
+        <span *ngIf="i9Loaded && i9SummaryExpired === 0 && i9SummaryExpiring > 0" class="badge bg-warning text-dark ms-1">{{ i9SummaryExpiring }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
+        <i class="bi bi-building-gear me-1"></i>Company Profile
+      </button>
+    </li>
+  </ul>
+
+  <!-- ── Cases tab ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'cases'">
     <div class="card p-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="section-title mb-0">Sponsored Cases</h6>
@@ -115,191 +140,240 @@
     </div>
   </div>
 
-  <!-- Right column: partners + team -->
-  <div class="col-lg-4">
+  <!-- ── Team & Partners tab ────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'team'" class="row g-4">
 
     <!-- Law firm partners -->
-    <div class="card p-3 mb-3">
-      <h6 class="section-title">Law Firm Partners</h6>
-      <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
-        No law firm partners yet. Your attorney can initiate a partnership.
-      </div>
-      <div *ngFor="let p of partnerships" class="partner-row">
-        <span>{{ p.lawFirmOrgName }}</span>
-        <span class="badge" [ngClass]="p.status === 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'">
-          {{ p.status }}
-        </span>
+    <div class="col-lg-6">
+      <div class="card p-3">
+        <h6 class="section-title">Law Firm Partners</h6>
+        <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
+          No law firm partners yet. Your attorney can initiate a partnership.
+        </div>
+        <div *ngFor="let p of partnerships" class="partner-row">
+          <span>{{ p.lawFirmOrgName }}</span>
+          <span class="badge" [ngClass]="p.status === 'ACTIVE' ? 'bg-success' : 'bg-warning text-dark'">
+            {{ p.status }}
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- Team members -->
-    <div class="card p-3">
-      <h6 class="section-title">Team Members</h6>
-      <div *ngIf="inviteResult" class="alert alert-success alert-sm mb-2">{{ inviteResult }}</div>
-      <div *ngIf="inviteError" class="alert alert-danger alert-sm mb-2">{{ inviteError }}</div>
-      <div class="d-flex gap-2 mb-3">
-        <input class="form-control form-control-sm" [(ngModel)]="inviteEmail"
-               placeholder="Email address" (keydown.enter)="inviteMember()">
-        <button class="btn btn-primary btn-sm" (click)="inviteMember()" [disabled]="!inviteEmail.trim() || inviting">
-          <span *ngIf="inviting"><i class="bi bi-arrow-repeat spin"></i></span>
-          <span *ngIf="!inviting">Invite</span>
-        </button>
-      </div>
-      <div *ngFor="let m of members" class="member-row">
-        <div>
-          <div class="small fw-semibold">{{ m.email }}</div>
-          <div class="text-muted" style="font-size:.75rem">{{ m.role | titlecase }}</div>
+    <div class="col-lg-6">
+      <div class="card p-3">
+        <h6 class="section-title">Team Members</h6>
+        <div *ngIf="inviteResult" class="alert alert-success alert-sm mb-2">{{ inviteResult }}</div>
+        <div *ngIf="inviteError" class="alert alert-danger alert-sm mb-2">{{ inviteError }}</div>
+        <div class="d-flex gap-2 mb-3">
+          <input class="form-control form-control-sm" [(ngModel)]="inviteEmail"
+                 placeholder="Email address" (keydown.enter)="inviteMember()">
+          <button class="btn btn-primary btn-sm" (click)="inviteMember()" [disabled]="!inviteEmail.trim() || inviting">
+            <span *ngIf="inviting"><i class="bi bi-arrow-repeat spin"></i></span>
+            <span *ngIf="!inviting">Invite</span>
+          </button>
         </div>
-        <span class="badge" [ngClass]="m.status === 'ACTIVE' ? 'bg-success' : m.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary'">
-          {{ m.status | titlecase }}
-        </span>
+        <div *ngFor="let m of members" class="member-row">
+          <div>
+            <div class="small fw-semibold">{{ m.email }}</div>
+            <div class="text-muted" style="font-size:.75rem">{{ m.role | titlecase }}</div>
+          </div>
+          <span class="badge" [ngClass]="m.status === 'ACTIVE' ? 'bg-success' : m.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary'">
+            {{ m.status | titlecase }}
+          </span>
+        </div>
       </div>
     </div>
-
   </div>
 
-  <!-- ── I-9 Compliance Section (FEAT-M4) ────────────────────────────────── -->
-  <div class="col-12">
+  <!-- ── I-9 Compliance tab ─────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'i9'">
     <div class="card p-3">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-          <h6 class="section-title mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>I-9 Compliance</h6>
-          <span *ngIf="i9Loaded && i9SummaryExpired > 0" class="badge bg-danger">{{ i9SummaryExpired }} Expired</span>
-          <span *ngIf="i9Loaded && i9SummaryExpiring > 0 && i9SummaryExpired === 0" class="badge bg-warning text-dark">{{ i9SummaryExpiring }} Expiring Soon</span>
-        </div>
-        <button class="btn btn-sm btn-outline-secondary" (click)="toggleI9Section()">
-          <i class="bi" [ngClass]="showI9Section ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-          {{ showI9Section ? 'Hide' : 'Show' }}
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0"><i class="bi bi-shield-check me-2 text-primary"></i>I-9 Compliance</h6>
+        <button class="btn btn-outline-primary btn-sm" (click)="showAddI9 = true; addI9Error = null" *ngIf="!showAddI9">
+          <i class="bi bi-plus-lg me-1"></i>Add Record
         </button>
       </div>
 
-      <div *ngIf="showI9Section" class="mt-3">
-        <div *ngIf="i9Loading" class="text-center text-muted py-3">
-          <i class="bi bi-arrow-repeat spin me-1"></i>Loading I-9 records…
-        </div>
+      <div *ngIf="i9Loading" class="text-center text-muted py-3">
+        <i class="bi bi-arrow-repeat spin me-1"></i>Loading I-9 records…
+      </div>
 
-        <!-- Add I-9 form -->
-        <div *ngIf="showAddI9" class="card p-3 mb-3 bg-light border-0">
-          <h6 class="mb-3">Add I-9 Record</h6>
-          <div *ngIf="addI9Error" class="alert alert-danger alert-sm">{{ addI9Error }}</div>
-          <div class="row g-2">
-            <div class="col-md-6">
-              <label class="form-label form-label-sm">Employee Email <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" [(ngModel)]="i9Form.employeeEmail" placeholder="employee@company.com">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label form-label-sm">Full Name <span class="text-danger">*</span></label>
-              <input class="form-control form-control-sm" [(ngModel)]="i9Form.employeeName" placeholder="Full legal name">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label form-label-sm">Work Auth Type</label>
-              <input class="form-control form-control-sm" [(ngModel)]="i9Form.workAuthType" placeholder="e.g. H-1B, Green Card, Citizen">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label form-label-sm">Document Title</label>
-              <input class="form-control form-control-sm" [(ngModel)]="i9Form.documentTitle" placeholder="e.g. US Passport, EAD Card">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label form-label-sm">Document Number</label>
-              <input class="form-control form-control-sm" [(ngModel)]="i9Form.documentNumber">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label form-label-sm">Expiry Date</label>
-              <input class="form-control form-control-sm" type="date" [(ngModel)]="i9Form.expiryDate">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label form-label-sm">Verified At</label>
-              <input class="form-control form-control-sm" type="date" [(ngModel)]="i9Form.verifiedAt">
-            </div>
+      <!-- Add I-9 form -->
+      <div *ngIf="showAddI9" class="card p-3 mb-3 bg-light border-0">
+        <h6 class="mb-3">Add I-9 Record</h6>
+        <div *ngIf="addI9Error" class="alert alert-danger alert-sm">{{ addI9Error }}</div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Employee Email <span class="text-danger">*</span></label>
+            <input class="form-control form-control-sm" [(ngModel)]="i9Form.employeeEmail" placeholder="employee@company.com">
           </div>
-          <div class="d-flex gap-2 mt-3">
-            <button class="btn btn-secondary btn-sm" (click)="showAddI9 = false" [disabled]="addingI9">Cancel</button>
-            <button class="btn btn-primary btn-sm" (click)="submitAddI9()" [disabled]="!i9Form.employeeEmail || !i9Form.employeeName || addingI9">
-              <span *ngIf="addingI9"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
-              <span *ngIf="!addingI9">Save Record</span>
-            </button>
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Full Name <span class="text-danger">*</span></label>
+            <input class="form-control form-control-sm" [(ngModel)]="i9Form.employeeName" placeholder="Full legal name">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Work Auth Type</label>
+            <input class="form-control form-control-sm" [(ngModel)]="i9Form.workAuthType" placeholder="e.g. H-1B, Green Card, Citizen">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label form-label-sm">Document Title</label>
+            <input class="form-control form-control-sm" [(ngModel)]="i9Form.documentTitle" placeholder="e.g. US Passport, EAD Card">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Document Number</label>
+            <input class="form-control form-control-sm" [(ngModel)]="i9Form.documentNumber">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Expiry Date</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="i9Form.expiryDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label form-label-sm">Verified At</label>
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="i9Form.verifiedAt">
           </div>
         </div>
-
-        <!-- I-9 records table -->
-        <div *ngIf="!i9Loading && i9Records.length === 0 && !showAddI9" class="text-muted text-center py-3">
-          No I-9 records yet.
+        <div class="d-flex gap-2 mt-3">
+          <button class="btn btn-secondary btn-sm" (click)="showAddI9 = false" [disabled]="addingI9">Cancel</button>
+          <button class="btn btn-primary btn-sm" (click)="submitAddI9()" [disabled]="!i9Form.employeeEmail || !i9Form.employeeName || addingI9">
+            <span *ngIf="addingI9"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+            <span *ngIf="!addingI9">Save Record</span>
+          </button>
         </div>
-        <div *ngIf="!i9Loading && i9Records.length > 0" class="table-responsive">
-          <table class="table table-hover mb-2">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Work Auth</th>
-                <th>Document</th>
-                <th>Expiry</th>
-                <th>Verified</th>
-                <th>Status</th>
-                <th></th>
+      </div>
+
+      <!-- I-9 records table -->
+      <div *ngIf="!i9Loading && i9Records.length === 0 && !showAddI9" class="text-muted text-center py-3">
+        No I-9 records yet. Click "Add Record" to get started.
+      </div>
+      <div *ngIf="!i9Loading && i9Records.length > 0" class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Work Auth</th>
+              <th>Document</th>
+              <th>Expiry</th>
+              <th>Verified</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let r of i9Records">
+              <tr *ngIf="editingI9Id !== r.id">
+                <td>
+                  <div class="fw-semibold small">{{ r.employeeName }}</div>
+                  <div class="text-muted" style="font-size:.75rem">{{ r.employeeEmail }}</div>
+                </td>
+                <td class="small">{{ r.workAuthType || '—' }}</td>
+                <td class="small">
+                  <div>{{ r.documentTitle || '—' }}</div>
+                  <div class="text-muted" style="font-size:.75rem">{{ r.documentNumber }}</div>
+                </td>
+                <td class="small">{{ r.expiryDate ? (r.expiryDate | date:'mediumDate') : '—' }}</td>
+                <td class="small">{{ r.verifiedAt ? (r.verifiedAt | date:'mediumDate') : '—' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="i9StatusCss(r.status)">
+                    <i class="bi me-1" [ngClass]="r.status === 'CURRENT' ? 'bi-check-circle' : r.status === 'EXPIRING_SOON' ? 'bi-exclamation-circle' : 'bi-x-circle'"></i>
+                    {{ i9StatusLabel(r.status) }}
+                  </span>
+                </td>
+                <td><button class="btn btn-sm btn-outline-secondary" (click)="startEditI9(r)">Edit</button></td>
               </tr>
-            </thead>
-            <tbody>
-              <ng-container *ngFor="let r of i9Records">
-                <!-- View row -->
-                <tr *ngIf="editingI9Id !== r.id">
-                  <td>
-                    <div class="fw-semibold small">{{ r.employeeName }}</div>
-                    <div class="text-muted" style="font-size:.75rem">{{ r.employeeEmail }}</div>
-                  </td>
-                  <td class="small">{{ r.workAuthType || '—' }}</td>
-                  <td class="small">
-                    <div>{{ r.documentTitle || '—' }}</div>
-                    <div class="text-muted" style="font-size:.75rem">{{ r.documentNumber }}</div>
-                  </td>
-                  <td class="small">{{ r.expiryDate ? (r.expiryDate | date:'mediumDate') : '—' }}</td>
-                  <td class="small">{{ r.verifiedAt ? (r.verifiedAt | date:'mediumDate') : '—' }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="i9StatusCss(r.status)">
-                      <i class="bi me-1" [ngClass]="r.status === 'CURRENT' ? 'bi-check-circle' : r.status === 'EXPIRING_SOON' ? 'bi-exclamation-circle' : 'bi-x-circle'"></i>
-                      {{ i9StatusLabel(r.status) }}
-                    </span>
-                  </td>
-                  <td>
-                    <button class="btn btn-sm btn-outline-secondary" (click)="startEditI9(r)">Edit</button>
-                  </td>
-                </tr>
-                <!-- Inline edit row -->
-                <tr *ngIf="editingI9Id === r.id">
-                  <td colspan="7">
-                    <div class="p-2 bg-light rounded">
-                      <div class="row g-2">
-                        <div class="col-md-4">
-                          <input class="form-control form-control-sm" [(ngModel)]="editI9Form.workAuthType" placeholder="Work Auth Type">
-                        </div>
-                        <div class="col-md-4">
-                          <input class="form-control form-control-sm" [(ngModel)]="editI9Form.documentTitle" placeholder="Document Title">
-                        </div>
-                        <div class="col-md-4">
-                          <input class="form-control form-control-sm" [(ngModel)]="editI9Form.documentNumber" placeholder="Document #">
-                        </div>
-                        <div class="col-md-4">
-                          <label class="form-label form-label-sm mb-0">Expiry Date</label>
-                          <input class="form-control form-control-sm" type="date" [(ngModel)]="editI9Form.expiryDate">
-                        </div>
-                        <div class="col-md-4">
-                          <label class="form-label form-label-sm mb-0">Verified At</label>
-                          <input class="form-control form-control-sm" type="date" [(ngModel)]="editI9Form.verifiedAt">
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end gap-2">
-                          <button class="btn btn-primary btn-sm" (click)="saveEditI9(r.id)">Save</button>
-                          <button class="btn btn-secondary btn-sm" (click)="cancelEditI9()">Cancel</button>
-                        </div>
+              <tr *ngIf="editingI9Id === r.id">
+                <td colspan="7">
+                  <div class="p-2 bg-light rounded">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <input class="form-control form-control-sm" [(ngModel)]="editI9Form.workAuthType" placeholder="Work Auth Type">
+                      </div>
+                      <div class="col-md-4">
+                        <input class="form-control form-control-sm" [(ngModel)]="editI9Form.documentTitle" placeholder="Document Title">
+                      </div>
+                      <div class="col-md-4">
+                        <input class="form-control form-control-sm" [(ngModel)]="editI9Form.documentNumber" placeholder="Document #">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label form-label-sm mb-0">Expiry Date</label>
+                        <input class="form-control form-control-sm" type="date" [(ngModel)]="editI9Form.expiryDate">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label form-label-sm mb-0">Verified At</label>
+                        <input class="form-control form-control-sm" type="date" [(ngModel)]="editI9Form.verifiedAt">
+                      </div>
+                      <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button class="btn btn-primary btn-sm" (click)="saveEditI9(r.id)">Save</button>
+                        <button class="btn btn-secondary btn-sm" (click)="cancelEditI9()">Cancel</button>
                       </div>
                     </div>
-                  </td>
-                </tr>
-              </ng-container>
-            </tbody>
-          </table>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Company Profile tab ────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'profile'">
+    <div class="card p-4" style="max-width:700px">
+      <h6 class="section-title mb-4"><i class="bi bi-building-gear me-2"></i>Company Profile</h6>
+
+      <div *ngIf="profileSaveSuccess" class="alert alert-success alert-sm mb-3">
+        <i class="bi bi-check-circle me-1"></i>Profile saved successfully.
+      </div>
+      <div *ngIf="profileSaveError" class="alert alert-danger alert-sm mb-3">{{ profileSaveError }}</div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label form-label-sm">Organization Name <span class="text-danger">*</span></label>
+          <input class="form-control" [(ngModel)]="profileForm.name" placeholder="Acme Corp">
         </div>
 
-        <button *ngIf="!showAddI9" class="btn btn-outline-primary btn-sm" (click)="showAddI9 = true; addI9Error = null">
-          <i class="bi bi-plus-lg me-1"></i>Add I-9 Record
+        <div class="col-md-6">
+          <label class="form-label form-label-sm">Contact Name</label>
+          <input class="form-control" [(ngModel)]="profileForm.contactName" placeholder="Jane Smith">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label form-label-sm">Contact Email</label>
+          <input class="form-control" type="email" [(ngModel)]="profileForm.contactEmail" placeholder="hr@company.com">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label form-label-sm">Street Address</label>
+          <input class="form-control" [(ngModel)]="profileForm.address" placeholder="123 Main St">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label form-label-sm">City</label>
+          <input class="form-control" [(ngModel)]="profileForm.city" placeholder="San Francisco">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label form-label-sm">State</label>
+          <input class="form-control" [(ngModel)]="profileForm.stateCode" placeholder="CA" maxlength="10">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label form-label-sm">ZIP Code</label>
+          <input class="form-control" [(ngModel)]="profileForm.zipCode" placeholder="94105">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label form-label-sm">EIN (Employer Identification Number)</label>
+          <input class="form-control" [(ngModel)]="profileForm.einNumber" placeholder="12-3456789">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label form-label-sm">Website</label>
+          <input class="form-control" [(ngModel)]="profileForm.website" placeholder="https://company.com">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <button class="btn btn-primary" (click)="saveProfile()" [disabled]="profileSaving || !profileForm.name?.trim()">
+          <span *ngIf="profileSaving"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+          <span *ngIf="!profileSaving"><i class="bi bi-check-lg me-1"></i>Save Profile</span>
         </button>
       </div>
     </div>

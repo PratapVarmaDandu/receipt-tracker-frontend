@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImmOrgService } from '../../../services/imm-org.service';
-import { ImmOrg, ImmOrgMember, OrgPartnership, PartnershipInviteRequest } from '../../../models/imm-org.model';
+import { ImmOrg, ImmOrgMember, OrgPartnership, PartnershipInviteRequest, AttorneyProfile, BarNumber } from '../../../models/imm-org.model';
 import { ImmigrationService, ImmigrationCase, CASE_TYPE_LABELS, STATUS_LABELS, STATUS_CSS, CapSeasonSummary } from '../../../services/immigration.service';
 import { LoggerService } from '../../../services/logger.service';
 
@@ -41,6 +41,19 @@ export class AttorneyDashboardComponent implements OnInit {
   employerInviteResult: string | null = null;
   employerInviteError: string | null = null;
 
+  // Tab state
+  activeTab: 'cases' | 'employers' | 'team' | 'profile' = 'cases';
+
+  // Attorney profile tab state
+  attorneyProfile: AttorneyProfile | null = null;
+  profileLoaded = false;
+  profileLoading = false;
+  profileSaving = false;
+  profileSaveSuccess = false;
+  profileSaveError: string | null = null;
+  profileBio = '';
+  barNumbers: BarNumber[] = [];
+
   readonly caseTypeLabels = CASE_TYPE_LABELS;
   readonly statusLabels = STATUS_LABELS;
   readonly statusCss = STATUS_CSS;
@@ -77,10 +90,64 @@ export class AttorneyDashboardComponent implements OnInit {
     this.selectedOrg = org;
     this.activeFilter = null;
     this.capSeason = null;
+    this.activeTab = 'cases';
+    this.profileLoaded = false;
+    this.profileSaveSuccess = false;
+    this.profileSaveError = null;
     this.loadCases();
     this.loadMembers();
     this.loadPartnerships();
     this.loadCapSeason();
+  }
+
+  setTab(tab: 'cases' | 'employers' | 'team' | 'profile'): void {
+    this.activeTab = tab;
+    if (tab === 'profile' && !this.profileLoaded) this.loadAttorneyProfile();
+  }
+
+  loadAttorneyProfile(): void {
+    if (!this.selectedOrg) return;
+    this.profileLoading = true;
+    this.immOrgService.getAttorneyProfile(this.selectedOrg.id).subscribe({
+      next: p => {
+        this.attorneyProfile = p;
+        this.profileBio = p.bio ?? '';
+        this.barNumbers = Array.isArray(p.barNumbers) ? [...p.barNumbers] : [];
+        this.profileLoading = false;
+        this.profileLoaded = true;
+      },
+      error: () => { this.profileLoading = false; }
+    });
+  }
+
+  addBarNumber(): void {
+    this.barNumbers = [...this.barNumbers, { state: '', barNumber: '', admittedDate: '' }];
+  }
+
+  removeBarNumber(index: number): void {
+    this.barNumbers = this.barNumbers.filter((_, i) => i !== index);
+  }
+
+  saveAttorneyProfile(): void {
+    if (!this.selectedOrg) return;
+    this.profileSaving = true;
+    this.profileSaveSuccess = false;
+    this.profileSaveError = null;
+    const cleanedBars = this.barNumbers.filter(b => b.state.trim() || b.barNumber.trim());
+    this.immOrgService.updateAttorneyProfile(this.selectedOrg.id, {
+      barNumbers: cleanedBars,
+      bio: this.profileBio
+    }).subscribe({
+      next: p => {
+        this.attorneyProfile = p;
+        this.profileSaving = false;
+        this.profileSaveSuccess = true;
+      },
+      error: err => {
+        this.profileSaving = false;
+        this.profileSaveError = err?.error?.error || 'Failed to save profile';
+      }
+    });
   }
 
   loadCapSeason(): void {

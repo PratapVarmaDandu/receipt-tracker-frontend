@@ -5,6 +5,39 @@ export interface ImmOrg {
   ownerUserId: number;
   createdAt: string;
   myMemberId: number | null;
+  // Employer profile fields (null when not yet filled)
+  contactName?: string | null;
+  contactEmail?: string | null;
+  address?: string | null;
+  city?: string | null;
+  stateCode?: string | null;
+  zipCode?: string | null;
+  einNumber?: string | null;
+  website?: string | null;
+}
+
+export interface BarNumber { state: string; barNumber: string; admittedDate?: string; }
+
+export interface AttorneyProfile {
+  id: number | null;
+  immOrgMemberId: number | null;
+  barNumbers: BarNumber[];
+  bio: string | null;
+  signatureImageKey: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface UpdateImmOrgRequest {
+  name?: string;
+  contactName?: string;
+  contactEmail?: string;
+  address?: string;
+  city?: string;
+  stateCode?: string;
+  zipCode?: string;
+  einNumber?: string;
+  website?: string;
 }
 
 export interface ImmOrgMember {

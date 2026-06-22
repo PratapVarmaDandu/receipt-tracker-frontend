@@ -53,28 +53,52 @@
   </select>
 </div>
 
-<div *ngIf="!loading && selectedOrg" class="row g-4">
+<div *ngIf="!loading && selectedOrg">
 
-  <!-- Stats -->
-  <div class="col-12">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-value">{{ cases.length }}</div>
-        <div class="stat-label">Total Cases</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ activePartnerships().length }}</div>
-        <div class="stat-label">Employer Clients</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ pendingPartnerships().length }}</div>
-        <div class="stat-label">Pending Requests</div>
-      </div>
+  <!-- Stats row -->
+  <div class="stats-row mb-4">
+    <div class="stat-card">
+      <div class="stat-value">{{ cases.length }}</div>
+      <div class="stat-label">Total Cases</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ activePartnerships().length }}</div>
+      <div class="stat-label">Employer Clients</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ pendingPartnerships().length }}</div>
+      <div class="stat-label">Pending Requests</div>
     </div>
   </div>
 
-  <!-- Cases -->
-  <div class="col-lg-8">
+  <!-- Tab nav -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'cases'" (click)="setTab('cases')">
+        <i class="bi bi-briefcase me-1"></i>Cases
+        <span class="badge bg-secondary ms-1">{{ cases.length }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'employers'" (click)="setTab('employers')">
+        <i class="bi bi-building me-1"></i>Employers
+        <span *ngIf="activePartnerships().length" class="badge bg-secondary ms-1">{{ activePartnerships().length }}</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'team'" (click)="setTab('team')">
+        <i class="bi bi-people me-1"></i>Team
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="activeTab === 'profile'" (click)="setTab('profile')">
+        <i class="bi bi-person-vcard me-1"></i>Attorney Profile
+      </button>
+    </li>
+  </ul>
+
+  <!-- ── Cases tab ─────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'cases'">
     <div class="card p-3">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h6 class="section-title mb-0">Cases</h6>
@@ -117,86 +141,92 @@
     </div>
   </div>
 
-  <!-- Right column -->
-  <div class="col-lg-4">
+  <!-- ── Employers tab ──────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'employers'" class="row g-4">
 
     <!-- H-1B Cap Season widget -->
-    <div *ngIf="capSeason" class="card p-3 mb-3">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <h6 class="section-title mb-0">
-          <i class="bi bi-ballot me-1"></i>H-1B Cap Season
-          <span class="text-muted fw-normal ms-1">{{ capSeason.registrationYear }}</span>
-        </h6>
-        <span class="badge bg-secondary">{{ capSeason.total }} filed</span>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <div class="cap-stat cap-stat--selected">
-          <div class="cap-stat__value">{{ capSeason.selected }}</div>
-          <div class="cap-stat__label">Selected</div>
+    <div *ngIf="capSeason" class="col-12">
+      <div class="card p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="section-title mb-0">
+            <i class="bi bi-ballot me-1"></i>H-1B Cap Season
+            <span class="text-muted fw-normal ms-1">{{ capSeason.registrationYear }}</span>
+          </h6>
+          <span class="badge bg-secondary">{{ capSeason.total }} filed</span>
         </div>
-        <div class="cap-stat cap-stat--pending">
-          <div class="cap-stat__value">{{ capSeason.pendingResult }}</div>
-          <div class="cap-stat__label">Pending</div>
-        </div>
-        <div class="cap-stat cap-stat--not-selected">
-          <div class="cap-stat__value">{{ capSeason.notSelected }}</div>
-          <div class="cap-stat__label">Not Selected</div>
+        <div class="d-flex gap-2 flex-wrap">
+          <div class="cap-stat cap-stat--selected">
+            <div class="cap-stat__value">{{ capSeason.selected }}</div>
+            <div class="cap-stat__label">Selected</div>
+          </div>
+          <div class="cap-stat cap-stat--pending">
+            <div class="cap-stat__value">{{ capSeason.pendingResult }}</div>
+            <div class="cap-stat__label">Pending</div>
+          </div>
+          <div class="cap-stat cap-stat--not-selected">
+            <div class="cap-stat__value">{{ capSeason.notSelected }}</div>
+            <div class="cap-stat__label">Not Selected</div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Employer clients -->
-    <div class="card p-3 mb-3">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <h6 class="section-title mb-0">Employer Clients</h6>
-        <button class="btn btn-xs btn-primary" (click)="showInviteEmployer = !showInviteEmployer">
-          <i class="bi bi-building-add me-1"></i>Invite Employer
-        </button>
-      </div>
-
-      <!-- Invite employer form -->
-      <div *ngIf="showInviteEmployer" class="invite-employer-form mb-3">
-        <div *ngIf="employerInviteResult" class="alert alert-success alert-sm mb-2">{{ employerInviteResult }}</div>
-        <div *ngIf="employerInviteError" class="alert alert-danger alert-sm mb-2">{{ employerInviteError }}</div>
-        <p class="text-muted small mb-2">
-          Enter the employer's email. They'll receive a link to complete their company profile and activate the partnership.
-        </p>
-        <div class="d-flex gap-2">
-          <input class="form-control form-control-sm" [(ngModel)]="employerInviteEmail"
-                 type="email" name="employer-invite-email" autocomplete="off"
-                 placeholder="employer@company.com"
-                 (keydown.enter)="sendEmployerInvite()">
-          <button class="btn btn-primary btn-sm" (click)="sendEmployerInvite()"
-                  [disabled]="!employerInviteEmail.trim() || sendingEmployerInvite">
-            <span *ngIf="sendingEmployerInvite"><i class="bi bi-arrow-repeat spin"></i></span>
-            <span *ngIf="!sendingEmployerInvite">Send</span>
+    <div class="col-12">
+      <div class="card p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="section-title mb-0">Employer Clients</h6>
+          <button class="btn btn-xs btn-primary" (click)="showInviteEmployer = !showInviteEmployer">
+            <i class="bi bi-building-add me-1"></i>Invite Employer
           </button>
         </div>
-      </div>
 
-      <!-- Pending invites -->
-      <div *ngIf="pendingPartnerships().length > 0" class="mb-2">
-        <div *ngFor="let p of pendingPartnerships()" class="partner-row">
-          <span>
-            <span *ngIf="p.employerOrgId">{{ p.employerOrgName }}</span>
-            <span *ngIf="!p.employerOrgId" class="text-muted fst-italic">{{ p.inviteEmail }}</span>
-            <span class="badge bg-warning text-dark ms-1">Pending</span>
-          </span>
-          <button *ngIf="p.employerOrgId" class="btn btn-xs btn-success" (click)="acceptPartnership(p.id)">Accept</button>
+        <!-- Invite employer form -->
+        <div *ngIf="showInviteEmployer" class="invite-employer-form mb-3">
+          <div *ngIf="employerInviteResult" class="alert alert-success alert-sm mb-2">{{ employerInviteResult }}</div>
+          <div *ngIf="employerInviteError" class="alert alert-danger alert-sm mb-2">{{ employerInviteError }}</div>
+          <p class="text-muted small mb-2">
+            Enter the employer's email. They'll receive a link to complete their company profile and activate the partnership.
+          </p>
+          <div class="d-flex gap-2">
+            <input class="form-control form-control-sm" [(ngModel)]="employerInviteEmail"
+                   type="email" name="employer-invite-email" autocomplete="off"
+                   placeholder="employer@company.com"
+                   (keydown.enter)="sendEmployerInvite()">
+            <button class="btn btn-primary btn-sm" (click)="sendEmployerInvite()"
+                    [disabled]="!employerInviteEmail.trim() || sendingEmployerInvite">
+              <span *ngIf="sendingEmployerInvite"><i class="bi bi-arrow-repeat spin"></i></span>
+              <span *ngIf="!sendingEmployerInvite">Send</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pending invites -->
+        <div *ngIf="pendingPartnerships().length > 0" class="mb-2">
+          <div *ngFor="let p of pendingPartnerships()" class="partner-row">
+            <span>
+              <span *ngIf="p.employerOrgId">{{ p.employerOrgName }}</span>
+              <span *ngIf="!p.employerOrgId" class="text-muted fst-italic">{{ p.inviteEmail }}</span>
+              <span class="badge bg-warning text-dark ms-1">Pending</span>
+            </span>
+            <button *ngIf="p.employerOrgId" class="btn btn-xs btn-success" (click)="acceptPartnership(p.id)">Accept</button>
+          </div>
+        </div>
+
+        <div *ngFor="let p of activePartnerships()" class="partner-row">
+          <span>{{ p.employerOrgName }}</span>
+          <button class="btn btn-xs btn-outline-danger" (click)="endPartnership(p.id)">End</button>
+        </div>
+        <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
+          No employer partnerships yet. Use "Invite Employer" to add one.
         </div>
       </div>
-
-      <div *ngFor="let p of activePartnerships()" class="partner-row">
-        <span>{{ p.employerOrgName }}</span>
-        <button class="btn btn-xs btn-outline-danger" (click)="endPartnership(p.id)">End</button>
-      </div>
-      <div *ngIf="partnerships.length === 0" class="text-muted small py-2">
-        No employer partnerships yet. Use "Invite Employer" to add one.
-      </div>
     </div>
+  </div>
 
-    <!-- Team -->
-    <div class="card p-3">
+  <!-- ── Team tab ───────────────────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'team'">
+    <div class="card p-3" style="max-width:600px">
       <h6 class="section-title">Team Members</h6>
       <div *ngIf="inviteResult" class="alert alert-success alert-sm mb-2">{{ inviteResult }}</div>
       <div *ngIf="inviteError" class="alert alert-danger alert-sm mb-2">{{ inviteError }}</div>
@@ -224,6 +254,75 @@
         </span>
       </div>
     </div>
-
   </div>
+
+  <!-- ── Attorney Profile tab ───────────────────────────────────────────────── -->
+  <div *ngIf="activeTab === 'profile'">
+    <div class="card p-4" style="max-width:700px">
+      <h6 class="section-title mb-4"><i class="bi bi-person-vcard me-2"></i>Attorney Profile</h6>
+
+      <div *ngIf="profileLoading" class="text-center text-muted py-4">
+        <i class="bi bi-arrow-repeat spin me-1"></i>Loading profile…
+      </div>
+
+      <div *ngIf="!profileLoading">
+        <div *ngIf="profileSaveSuccess" class="alert alert-success alert-sm mb-3">
+          <i class="bi bi-check-circle me-1"></i>Profile saved successfully.
+        </div>
+        <div *ngIf="profileSaveError" class="alert alert-danger alert-sm mb-3">{{ profileSaveError }}</div>
+
+        <!-- Bio -->
+        <div class="mb-4">
+          <label class="form-label">Bio / Professional Summary</label>
+          <textarea class="form-control" [(ngModel)]="profileBio" rows="4"
+                    placeholder="Brief professional bio shown on case reports and documents…"></textarea>
+        </div>
+
+        <!-- Bar numbers -->
+        <div class="mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label mb-0">Bar Admissions</label>
+            <button class="btn btn-xs btn-outline-primary" (click)="addBarNumber()">
+              <i class="bi bi-plus-lg me-1"></i>Add
+            </button>
+          </div>
+
+          <div *ngIf="barNumbers.length === 0" class="text-muted small py-2">
+            No bar admissions added yet.
+          </div>
+
+          <div *ngFor="let b of barNumbers; let i = index" class="row g-2 mb-2 align-items-center">
+            <div class="col-3">
+              <input class="form-control form-control-sm" [(ngModel)]="b.state"
+                     placeholder="State" maxlength="10">
+            </div>
+            <div class="col-4">
+              <input class="form-control form-control-sm" [(ngModel)]="b.barNumber"
+                     placeholder="Bar number">
+            </div>
+            <div class="col-4">
+              <input class="form-control form-control-sm" type="date" [(ngModel)]="b.admittedDate"
+                     title="Date admitted">
+            </div>
+            <div class="col-1 text-end">
+              <button class="btn btn-xs btn-outline-danger" (click)="removeBarNumber(i)" title="Remove">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="barNumbers.length > 0" class="text-muted" style="font-size:.75rem">
+            State &nbsp;·&nbsp; Bar number &nbsp;·&nbsp; Date admitted
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <button class="btn btn-primary" (click)="saveAttorneyProfile()" [disabled]="profileSaving">
+            <span *ngIf="profileSaving"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+            <span *ngIf="!profileSaving"><i class="bi bi-check-lg me-1"></i>Save Profile</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

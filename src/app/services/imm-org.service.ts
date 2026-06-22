@@ -5,7 +5,8 @@ import { environment } from '../../environments/environment';
 import {
   ImmOrg, ImmOrgMember, OrgPartnership,
   CreateImmOrgRequest, InviteMemberRequest, CreatePartnershipRequest,
-  PartnershipInviteRequest, PartnershipJoinInfo, EmployerOnboardRequest
+  PartnershipInviteRequest, PartnershipJoinInfo, EmployerOnboardRequest,
+  AttorneyProfile, BarNumber, UpdateImmOrgRequest
 } from '../models/imm-org.model';
 import { ImmigrationCase, I9Record, CreateI9RecordRequest } from './immigration.service';
 
@@ -78,6 +79,18 @@ export class ImmOrgService {
 
   completeOnboarding(token: string, req: EmployerOnboardRequest): Observable<OrgPartnership> {
     return this.http.post<OrgPartnership>(`${BASE}/api/immigration/partnerships/onboard/${token}`, req, OPTS);
+  }
+
+  updateOrgProfile(orgId: number, req: UpdateImmOrgRequest): Observable<ImmOrg> {
+    return this.http.put<ImmOrg>(`${BASE}/api/immigration/orgs/${orgId}`, req, OPTS);
+  }
+
+  getAttorneyProfile(orgId: number): Observable<AttorneyProfile> {
+    return this.http.get<AttorneyProfile>(`${BASE}/api/immigration/orgs/${orgId}/attorney-profile`, OPTS);
+  }
+
+  updateAttorneyProfile(orgId: number, req: { barNumbers?: BarNumber[]; bio?: string }): Observable<AttorneyProfile> {
+    return this.http.put<AttorneyProfile>(`${BASE}/api/immigration/orgs/${orgId}/attorney-profile`, req, OPTS);
   }
 
   // ── FEAT-M4: I-9 Compliance ───────────────────────────────────────────────
