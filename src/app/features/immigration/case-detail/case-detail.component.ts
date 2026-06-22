@@ -166,6 +166,9 @@ export class CaseDetailComponent implements OnInit {
   approvingPackage: number | null = null;       // packageId being approved
   expandedPackage: number | null = null;
 
+  // Pre-computed completeness entries keyed by packageId — prevents new-object-per-CD-cycle
+  pkgCompletenessMap: Record<number, { owner: string; pct: number }[]> = {};
+
   // PDF generation state — keyed by packageId
   packets: Record<number, GeneratedPdfPacket[]> = {};
   generatingPdf: number | null = null;          // packageId
@@ -236,6 +239,7 @@ export class CaseDetailComponent implements OnInit {
     this.immigrationService.listPackages(this.caseId).subscribe({
       next: pkgs => {
         this.packages = pkgs;
+        this.cacheCompletenessEntries(pkgs);
         this.packagesLoaded = true;
         this.packagesLoading = false;
         pkgs.filter(p => p.status === 'GENERATED' || p.status === 'ATTORNEY_APPROVED')
@@ -261,6 +265,7 @@ export class CaseDetailComponent implements OnInit {
     }).subscribe({
       next: pkg => {
         this.packages.unshift(pkg);
+        this.cacheCompletenessEntries([pkg]);
         this.showCreatePackagePanel = false;
         this.newPackageName = '';
         this.newPackageFormTypes = [];
@@ -279,6 +284,7 @@ export class CaseDetailComponent implements OnInit {
       next: updated => {
         const idx = this.packages.findIndex(p => p.id === pkg.id);
         if (idx >= 0) this.packages[idx] = updated;
+        this.cacheCompletenessEntries([updated]);
         this.sendingQuestionnaires = null;
       },
       error: () => { this.sendingQuestionnaires = null; }
@@ -291,6 +297,7 @@ export class CaseDetailComponent implements OnInit {
       next: updated => {
         const idx = this.packages.findIndex(p => p.id === pkg.id);
         if (idx >= 0) this.packages[idx] = updated;
+        this.cacheCompletenessEntries([updated]);
         this.approvingPackage = null;
       },
       error: () => { this.approvingPackage = null; }
@@ -314,9 +321,15 @@ export class CaseDetailComponent implements OnInit {
     return `/immigration/packages/questionnaire/${token}`;
   }
 
-  packageCompletenessEntries(pkg: FilingPackage): { owner: string; pct: number }[] {
-    return Object.entries(pkg.completenessPercent || {}).map(([owner, pct]) => ({ owner, pct }));
+  private cacheCompletenessEntries(pkgs: FilingPackage[]): void {
+    pkgs.forEach(pkg => {
+      this.pkgCompletenessMap[pkg.id] = Object.entries(pkg.completenessPercent || {})
+          .map(([owner, pct]) => ({ owner, pct }));
+    });
   }
+
+  trackPackageById(_: number, pkg: FilingPackage): number { return pkg.id; }
+  trackEntryByOwner(_: number, e: { owner: string; pct: number }): string { return e.owner; }
 
   // Tasks tab state (FEAT-QW8)
   tasks: CaseTask[] = [];

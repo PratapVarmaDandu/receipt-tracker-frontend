@@ -1164,7 +1164,7 @@
     </div>
 
     <!-- Package list -->
-    <div *ngFor="let pkg of packages" class="card mb-3">
+    <div *ngFor="let pkg of packages; trackBy: trackPackageById" class="card mb-3">
       <div class="card-body">
 
         <div class="d-flex align-items-start justify-content-between">
@@ -1183,10 +1183,10 @@
         </div>
 
         <!-- Completeness bars -->
-        <div *ngFor="let entry of packageCompletenessEntries(pkg)" class="d-flex align-items-center gap-2 mb-1 small">
+        <div *ngFor="let entry of pkgCompletenessMap[pkg.id] || []; trackBy: trackEntryByOwner" class="d-flex align-items-center gap-2 mb-1 small">
           <span class="text-muted" style="min-width:90px">{{ entry.owner | titlecase }}</span>
           <div class="flex-fill bg-light rounded" style="height:6px">
-            <div class="bg-primary rounded" [style.width.%]="entry.pct" style="height:6px;transition:width .3s"></div>
+            <div class="bg-primary rounded" [style.width.%]="entry.pct" style="height:6px"></div>
           </div>
           <span class="text-muted" style="min-width:2.5rem;text-align:right">{{ entry.pct }}%</span>
         </div>
