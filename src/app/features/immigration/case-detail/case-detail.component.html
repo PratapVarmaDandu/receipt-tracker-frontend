@@ -54,23 +54,25 @@
   <a routerLink="/immigration" class="btn-back">
     <i class="bi bi-arrow-left"></i> Cases
   </a>
-  <div *ngIf="!caseLoading && case" class="d-flex align-items-center gap-2 flex-wrap flex-1">
-    <h2 class="mb-0">{{ case.caseNumber }}</h2>
-    <span class="badge" [ngClass]="statusCss[case.status]">
-      {{ statusLabels[case.status] || case.status }}
-    </span>
-    <span *ngIf="case.callerRelationship" class="role-badge role-badge--{{case.callerRelationship | lowercase}}">
-      {{ case.callerRelationship | titlecase }}
-    </span>
+  <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 flex-1 min-w-0">
+    <div *ngIf="!caseLoading && case" class="d-flex align-items-center gap-2 flex-wrap">
+      <h2 class="mb-0" style="font-size:clamp(1rem,4vw,1.5rem)">{{ case.caseNumber }}</h2>
+      <span class="badge" [ngClass]="statusCss[case.status]">
+        {{ statusLabels[case.status] || case.status }}
+      </span>
+      <span *ngIf="case.callerRelationship" class="role-badge role-badge--{{case.callerRelationship | lowercase}}">
+        {{ case.callerRelationship | titlecase }}
+      </span>
+    </div>
+    <span *ngIf="caseLoading" class="text-muted">Loading…</span>
   </div>
-  <span *ngIf="caseLoading" class="text-muted">Loading…</span>
   <!-- Org nav buttons — always visible for employer/attorney (item 4) -->
-  <div class="d-flex gap-2" *ngIf="!caseLoading">
+  <div class="d-flex gap-2 flex-shrink-0" *ngIf="!caseLoading">
     <a *ngIf="isEmployer" routerLink="/immigration/employer" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-building me-1"></i>Employer
+      <i class="bi bi-building me-1"></i><span class="d-none d-sm-inline">Employer</span>
     </a>
     <a *ngIf="isAttorney" routerLink="/immigration/attorney" class="btn btn-outline-secondary btn-sm">
-      <i class="bi bi-person-workspace me-1"></i>Attorney
+      <i class="bi bi-person-workspace me-1"></i><span class="d-none d-sm-inline">Attorney</span>
     </a>
   </div>
 </div>
@@ -268,7 +270,7 @@
           <label class="form-label mb-0 fw-semibold" style="white-space:nowrap">
             <i class="bi bi-arrow-repeat me-1"></i>Change Status
           </label>
-          <select class="form-select form-select-sm" [(ngModel)]="statusChangeTarget" style="max-width:240px">
+          <select class="form-select form-select-sm flex-grow-1" [(ngModel)]="statusChangeTarget" style="max-width:240px;min-width:0">
             <option value="">— select next status —</option>
             <option *ngFor="let s of allowedTransitions()" [value]="s">{{ statusLabels[s] || s }}</option>
           </select>
@@ -276,7 +278,7 @@
                   [disabled]="!statusChangeTarget || updatingStatus">
             <i *ngIf="updatingStatus" class="bi bi-arrow-repeat spin me-1"></i>Update
           </button>
-          <button class="btn btn-sm btn-link p-0 ms-1" (click)="setTab('timeline')" title="Log progress event">
+          <button class="btn btn-sm btn-link p-0" (click)="setTab('timeline')" title="Log progress event">
             <i class="bi bi-clock-history me-1"></i>Add Timeline Event
           </button>
         </div>
@@ -638,7 +640,7 @@
         No status changes recorded yet.
       </div>
       <div class="sh-list">
-        <div *ngFor="let h of statusHistory" class="sh-row d-flex align-items-center gap-2">
+        <div *ngFor="let h of statusHistory" class="sh-row d-flex align-items-start flex-wrap gap-1">
           <span class="sh-arrow flex-grow-1">
             <span class="badge" [ngClass]="statusCss[h.fromStatus || ''] || 'bg-secondary'">
               {{ statusLabel(h.fromStatus) }}
@@ -648,7 +650,7 @@
               {{ statusLabel(h.toStatus) }}
             </span>
           </span>
-          <span class="text-muted sh-meta" style="font-size:.78rem;white-space:nowrap">
+          <span class="text-muted sh-meta" style="font-size:.78rem">
             {{ h.changedByName || 'System' }} · {{ h.changedAt | date:'short' }}
           </span>
         </div>
@@ -660,7 +662,7 @@
   <!-- ── Timeline ──────────────────────────────────────────────────────── -->
   <div *ngIf="activeTab === 'timeline'">
 
-    <div class="d-flex gap-2 justify-content-end mb-3">
+    <div class="d-flex gap-2 justify-content-end flex-wrap mb-3">
       <button class="btn btn-sm btn-outline-secondary" (click)="downloadTimeline()" [disabled]="downloadingTimeline">
         <span *ngIf="downloadingTimeline"><i class="bi bi-arrow-repeat spin me-1"></i></span>
         <span *ngIf="!downloadingTimeline"><i class="bi bi-download me-1"></i>Export PDF</span>
@@ -801,28 +803,30 @@
 
     <div *ngFor="let f of forms" class="card mb-3">
       <!-- Form card header row -->
-      <div class="d-flex align-items-center justify-content-between p-3 gap-3">
-        <div class="min-w-0">
-          <div class="fw-semibold">{{ f.formTypeLabel }}</div>
-          <div class="text-muted" style="font-size:.78rem;margin-top:.1rem">{{ f.formType }}</div>
-        </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          <div class="completeness-wrap">
-            <div class="completeness-bar">
-              <div class="completeness-fill" [style.width.%]="f.completeness"></div>
-            </div>
-            <span class="completeness-label">{{ f.completeness }}%</span>
+      <div class="p-3">
+        <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+          <div class="min-w-0">
+            <div class="fw-semibold">{{ f.formTypeLabel }}</div>
+            <div class="text-muted" style="font-size:.78rem;margin-top:.1rem">{{ f.formType }}</div>
           </div>
-          <span class="badge" [ngClass]="formStatusCss[f.status]">
-            {{ formStatusLabels[f.status] || f.status }}
-          </span>
-          <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary" (click)="openFormShare(f)">
-            <i class="bi bi-share me-1"></i>Share
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" (click)="toggleFieldView(f.id)">
-            <i class="bi" [ngClass]="expandedFormId === f.id ? 'bi-chevron-up' : 'bi-list-ul'"></i>
-            {{ expandedFormId === f.id ? 'Hide' : 'Fields' }}
-          </button>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="completeness-wrap">
+              <div class="completeness-bar">
+                <div class="completeness-fill" [style.width.%]="f.completeness"></div>
+              </div>
+              <span class="completeness-label">{{ f.completeness }}%</span>
+            </div>
+            <span class="badge" [ngClass]="formStatusCss[f.status]">
+              {{ formStatusLabels[f.status] || f.status }}
+            </span>
+            <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary" (click)="openFormShare(f)">
+              <i class="bi bi-share me-1"></i>Share
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="toggleFieldView(f.id)">
+              <i class="bi" [ngClass]="expandedFormId === f.id ? 'bi-chevron-up' : 'bi-list-ul'"></i>
+              {{ expandedFormId === f.id ? 'Hide' : 'Fields' }}
+            </button>
+          </div>
         </div>
       </div>
 

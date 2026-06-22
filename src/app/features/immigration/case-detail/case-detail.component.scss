@@ -13,6 +13,8 @@
   &--viewer      { background: #f1f5f9; color: #64748b; }
 }
 
+.case-number { font-weight: 600; font-size: 0.9rem; }
+
 .page-header {
   display: flex;
   align-items: center;
@@ -539,3 +541,130 @@
   font-weight: 600;
 }
 .uscis-status__value { flex: 1; }
+
+// ── Mobile responsive (≤ 767px) ───────────────────────────────────────────
+@media (max-width: 767.98px) {
+
+  // Page header: stack on two lines
+  .page-header {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+
+    h2 { font-size: 1.15rem; }
+
+    // Nav buttons row drops to full-width below the title row
+    > div:last-child {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+  }
+
+  // Tab bar: horizontal scroll instead of overflow/wrap
+  .tab-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+    margin-bottom: 1rem;
+
+    button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+  }
+
+  // Tab content: remove extra padding from cards on narrow screens
+  .tab-content .card { padding: 0.75rem !important; }
+
+  // Overview: status-change row stacks the select full-width
+  .tab-content .bg-light.rounded {
+    .d-flex.align-items-center.gap-2.flex-wrap {
+      select { max-width: 100% !important; width: 100%; }
+    }
+  }
+
+  // RFE banner: stack icon + body on very narrow screens
+  .rfe-banner {
+    flex-wrap: wrap;
+    &__actions { width: 100%; margin-top: 0.5rem; }
+  }
+
+  // Key dates: label stays on one line, date + badge wrap below
+  .kd-row {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    .kd-label { flex-basis: 100%; }
+    .kd-date, .kd-badge { font-size: 0.78rem; }
+  }
+
+  // Timeline: header buttons stack on two lines
+  .timeline-list + div,
+  .tab-content > div > .d-flex.gap-2.justify-content-end.mb-3 {
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    button { flex: 1 1 auto; font-size: 0.8rem; }
+  }
+
+  // Timeline item: delete button always visible (hover doesn't work on touch)
+  .timeline-delete { opacity: 1; }
+
+  // Timeline header: title + date stack
+  .timeline-header { flex-direction: column; gap: 0.1rem; }
+  .timeline-date   { font-size: 0.75rem; }
+
+  // Forms tab: card header stacks completeness + actions
+  .tab-content .card .d-flex.align-items-center.justify-content-between.p-3.gap-3 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+
+    > div:last-child {
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+
+      button { flex: 1 1 auto; font-size: 0.8rem; }
+    }
+  }
+
+  // Status history: badges + arrow can wrap
+  .sh-row { flex-wrap: wrap; gap: 0.3rem; }
+  .sh-meta { width: 100%; margin-top: 0.15rem; }
+
+  // USCIS status label: relax min-width so it doesn't push value off-screen
+  .uscis-status__label { min-width: 80px; }
+
+  // Messaging: send row textarea gets full width
+  .msg-send-row { flex-direction: column; align-items: stretch; }
+  .msg-send-row .btn { align-self: flex-end; margin-top: 0.5rem; margin-left: 0 !important; }
+
+  // Profile sub-tabs: horizontal scroll (already uses overflow-x:auto, just ensure sizing)
+  .profile-subtab-bar button {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  // Filing packages: completeness owner label narrower
+  .tab-content .small[style*="min-width:90px"] { min-width: 60px !important; }
+
+  // Task row: edit/delete buttons stay visible
+  .task-row .d-flex.gap-1.flex-shrink-0 {
+    flex-shrink: 0;
+    button { padding: 0.2rem 0.4rem; }
+  }
+
+  // Checklist: doc picker row stacks
+  .tab-content .d-flex.align-items-center.gap-2.flex-wrap.mb-2 {
+    select { max-width: 100% !important; width: 100%; }
+  }
+
+  // Consent modal: already responsive, just tighten padding
+  .consent-modal-card { max-width: 100%; margin: 0 0.5rem; }
+  .consent-modal-header,
+  .consent-modal-body,
+  .consent-modal-footer { padding-left: 1rem; padding-right: 1rem; }
+}
