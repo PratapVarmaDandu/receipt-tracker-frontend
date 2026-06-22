@@ -50,6 +50,6 @@ export interface EmployerOnboardRequest {
 }
 
 export interface CreateImmOrgRequest { name: string; orgType: string; }
-export interface InviteMemberRequest { email: string; }
+export interface InviteMemberRequest { email: string; role: string; }
 export interface CreatePartnershipRequest { employerOrgId: number; lawFirmOrgId: number; }
 export interface PartnershipInviteRequest { lawFirmOrgId: number; employerEmail: string; }

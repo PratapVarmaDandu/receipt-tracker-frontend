@@ -204,6 +204,11 @@
         <input class="form-control form-control-sm" [(ngModel)]="inviteEmail"
                name="team-member-email" autocomplete="off"
                placeholder="Email address" (keydown.enter)="inviteMember()">
+        <select class="form-select form-select-sm" [(ngModel)]="inviteRole" name="team-member-role" style="min-width:130px">
+          <option value="ATTORNEY">Attorney</option>
+          <option value="PARALEGAL">Paralegal</option>
+          <option value="CASE_VIEWER">Case Viewer</option>
+        </select>
         <button class="btn btn-primary btn-sm" (click)="inviteMember()" [disabled]="!inviteEmail.trim() || inviting">
           <span *ngIf="inviting"><i class="bi bi-arrow-repeat spin"></i></span>
           <span *ngIf="!inviting">Invite</span>
