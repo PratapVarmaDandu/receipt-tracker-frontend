@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, timeout } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggerService } from './logger.service';
 
@@ -1237,6 +1237,7 @@ export class ImmigrationService {
   createPackage(caseId: number, req: CreatePackageRequest): Observable<FilingPackage> {
     const t = Date.now();
     return this.http.post<FilingPackage>(`${this.base}/cases/${caseId}/packages`, req).pipe(
+      timeout(45000),
       tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/cases/${caseId}/packages`, t)),
       catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/cases/${caseId}/packages`, err, t); throw err; })
     );
@@ -1245,6 +1246,7 @@ export class ImmigrationService {
   listPackages(caseId: number): Observable<FilingPackage[]> {
     const t = Date.now();
     return this.http.get<FilingPackage[]>(`${this.base}/cases/${caseId}/packages`).pipe(
+      timeout(45000),
       tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages`, t)),
       catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages`, err, t); throw err; })
     );
