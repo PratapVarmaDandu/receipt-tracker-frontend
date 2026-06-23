@@ -79,6 +79,40 @@
 
 <div *ngIf="caseError" class="alert alert-danger">{{ caseError }}</div>
 
+<!-- ── Case Progress Tracker ─────────────────────────────────────────────── -->
+<div *ngIf="!caseLoading && case" class="case-tracker card mb-3">
+
+  <!-- Terminal: DENIED or WITHDRAWN -->
+  <div *ngIf="isTerminalStatus" class="tracker-terminal">
+    <div class="tracker-terminal__icon" [class.tracker-terminal__icon--denied]="case.status === 'DENIED'">
+      <i class="bi" [ngClass]="case.status === 'DENIED' ? 'bi-x-circle-fill' : 'bi-dash-circle-fill'"></i>
+    </div>
+    <div>
+      <div class="tracker-terminal__title">Case {{ case.status === 'DENIED' ? 'Denied' : 'Withdrawn' }}</div>
+      <div class="tracker-terminal__sub">This case has been closed without approval.</div>
+    </div>
+  </div>
+
+  <!-- Normal progress steps -->
+  <div *ngIf="!isTerminalStatus" class="tracker-steps-wrap">
+    <ng-container *ngFor="let step of TRACKER_STEPS; let i = index; let last = last">
+      <div class="tracker-step"
+           [class.is-done]="isStepDone(i)"
+           [class.is-active]="isStepActive(i)"
+           [class.is-rfe]="isRfeStep(i)">
+        <div class="tracker-step__node">
+          <i class="bi" [ngClass]="isStepDone(i) ? 'bi-check-lg' : step.icon"></i>
+          <span *ngIf="isRfeStep(i)" class="tracker-rfe-dot"></span>
+        </div>
+        <div class="tracker-step__label">{{ step.label }}</div>
+        <div *ngIf="isRfeStep(i)" class="tracker-step__sub">RFE</div>
+      </div>
+      <div *ngIf="!last" class="tracker-connector" [class.is-filled]="isStepDone(i)"></div>
+    </ng-container>
+  </div>
+
+</div>
+
 <!-- Tab bar -->
 <div class="tab-bar">
   <button [class.active]="activeTab === 'overview'"   (click)="setTab('overview')">Overview</button>

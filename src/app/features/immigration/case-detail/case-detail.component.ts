@@ -793,6 +793,56 @@ export class CaseDetailComponent implements OnInit {
     }
   }
 
+  // ── Case progress tracker ─────────────────────────────────────────────────
+
+  readonly TRACKER_STEPS: { key: string; label: string; icon: string }[] = [
+    { key: 'PROSPECTIVE',         label: 'Prospective',  icon: 'bi-person-plus' },
+    { key: 'DATA_COLLECTION',     label: 'Data Collect', icon: 'bi-clipboard-data' },
+    { key: 'PETITION_FILED',      label: 'Filed',        icon: 'bi-send' },
+    { key: 'PETITION_APPROVED',   label: 'Approved',     icon: 'bi-patch-check' },
+    { key: 'DS160_FILED',         label: 'DS-160',       icon: 'bi-file-earmark-text' },
+    { key: 'INTERVIEW_SCHEDULED', label: 'Interview',    icon: 'bi-calendar-event' },
+    { key: 'VISA_ISSUED',         label: 'Visa Issued',  icon: 'bi-credit-card-2-front' },
+    { key: 'ADMITTED',            label: 'Admitted',     icon: 'bi-airplane' },
+    { key: 'CLOSED',              label: 'Complete',     icon: 'bi-house-check' },
+  ];
+
+  private readonly STATUS_STEP_INDEX: Record<string, number> = {
+    PROSPECTIVE:         0,
+    DATA_COLLECTION:     1,
+    PETITION_FILED:      2,
+    RFE_PENDING:         2,
+    PETITION_APPROVED:   3,
+    DS160_FILED:         4,
+    INTERVIEW_SCHEDULED: 5,
+    VISA_ISSUED:         6,
+    ADMITTED:            7,
+    CLOSED:              9,
+  };
+
+  get trackerCurrentIndex(): number {
+    if (!this.case) return -1;
+    return this.STATUS_STEP_INDEX[this.case.status] ?? -1;
+  }
+
+  get isTerminalStatus(): boolean {
+    return this.case?.status === 'DENIED' || this.case?.status === 'WITHDRAWN';
+  }
+
+  isStepDone(stepIdx: number): boolean {
+    if (!this.case || this.isTerminalStatus) return false;
+    return stepIdx < this.trackerCurrentIndex;
+  }
+
+  isStepActive(stepIdx: number): boolean {
+    if (!this.case || this.isTerminalStatus) return false;
+    return stepIdx === this.trackerCurrentIndex;
+  }
+
+  isRfeStep(stepIdx: number): boolean {
+    return stepIdx === 2 && this.case?.status === 'RFE_PENDING';
+  }
+
   // ── Status change (attorney / HR_ADMIN) ──────────────────────────────────
 
   private readonly STATUS_TRANSITIONS: Record<string, string[]> = {
