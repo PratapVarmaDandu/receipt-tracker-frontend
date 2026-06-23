@@ -66,8 +66,8 @@
 .detail-mono  { font-family: monospace; font-size: 0.85rem; }
 
 // Status badges (reused from case-list)
-.status-draft    { background: #e2e8f0; color: #475569; }
-.status-active   { background: #dbeafe; color: #1d4ed8; }
+.status-draft    { background: #f1f5f9; color: #475569; }
+.status-active   { background: var(--primary-light, #e8edf5); color: var(--primary, #1a2332); }
 .status-pending  { background: #fef3c7; color: #92400e; }
 .status-warning  { background: #ffedd5; color: #9a3412; }
 .status-success  { background: #dcfce7; color: #166534; }

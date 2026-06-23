@@ -124,7 +124,7 @@
                 [disabled]="!form.passports.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
-        <label class="btn btn-sm btn-outline-info mb-0" [class.disabled]="scanLoading"
+        <label class="btn btn-sm btn-outline-secondary mb-0" [class.disabled]="scanLoading"
                title="Scan a passport image to auto-fill fields">
           <i class="bi bi-camera me-1"></i>
           <span *ngIf="!scanLoading">Scan Passport</span>
@@ -155,7 +155,7 @@
       <!-- Passport card header -->
       <div class="entry-header p-3 d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-passport text-primary"></i>
+          <i class="bi bi-passport icon-themed"></i>
           <span class="fw-semibold">Passport {{ i + 1 }}</span>
           <span *ngIf="isCurrentPassport(p) && form.passports.length > 1"
                 class="badge bg-success">Current</span>
@@ -233,7 +233,7 @@
                 [disabled]="!form.travelEntries.length">
           <i class="bi bi-share me-1"></i>Share
         </button>
-        <label class="btn btn-sm btn-outline-info mb-0" [class.disabled]="scanLoading"
+        <label class="btn btn-sm btn-outline-secondary mb-0" [class.disabled]="scanLoading"
                title="Scan an I-94 printout to auto-fill entry fields">
           <i class="bi bi-camera me-1"></i>
           <span *ngIf="!scanLoading">Scan I-94</span>
@@ -262,7 +262,7 @@
     <div *ngFor="let e of form.travelEntries; let i = index" class="card mb-3">
       <div class="entry-header p-3 d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-airplane-engines text-primary"></i>
+          <i class="bi bi-airplane-engines icon-themed"></i>
           <span class="fw-semibold">Entry {{ i + 1 }}</span>
           <span *ngIf="e.entryDate" class="text-muted small">{{ e.entryDate | date:'mediumDate' }}</span>
         </div>

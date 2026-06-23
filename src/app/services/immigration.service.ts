@@ -797,6 +797,14 @@ export class ImmigrationService {
     );
   }
 
+  updateReceiptNumber(id: number, receiptNumber: string): Observable<ImmigrationCase> {
+    const t = Date.now();
+    return this.http.put<ImmigrationCase>(`${this.base}/cases/${id}/receipt-number`, { receiptNumber }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'PUT', `/immigration/cases/${id}/receipt-number`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'PUT', `/immigration/cases/${id}/receipt-number`, err, t); throw err; })
+    );
+  }
+
   // ── Key dates ────────────────────────────────────────────────────────────
 
   getKeyDates(caseId: number): Observable<KeyDate[]> {

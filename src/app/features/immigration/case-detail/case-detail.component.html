@@ -257,13 +257,53 @@
         </div>
         <div class="col-md-4" *ngIf="case.receiptNumber">
           <div class="detail-label">Receipt Number</div>
-          <div class="detail-value detail-mono">{{ case.receiptNumber }}</div>
+          <div class="detail-value detail-mono">
+            {{ case.receiptNumber }}
+            <button *ngIf="isAttorney" class="btn btn-link btn-sm p-0 ms-1"
+                    (click)="openReceiptNumberPanel()" title="Edit receipt number">
+              <i class="bi bi-pencil-square"></i>
+            </button>
+          </div>
         </div>
         <div class="col-12">
           <div class="detail-label">Opened</div>
           <div class="detail-value">{{ case.createdAt | date:'medium' }}</div>
         </div>
       </div>
+
+      <!-- Receipt number entry / edit — attorney only, petition must be filed -->
+      <div *ngIf="isAttorney && isPetitionFiled()" class="mt-3">
+        <div *ngIf="!case.receiptNumber && !showReceiptNumberPanel">
+          <button class="btn btn-sm btn-outline-secondary" (click)="openReceiptNumberPanel()">
+            <i class="bi bi-hash me-1"></i>Add USCIS Receipt Number
+          </button>
+        </div>
+        <div *ngIf="showReceiptNumberPanel" class="mt-2 p-3 bg-light rounded">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="form-label mb-0 fw-semibold" style="white-space:nowrap">
+              <i class="bi bi-hash me-1"></i>USCIS Receipt Number
+            </label>
+            <input type="text" class="form-control form-control-sm flex-grow-1"
+                   [(ngModel)]="receiptNumberDraft"
+                   placeholder="e.g. EAC2490012345"
+                   style="max-width:220px;font-family:monospace;text-transform:uppercase"
+                   [disabled]="savingReceiptNumber">
+            <button class="btn btn-sm btn-primary" (click)="doUpdateReceiptNumber()"
+                    [disabled]="!receiptNumberDraft.trim() || savingReceiptNumber">
+              <i *ngIf="savingReceiptNumber" class="bi bi-arrow-repeat spin me-1"></i>Save
+            </button>
+            <button class="btn btn-sm btn-link text-secondary" (click)="showReceiptNumberPanel = false"
+                    [disabled]="savingReceiptNumber">Cancel</button>
+          </div>
+          <div *ngIf="receiptNumberError" class="text-danger mt-2" style="font-size:.85rem">
+            {{ receiptNumberError }}
+          </div>
+          <div class="text-muted mt-1" style="font-size:.78rem">
+            Found on the I-797 Notice of Action. Enables daily USCIS status tracking.
+          </div>
+        </div>
+      </div>
+
       <!-- Status change — attorney and HR_ADMIN only -->
       <div *ngIf="(isAttorney || isEmployer) && allowedTransitions().length > 0" class="mt-3 p-3 bg-light rounded">
         <div class="d-flex align-items-center gap-2 flex-wrap">

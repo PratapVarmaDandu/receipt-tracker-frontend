@@ -26,17 +26,16 @@
 }
 
 .stats-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 1rem;
-  flex-wrap: wrap;
 }
 
 .stat-card {
   background: var(--card-bg, #fff);
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius, 0.5rem);
-  padding: 1rem 1.5rem;
-  min-width: 120px;
+  padding: 1rem 1.25rem;
   text-align: center;
 }
 

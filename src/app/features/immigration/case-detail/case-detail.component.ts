@@ -92,6 +92,12 @@ export class CaseDetailComponent implements OnInit {
   rfeError: string | null = null;
   respondingRfeId: number | null = null;
 
+  // Receipt number state
+  showReceiptNumberPanel = false;
+  receiptNumberDraft = '';
+  savingReceiptNumber = false;
+  receiptNumberError: string | null = null;
+
   // USCIS polling state (FEAT-M3)
   uscisHistory: UscisStatusResult[] = [];
   uscisLoading = false;
@@ -825,6 +831,39 @@ export class CaseDetailComponent implements OnInit {
       error: err => {
         this.statusUpdateError = err?.error?.error || 'Status update failed';
         this.updatingStatus = false;
+      }
+    });
+  }
+
+  private readonly FILED_STATUSES = new Set([
+    'PETITION_FILED', 'RFE_PENDING', 'PETITION_APPROVED',
+    'DS160_FILED', 'INTERVIEW_SCHEDULED', 'VISA_ISSUED', 'ADMITTED', 'CLOSED'
+  ]);
+
+  isPetitionFiled(): boolean {
+    return !!this.case && this.FILED_STATUSES.has(this.case.status);
+  }
+
+  openReceiptNumberPanel(): void {
+    this.receiptNumberDraft = this.case?.receiptNumber || '';
+    this.receiptNumberError = null;
+    this.showReceiptNumberPanel = true;
+  }
+
+  doUpdateReceiptNumber(): void {
+    if (!this.receiptNumberDraft.trim()) return;
+    this.savingReceiptNumber = true;
+    this.receiptNumberError = null;
+    this.immigrationService.updateReceiptNumber(this.caseId, this.receiptNumberDraft.trim()).subscribe({
+      next: updated => {
+        this.case = updated;
+        this.showReceiptNumberPanel = false;
+        this.savingReceiptNumber = false;
+        this.loadUscisHistory();
+      },
+      error: err => {
+        this.receiptNumberError = err?.error?.error || 'Failed to save receipt number';
+        this.savingReceiptNumber = false;
       }
     });
   }

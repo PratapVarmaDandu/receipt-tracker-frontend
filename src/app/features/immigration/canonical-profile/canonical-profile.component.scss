@@ -1,10 +1,11 @@
 .page-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
   gap: 0.5rem;
+
+  h2 { text-align: center; margin: 0; }
 }
 .btn-back {
   color: var(--primary);
@@ -12,7 +13,11 @@
   font-size: 0.9rem;
   white-space: nowrap;
 }
-.header-actions { display: flex; align-items: center; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
 .save-ok { font-size: 0.9rem; }
 
 .profile-tabs {
@@ -82,8 +87,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--primary-light, #e8edf5);
+  color: var(--primary);
   border-radius: 1rem;
   padding: 0.2rem 0.65rem;
   font-size: 0.78rem;
@@ -94,7 +99,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6366f1;
+  color: var(--primary);
   padding: 0;
   line-height: 1;
   font-size: 1rem;
@@ -124,10 +129,12 @@
 
 // Share panel
 .share-panel {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--primary-light, #e8edf5);
+  border: 1px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius, 0.5rem);
 }
+
+.icon-themed { color: var(--primary); }
 
 // Document scan modal
 .modal-backdrop-custom {
