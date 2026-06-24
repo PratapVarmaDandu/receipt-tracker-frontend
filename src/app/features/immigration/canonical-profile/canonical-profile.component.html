@@ -1,6 +1,8 @@
 <div class="page-header">
-  <a routerLink="/immigration" class="btn-back">
-    <i class="bi bi-arrow-left"></i> Cases
+  <a [routerLink]="caseContext ? ['/immigration/cases', caseContext.id] : ['/immigration']" class="btn-back">
+    <i class="bi bi-arrow-left"></i>
+    <ng-container *ngIf="caseContext">Case {{ caseContext.caseNumber }}</ng-container>
+    <ng-container *ngIf="!caseContext">Cases</ng-container>
   </a>
   <h2><i class="bi bi-person-vcard me-2"></i>My Profile</h2>
   <div class="header-actions">

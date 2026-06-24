@@ -1,0 +1,249 @@
+<div class="setup-page">
+  <div class="setup-card">
+
+    <!-- Header -->
+    <div class="setup-header">
+      <i class="bi bi-person-workspace setup-icon"></i>
+      <h2>Set up your law firm</h2>
+      <p class="text-muted mb-0">Get started in a few steps — everything can be updated later.</p>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-item" [class.active]="currentStep === 1" [class.done]="currentStep > 1">
+        <div class="step-circle">
+          <i *ngIf="currentStep > 1" class="bi bi-check-lg"></i>
+          <span *ngIf="currentStep <= 1">1</span>
+        </div>
+        <div class="step-label">Firm Details</div>
+      </div>
+      <div class="step-line" [class.done]="currentStep > 1"></div>
+
+      <div class="step-item" [class.active]="currentStep === 2" [class.done]="currentStep > 2">
+        <div class="step-circle">
+          <i *ngIf="currentStep > 2" class="bi bi-check-lg"></i>
+          <span *ngIf="currentStep <= 2">2</span>
+        </div>
+        <div class="step-label">Attorney Profile</div>
+      </div>
+      <div class="step-line" [class.done]="currentStep > 2"></div>
+
+      <div class="step-item" [class.active]="currentStep === 3" [class.done]="currentStep > 3">
+        <div class="step-circle">
+          <i *ngIf="currentStep > 3" class="bi bi-check-lg"></i>
+          <span *ngIf="currentStep <= 3">3</span>
+        </div>
+        <div class="step-label">Invite Team</div>
+      </div>
+      <div class="step-line" [class.done]="currentStep > 3"></div>
+
+      <div class="step-item" [class.active]="currentStep === 4">
+        <div class="step-circle"><span>4</span></div>
+        <div class="step-label">Done</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Firm Details ─────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 1" class="step-content">
+      <h5 class="step-title">Firm Details</h5>
+      <p class="text-muted small mb-4">
+        Name your firm to get started. Address and website are optional but appear on generated filings.
+      </p>
+
+      <div *ngIf="step1Error" class="alert alert-danger alert-sm mb-3">{{ step1Error }}</div>
+
+      <div class="form-section">
+        <div class="mb-3">
+          <label class="form-label required">Firm Name</label>
+          <input class="form-control" [(ngModel)]="firmName" name="firmName"
+                 placeholder="Smith &amp; Partners LLP"
+                 [class.is-invalid]="step1Submitted && !firmName.trim()">
+          <div class="invalid-feedback">Firm name is required.</div>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Website</label>
+          <input class="form-control" [(ngModel)]="website" name="website"
+                 placeholder="https://smithlaw.com">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h6 class="form-section-title">
+          Office Address <span class="optional-tag">Optional</span>
+        </h6>
+        <div class="mb-3">
+          <label class="form-label">Street Address</label>
+          <input class="form-control" [(ngModel)]="address" name="address"
+                 placeholder="123 Main St, Suite 400">
+        </div>
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label">City</label>
+            <input class="form-control" [(ngModel)]="city" name="city" placeholder="New York">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">State</label>
+            <select class="form-select" [(ngModel)]="stateCode" name="stateCode">
+              <option value="">Select</option>
+              <option *ngFor="let s of US_STATES" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ZIP Code</label>
+            <input class="form-control" [(ngModel)]="zipCode" name="zipCode" placeholder="10001">
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <span></span>
+        <button class="btn btn-primary" (click)="submitStep1()" [disabled]="step1Saving">
+          <span *ngIf="step1Saving"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+          <span *ngIf="!step1Saving">Next <i class="bi bi-arrow-right ms-1"></i></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Attorney Profile ────────────────────────────────────── -->
+    <div *ngIf="currentStep === 2" class="step-content">
+      <h5 class="step-title">Your Attorney Profile</h5>
+      <p class="text-muted small mb-4">
+        Bar admissions and your bio appear on generated case packets. Skip to fill these in later.
+      </p>
+
+      <div *ngIf="step2Error" class="alert alert-danger alert-sm mb-3">{{ step2Error }}</div>
+
+      <div class="form-section">
+        <label class="form-label">Bio / Professional Summary</label>
+        <textarea class="form-control" [(ngModel)]="profileBio" name="profileBio" rows="3"
+                  placeholder="Brief professional bio shown on case reports and generated filings…"></textarea>
+      </div>
+
+      <div class="form-section">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h6 class="form-section-title mb-0">Bar Admissions</h6>
+          <button class="btn btn-xs btn-outline-primary" type="button" (click)="addBarNumber()">
+            <i class="bi bi-plus-lg me-1"></i>Add
+          </button>
+        </div>
+
+        <div *ngIf="barNumbers.length === 0" class="text-muted small py-2">
+          No bar admissions added yet.
+        </div>
+
+        <div *ngFor="let b of barNumbers; let i = index" class="row g-2 mb-2 align-items-center">
+          <div class="col-3">
+            <input class="form-control form-control-sm" [(ngModel)]="b.state" [name]="'bar-state-' + i"
+                   placeholder="State" maxlength="10">
+          </div>
+          <div class="col-4">
+            <input class="form-control form-control-sm" [(ngModel)]="b.barNumber" [name]="'bar-num-' + i"
+                   placeholder="Bar number">
+          </div>
+          <div class="col-4">
+            <input class="form-control form-control-sm" type="date" [(ngModel)]="b.admittedDate"
+                   [name]="'bar-date-' + i" title="Date admitted">
+          </div>
+          <div class="col-1 text-end">
+            <button class="btn btn-xs btn-outline-danger" type="button" (click)="removeBarNumber(i)">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="barNumbers.length > 0" class="text-muted" style="font-size:.75rem">
+          State &nbsp;·&nbsp; Bar number &nbsp;·&nbsp; Date admitted
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-outline-secondary" (click)="currentStep = 1" [disabled]="step2Saving">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" (click)="skipStep2()" [disabled]="step2Saving">
+            Skip
+          </button>
+          <button class="btn btn-primary" (click)="submitStep2()" [disabled]="step2Saving">
+            <span *ngIf="step2Saving"><i class="bi bi-arrow-repeat spin me-1"></i>Saving…</span>
+            <span *ngIf="!step2Saving">Next <i class="bi bi-arrow-right ms-1"></i></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Invite Team ─────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 3" class="step-content">
+      <h5 class="step-title">Invite Your Team</h5>
+      <p class="text-muted small mb-4">
+        Add co-attorneys and paralegals now, or skip and invite them later from the dashboard.
+      </p>
+
+      <div *ngIf="step3Error" class="alert alert-danger alert-sm mb-3">{{ step3Error }}</div>
+
+      <div class="form-section">
+        <div *ngFor="let invite of invites; let i = index" class="row g-2 mb-2 align-items-center">
+          <div class="col-7">
+            <input class="form-control form-control-sm" [(ngModel)]="invite.email"
+                   [name]="'inv-email-' + i" type="email"
+                   placeholder="colleague@smithlaw.com">
+          </div>
+          <div class="col-4">
+            <select class="form-select form-select-sm" [(ngModel)]="invite.role"
+                    [name]="'inv-role-' + i">
+              <option value="ATTORNEY">Attorney</option>
+              <option value="PARALEGAL">Paralegal</option>
+              <option value="CASE_VIEWER">Case Viewer</option>
+            </select>
+          </div>
+          <div class="col-1 text-end">
+            <button class="btn btn-xs btn-outline-danger" type="button"
+                    (click)="removeInviteRow(i)" *ngIf="invites.length > 1">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-xs btn-outline-primary mt-1" type="button" (click)="addInviteRow()">
+          <i class="bi bi-plus-lg me-1"></i>Add another
+        </button>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-outline-secondary" (click)="currentStep = 2" [disabled]="step3Saving">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" (click)="skipStep3()" [disabled]="step3Saving">
+            Skip
+          </button>
+          <button class="btn btn-primary" (click)="submitStep3()" [disabled]="step3Saving">
+            <span *ngIf="step3Saving"><i class="bi bi-arrow-repeat spin me-1"></i>Sending…</span>
+            <span *ngIf="!step3Saving">Next <i class="bi bi-arrow-right ms-1"></i></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Done ────────────────────────────────────────────────── -->
+    <div *ngIf="currentStep === 4" class="step-content text-center">
+      <i class="bi bi-check-circle-fill success-icon"></i>
+      <h4 class="mt-3 mb-2">You're all set!</h4>
+      <p class="text-muted">
+        <strong>{{ createdOrg?.name }}</strong> is ready to go.<br>
+        Open your first case, link an employer client, and start managing immigration petitions.
+      </p>
+
+      <div class="done-chips mt-3">
+        <span class="chip chip--done"><i class="bi bi-check-circle me-1"></i>Firm created</span>
+        <span class="chip chip--done"><i class="bi bi-check-circle me-1"></i>Profile configured</span>
+        <span class="chip chip--done"><i class="bi bi-check-circle me-1"></i>Team invited</span>
+      </div>
+
+      <div class="mt-4">
+        <button class="btn btn-primary btn-lg" (click)="goToDashboard()">
+          <i class="bi bi-person-workspace me-2"></i>Go to Attorney Dashboard
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

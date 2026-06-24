@@ -13,11 +13,13 @@ import { EmployerOnboardComponent } from './employer-onboard/employer-onboard.co
 import { DataRequestComponent } from './data-request/data-request.component';
 import { PackageQuestionnaireComponent } from './package-questionnaire/package-questionnaire.component';
 import { FormVersionsComponent } from './form-versions/form-versions.component';
+import { LawFirmSetupComponent } from './law-firm-setup/law-firm-setup.component';
 
 const routes: Routes = [
   { path: '',                                     component: CaseListComponent,              canActivate: [AuthGuard] },
   { path: 'employer/onboard/:token',              component: EmployerOnboardComponent,       canActivate: [AuthGuard] },
   { path: 'employer',                             component: EmployerDashboardComponent,     canActivate: [AuthGuard] },
+  { path: 'attorney/setup',                       component: LawFirmSetupComponent,          canActivate: [AuthGuard] },
   { path: 'attorney',                             component: AttorneyDashboardComponent,     canActivate: [AuthGuard] },
   { path: 'cases/new',                            component: CaseFormComponent,              canActivate: [AuthGuard] },
   { path: 'cases/join/:token',                    component: CaseJoinComponent },   // public
@@ -40,7 +42,8 @@ const routes: Routes = [
     EmployerOnboardComponent,
     DataRequestComponent,
     PackageQuestionnaireComponent,
-    FormVersionsComponent
+    FormVersionsComponent,
+    LawFirmSetupComponent
   ],
   imports: [SharedModule, RouterModule.forChild(routes)]
 })

@@ -473,6 +473,7 @@ export class CaseDetailComponent implements OnInit {
     if (tab === 'profile')    this.loadBeneficiaryProfile();
     if (tab === 'tasks'     && !this.tasksLoaded)     this.loadTasks();
     if (tab === 'packages'  && !this.packagesLoaded)  this.loadPackages();
+    if (tab === 'documents' && this.isBeneficiary && !this.checklistLoaded) this.loadChecklist();
   }
 
   // ── Role helpers ──────────────────────────────────────────────────────────
@@ -482,6 +483,42 @@ export class CaseDetailComponent implements OnInit {
   get isEmployer():           boolean { return this.case?.callerRelationship === 'HR_ADMIN'; }
   get isAttorneyOrParalegal():boolean { return this.isAttorney || this.isParalegal; }
   get isOrgMember():          boolean { return this.isAttorney || this.isParalegal || this.isEmployer; }
+
+  // ── Profile tab helpers (attorney view) ───────────────────────────────────
+  openDataRequestFromProfile(): void {
+    this.setTab('overview');
+    this.showRequestDataPanel = true;
+    this.loadDataRequests();
+  }
+
+  visaExpiryBadgeCss(expiry: string | null | undefined): string {
+    if (!expiry) return 'bg-secondary';
+    const days = (new Date(expiry).getTime() - Date.now()) / 86400000;
+    if (days < 0) return 'bg-danger';
+    if (days <= 90) return 'bg-warning text-dark';
+    return 'bg-success';
+  }
+
+  visaExpiryLabel(expiry: string | null | undefined): string {
+    if (!expiry) return 'no expiry on file';
+    const days = Math.round((new Date(expiry).getTime() - Date.now()) / 86400000);
+    if (days < 0) return 'Expired';
+    if (days <= 90) return `Expires in ${days}d`;
+    return 'Valid';
+  }
+
+  profileCompleteness(profile: CanonicalProfile): number {
+    let score = 0;
+    if (profile.legalFirstName && profile.legalLastName) score++;
+    if (profile.dateOfBirth || profile.countryOfBirth || profile.citizenshipCountry) score++;
+    if (profile.gender || profile.phone) score++;
+    if (profile.currentAddress?.line1) score++;
+    if (profile.passports?.length) score++;
+    if (profile.travelEntries?.length) score++;
+    if (profile.currentVisaType) score++;
+    if (profile.employment?.length) score++;
+    return Math.round((score / 8) * 100);
+  }
 
   // ── Beneficiary profile (for employer / attorney view) ────────────────────
   beneficiaryProfile: CanonicalProfile | null = null;

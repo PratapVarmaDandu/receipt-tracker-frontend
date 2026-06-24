@@ -24,11 +24,6 @@ export class AttorneyDashboardComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
-  showCreateOrg = false;
-  newOrgName = '';
-  creating = false;
-  createError: string | null = null;
-
   inviteEmail = '';
   inviteRole = 'ATTORNEY';
   inviting = false;
@@ -75,8 +70,12 @@ export class AttorneyDashboardComponent implements OnInit {
     this.immOrgService.listMine().subscribe({
       next: orgs => {
         this.lawFirmOrgs = orgs.filter(o => o.orgType === 'LAW_FIRM');
+        if (this.lawFirmOrgs.length === 0) {
+          this.router.navigate(['/immigration/attorney/setup']);
+          return;
+        }
         this.loading = false;
-        if (this.lawFirmOrgs.length > 0) this.selectOrg(this.lawFirmOrgs[0]);
+        this.selectOrg(this.lawFirmOrgs[0]);
       },
       error: err => {
         this.error = err?.error?.error || 'Failed to load organizations';
@@ -211,25 +210,6 @@ export class AttorneyDashboardComponent implements OnInit {
     this.immOrgService.endPartnership(id).subscribe({
       next: () => this.loadPartnerships(),
       error: err => { this.logger.error(this.source, 'endPartnership failed', err); }
-    });
-  }
-
-  createOrg(): void {
-    if (!this.newOrgName.trim()) return;
-    this.creating = true;
-    this.createError = null;
-    this.immOrgService.createOrg({ name: this.newOrgName.trim(), orgType: 'LAW_FIRM' }).subscribe({
-      next: org => {
-        this.creating = false;
-        this.showCreateOrg = false;
-        this.newOrgName = '';
-        this.lawFirmOrgs = [...this.lawFirmOrgs, org];
-        this.selectOrg(org);
-      },
-      error: err => {
-        this.creating = false;
-        this.createError = err?.error?.error || 'Failed to create organization';
-      }
     });
   }
 

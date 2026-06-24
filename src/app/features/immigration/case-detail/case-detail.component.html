@@ -405,6 +405,89 @@
       </div>
     </div>
 
+    <!-- ── Beneficiary next-steps card ──────────────────────────────────── -->
+    <div *ngIf="!caseLoading && case && isBeneficiary" class="card mt-3 p-0 overflow-hidden next-steps-card">
+      <div class="next-steps-header">
+        <i class="bi bi-list-task me-2"></i>Your Next Steps
+      </div>
+      <div class="next-steps-grid">
+
+        <!-- My Profile -->
+        <a routerLink="/immigration/profile" [queryParams]="{caseId: caseId}" class="next-step-item text-decoration-none">
+          <div class="next-step-icon next-step-icon--indigo">
+            <i class="bi bi-person-vcard"></i>
+          </div>
+          <div class="flex-grow-1">
+            <div class="next-step-label">My Profile</div>
+            <div class="next-step-sub">Keep your personal information up to date</div>
+          </div>
+          <i class="bi bi-chevron-right next-step-arrow"></i>
+        </a>
+
+        <!-- Upload Documents -->
+        <button class="next-step-item" (click)="setTab('documents')">
+          <div class="next-step-icon next-step-icon--amber">
+            <i class="bi bi-folder2-open"></i>
+          </div>
+          <div class="flex-grow-1 text-start">
+            <div class="next-step-label">Upload Documents</div>
+            <div class="next-step-sub">
+              <ng-container *ngIf="checklistLoaded && pendingRequiredCount > 0">
+                {{ pendingRequiredCount }} document{{ pendingRequiredCount !== 1 ? 's' : '' }} still needed
+              </ng-container>
+              <ng-container *ngIf="checklistLoaded && pendingRequiredCount === 0 && checklist.length > 0">
+                All required documents submitted
+              </ng-container>
+              <ng-container *ngIf="!checklistLoaded || checklist.length === 0">
+                Submit documents requested by your attorney
+              </ng-container>
+            </div>
+          </div>
+          <span *ngIf="checklistLoaded && pendingRequiredCount > 0"
+                class="msg-unread-badge">{{ pendingRequiredCount }}</span>
+          <i class="bi bi-chevron-right next-step-arrow"></i>
+        </button>
+
+        <!-- Messaging -->
+        <button class="next-step-item" (click)="setTab('messaging')">
+          <div class="next-step-icon next-step-icon--green">
+            <i class="bi bi-chat-left-text"></i>
+          </div>
+          <div class="flex-grow-1 text-start">
+            <div class="next-step-label">Messages</div>
+            <div class="next-step-sub">
+              <ng-container *ngIf="totalUnread() > 0">{{ totalUnread() }} unread message{{ totalUnread() !== 1 ? 's' : '' }}</ng-container>
+              <ng-container *ngIf="totalUnread() === 0">Stay in touch with your case team</ng-container>
+            </div>
+          </div>
+          <span *ngIf="totalUnread() > 0" class="msg-unread-badge">{{ totalUnread() }}</span>
+          <i class="bi bi-chevron-right next-step-arrow"></i>
+        </button>
+
+        <!-- Tasks -->
+        <button class="next-step-item" (click)="setTab('tasks')">
+          <div class="next-step-icon next-step-icon--red">
+            <i class="bi bi-clipboard-check"></i>
+          </div>
+          <div class="flex-grow-1 text-start">
+            <div class="next-step-label">Tasks</div>
+            <div class="next-step-sub">
+              <ng-container *ngIf="tasksLoaded && overdueTaskCount() > 0">
+                {{ overdueTaskCount() }} overdue task{{ overdueTaskCount() !== 1 ? 's' : '' }}
+              </ng-container>
+              <ng-container *ngIf="!tasksLoaded || overdueTaskCount() === 0">
+                Review tasks assigned by your attorney
+              </ng-container>
+            </div>
+          </div>
+          <span *ngIf="tasksLoaded && overdueTaskCount() > 0"
+                class="msg-unread-badge">{{ overdueTaskCount() }}</span>
+          <i class="bi bi-chevron-right next-step-arrow"></i>
+        </button>
+
+      </div>
+    </div>
+
     <!-- Key Dates panel -->
     <div class="card mt-3 p-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
@@ -741,10 +824,12 @@
         <span *ngIf="downloadingTimeline"><i class="bi bi-arrow-repeat spin me-1"></i></span>
         <span *ngIf="!downloadingTimeline"><i class="bi bi-download me-1"></i>Export PDF</span>
       </button>
-      <button class="btn btn-sm btn-outline-secondary" (click)="showAddAppt = !showAddAppt; showAddEvent = false">
+      <button *ngIf="isAttorneyOrParalegal"
+              class="btn btn-sm btn-outline-secondary" (click)="showAddAppt = !showAddAppt; showAddEvent = false">
         <i class="bi bi-calendar-plus me-1"></i>Add Appointment
       </button>
-      <button class="btn btn-sm btn-outline-primary" (click)="showAddEvent = !showAddEvent; showAddAppt = false">
+      <button *ngIf="isAttorneyOrParalegal"
+              class="btn btn-sm btn-outline-primary" (click)="showAddEvent = !showAddEvent; showAddAppt = false">
         <i class="bi bi-plus-lg me-1"></i>Add Event
       </button>
     </div>
@@ -839,7 +924,7 @@
           </div>
           <div *ngIf="item.description" class="timeline-desc text-muted">{{ item.description }}</div>
         </div>
-        <button *ngIf="!item.systemGenerated"
+        <button *ngIf="!item.systemGenerated && isAttorneyOrParalegal"
                 class="timeline-delete btn btn-sm btn-outline-danger"
                 (click)="deleteTimelineItem(item)" title="Delete">
           <i class="bi bi-trash"></i>
@@ -969,7 +1054,99 @@
 
   <!-- ── Documents ─────────────────────────────────────────────────────── -->
   <div *ngIf="activeTab === 'documents'">
-    <p class="text-muted">Document case-file integration coming soon.</p>
+
+    <!-- Beneficiary view: vault shortcut + checklist summary + messaging CTA -->
+    <ng-container *ngIf="isBeneficiary">
+
+      <!-- Document vault shortcut -->
+      <div class="card p-3 mb-3 doc-vault-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="doc-vault-icon"><i class="bi bi-folder2-open"></i></div>
+          <div class="flex-grow-1">
+            <div class="fw-semibold mb-1">Your Document Vault</div>
+            <div class="text-muted" style="font-size:.85rem">
+              Securely store passports, visa documents, tax records, and more — then attach them to your case.
+            </div>
+          </div>
+          <a routerLink="/documents" class="btn btn-primary btn-sm flex-shrink-0">
+            <i class="bi bi-arrow-right me-1"></i>Open Vault
+          </a>
+        </div>
+      </div>
+
+      <!-- Case documents needed (from checklist) -->
+      <div class="card p-3 mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="mb-0"><i class="bi bi-card-checklist me-2"></i>Documents Needed for This Case</h6>
+          <span *ngIf="checklistLoaded && checklist.length > 0" class="text-muted" style="font-size:.78rem">
+            {{ checklist.length - pendingRequiredCount }} of {{ checklist.length }} items ready
+          </span>
+        </div>
+
+        <!-- Not yet loaded -->
+        <div *ngIf="!checklistLoaded" class="text-muted" style="font-size:.85rem">
+          <i class="bi bi-arrow-repeat spin me-1"></i>Loading document checklist…
+        </div>
+
+        <!-- Empty checklist -->
+        <div *ngIf="checklistLoaded && checklist.length === 0" class="text-muted" style="font-size:.85rem">
+          Your attorney hasn't added a document checklist yet. Check back as your case progresses.
+        </div>
+
+        <!-- Checklist items -->
+        <div *ngIf="checklistLoaded && checklist.length > 0">
+          <div *ngFor="let item of checklist" class="doc-needed-row"
+               [class.doc-needed-row--done]="item.status !== 'PENDING'">
+            <span class="badge" [ngClass]="checklistStatusCss(item.status)"
+                  style="font-size:.7rem; flex-shrink:0">
+              {{ item.status | titlecase }}
+            </span>
+            <span class="flex-grow-1" style="font-size:.85rem">
+              {{ item.label }}
+              <span *ngIf="item.required" class="text-danger ms-1" title="Required for filing">*</span>
+            </span>
+            <button *ngIf="item.status === 'PENDING'" class="btn btn-xs btn-outline-secondary"
+                    (click)="setTab('checklist')">
+              <i class="bi bi-upload me-1"></i>Upload
+            </button>
+          </div>
+          <div class="mt-2" style="font-size:.75rem; color:var(--text-muted,#94a3b8)">
+            * Required for filing &nbsp;·&nbsp;
+            <button class="btn btn-link p-0" style="font-size:.75rem"
+                    (click)="setTab('checklist')">
+              Open full checklist
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions shortcut -->
+      <div class="card p-3 doc-help-card">
+        <div class="d-flex align-items-center gap-3">
+          <i class="bi bi-chat-left-text fs-4" style="color:var(--primary,#6366f1)"></i>
+          <div class="flex-grow-1">
+            <div class="fw-semibold mb-1">Questions about a document?</div>
+            <div class="text-muted" style="font-size:.85rem">
+              Message your attorney or case team directly.
+            </div>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                  (click)="setTab('messaging')">
+            <i class="bi bi-chat me-1"></i>Go to Messaging
+          </button>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <!-- Org-member view: redirect to checklist -->
+    <div *ngIf="isOrgMember" class="text-muted d-flex align-items-center gap-2 py-3" style="font-size:.875rem">
+      <i class="bi bi-info-circle"></i>
+      Case documents are tracked in the
+      <button class="btn btn-link p-0 ms-1" style="font-size:.875rem"
+              (click)="setTab('checklist'); loadChecklist()">Checklist tab</button>.
+    </div>
+
   </div>
 
   <!-- ── Checklist (FEAT-M8) ─────────────────────────────────────────────── -->
@@ -1397,20 +1574,48 @@
     <div *ngIf="profileLoading" class="text-muted py-3">
       <i class="bi bi-arrow-repeat spin me-1"></i>Loading profile…
     </div>
-    <div *ngIf="profileError && !profileLoading" class="alert alert-warning">
-      <i class="bi bi-person-exclamation me-2"></i>{{ profileError }}
+    <div *ngIf="profileError && !profileLoading"
+         class="alert alert-warning d-flex align-items-center gap-3 flex-wrap">
+      <div class="flex-grow-1">
+        <i class="bi bi-person-exclamation me-2"></i>{{ profileError }}
+      </div>
+      <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary flex-shrink-0"
+              (click)="openDataRequestFromProfile()">
+        <i class="bi bi-envelope-plus me-1"></i>Request Profile Data
+      </button>
     </div>
 
     <div *ngIf="beneficiaryProfile && !profileLoading">
 
       <!-- Profile header -->
       <div class="profile-header mb-3">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-person-circle fs-4 text-muted"></i>
-          <div>
-            <div class="fw-semibold">{{ beneficiaryProfile.legalFirstName }} {{ beneficiaryProfile.middleName }} {{ beneficiaryProfile.legalLastName }}</div>
-            <div class="text-muted small">Employee Profile · <span class="badge bg-secondary">Read Only</span></div>
+        <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-circle fs-3 text-muted flex-shrink-0"></i>
+            <div>
+              <div class="fw-semibold">
+                {{ beneficiaryProfile.legalFirstName }}
+                <span *ngIf="beneficiaryProfile.middleName">{{ beneficiaryProfile.middleName }} </span>
+                {{ beneficiaryProfile.legalLastName }}
+              </div>
+              <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                <span class="badge bg-secondary" style="font-size:.7rem">Read Only</span>
+                <ng-container *ngIf="beneficiaryProfile.currentVisaType">
+                  <span class="badge" style="font-size:.7rem"
+                        [ngClass]="visaExpiryBadgeCss(beneficiaryProfile.currentVisaExpiry)">
+                    {{ beneficiaryProfile.currentVisaType }} &middot; {{ visaExpiryLabel(beneficiaryProfile.currentVisaExpiry) }}
+                  </span>
+                </ng-container>
+                <span class="profile-completeness-label">
+                  {{ profileCompleteness(beneficiaryProfile) }}% complete
+                </span>
+              </div>
+            </div>
           </div>
+          <button *ngIf="isAttorney" class="btn btn-sm btn-outline-primary flex-shrink-0"
+                  (click)="openDataRequestFromProfile()">
+            <i class="bi bi-envelope-plus me-1"></i>Request Update
+          </button>
         </div>
       </div>
 
@@ -1504,10 +1709,10 @@
           </div>
           <div *ngIf="p.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of p.documentIds"
+            <button *ngFor="let docId of p.documentIds; let j = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'passport-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ j + 1 }}
             </button>
           </div>
         </div>
@@ -1558,10 +1763,10 @@
           </div>
           <div *ngIf="t.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of t.documentIds"
+            <button *ngFor="let docId of t.documentIds; let j = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'entry-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ j + 1 }}
             </button>
           </div>
         </div>
@@ -1593,10 +1798,10 @@
           </div>
           <div *ngIf="e.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of e.documentIds"
+            <button *ngFor="let docId of e.documentIds; let j = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'edu-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ j + 1 }}
             </button>
           </div>
         </div>
@@ -1626,10 +1831,10 @@
           </div>
           <div *ngIf="j.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of j.documentIds"
+            <button *ngFor="let docId of j.documentIds; let k = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'emp-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ k + 1 }}
             </button>
           </div>
         </div>
@@ -1661,10 +1866,10 @@
           </div>
           <div *ngIf="d.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of d.documentIds"
+            <button *ngFor="let docId of d.documentIds; let j = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'dependent-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ j + 1 }}
             </button>
           </div>
         </div>
@@ -1694,10 +1899,10 @@
           </div>
           <div *ngIf="v.documentIds?.length" class="attachments mt-2">
             <span class="detail-label me-2">Attachments:</span>
-            <button *ngFor="let docId of v.documentIds"
+            <button *ngFor="let docId of v.documentIds; let j = index"
                     class="btn btn-xs btn-outline-primary me-1"
                     (click)="downloadProfileDoc(docId, 'visa-doc-' + docId + '.pdf')">
-              <i class="bi bi-download me-1"></i>Doc #{{ docId }}
+              <i class="bi bi-file-earmark me-1"></i>Attachment {{ j + 1 }}
             </button>
           </div>
         </div>

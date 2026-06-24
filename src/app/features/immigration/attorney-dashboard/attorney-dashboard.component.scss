@@ -150,3 +150,64 @@
     .cap-stat__label { color: #b91c1c; }
   }
 }
+
+// ── Attorney Profile tab ────────────────────────────────────────────────────
+.dash-profile-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f5f7ff 0%, var(--card-bg, #fff) 100%);
+  border: 1px solid #e0e7ff;
+  border-radius: var(--radius, 0.5rem);
+}
+
+.dash-profile-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+
+  &--attorney {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  &--employer {
+    background: #d1fae5;
+    color: #065f46;
+  }
+}
+
+.dash-profile-section {
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary, #64748b);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+  }
+}
+
+.bar-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bar-entry {
+  display: grid;
+  grid-template-columns: 90px 1fr 140px auto;
+  gap: 0.5rem;
+  align-items: center;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+    .form-control:nth-child(3) { grid-column: span 2; }
+    button { grid-column: span 2; justify-self: end; }
+  }
+}
