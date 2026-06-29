@@ -7,6 +7,7 @@ import { CaseDetailComponent } from './case-detail/case-detail.component';
 import { CaseFormComponent } from './case-form/case-form.component';
 import { CanonicalProfileComponent } from './canonical-profile/canonical-profile.component';
 import { CaseJoinComponent } from './case-join/case-join.component';
+import { OrgJoinComponent } from './org-join/org-join.component';
 import { EmployerDashboardComponent } from './employer-dashboard/employer-dashboard.component';
 import { AttorneyDashboardComponent } from './attorney-dashboard/attorney-dashboard.component';
 import { EmployerOnboardComponent } from './employer-onboard/employer-onboard.component';
@@ -23,6 +24,7 @@ const routes: Routes = [
   { path: 'attorney',                             component: AttorneyDashboardComponent,     canActivate: [AuthGuard] },
   { path: 'cases/new',                            component: CaseFormComponent,              canActivate: [AuthGuard] },
   { path: 'cases/join/:token',                    component: CaseJoinComponent },   // public
+  { path: 'orgs/join/:token',                     component: OrgJoinComponent },    // public GET; auth for accept
   { path: 'cases/:id',                            component: CaseDetailComponent,            canActivate: [AuthGuard] },
   { path: 'profile',                              component: CanonicalProfileComponent,      canActivate: [AuthGuard] },
   { path: 'data-request/:token',                  component: DataRequestComponent },         // public GET; auth for submit
@@ -37,6 +39,7 @@ const routes: Routes = [
     CaseFormComponent,
     CanonicalProfileComponent,
     CaseJoinComponent,
+    OrgJoinComponent,
     EmployerDashboardComponent,
     AttorneyDashboardComponent,
     EmployerOnboardComponent,

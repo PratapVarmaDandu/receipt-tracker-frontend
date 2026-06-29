@@ -48,6 +48,7 @@ export interface ImmOrgMember {
   role: 'OWNER' | 'MEMBER';
   status: 'PENDING' | 'ACTIVE' | 'REMOVED';
   inviteToken?: string | null;
+  orgName?: string | null;   // populated only by the public join-info call
 }
 
 export interface OrgPartnership {

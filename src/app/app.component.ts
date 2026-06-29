@@ -82,6 +82,7 @@ export class AppComponent implements OnInit {
           || url.startsWith('/garage/join/')
           || url.startsWith('/admin/join/')
           || url.startsWith('/immigration/cases/join/')
+          || url.startsWith('/immigration/orgs/join/')
           || url.startsWith('/immigration/data-request/')
           || url.startsWith('/immigration/packages/questionnaire/');
         this.sidebarOpen = false;

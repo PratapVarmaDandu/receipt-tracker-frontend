@@ -1,0 +1,81 @@
+<div class="join-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="text-center py-5 text-muted">
+    <i class="bi bi-arrow-repeat spin me-2"></i>Loading invitation…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="join-card">
+    <div class="join-icon join-icon--error">
+      <i class="bi bi-exclamation-triangle"></i>
+    </div>
+    <h3>Invalid Invitation</h3>
+    <p class="text-muted">{{ error }}</p>
+    <a routerLink="/immigration" class="btn btn-outline-primary">Go to Visa Tracker</a>
+  </div>
+
+  <!-- Accepted success -->
+  <div *ngIf="accepted" class="join-card">
+    <div class="join-icon join-icon--success">
+      <i class="bi bi-check-circle"></i>
+    </div>
+    <h3>You're in!</h3>
+    <p class="text-muted">Your firm membership is confirmed. Redirecting…</p>
+  </div>
+
+  <!-- Invite info + actions -->
+  <div *ngIf="!loading && !error && !accepted && invite" class="join-card">
+    <div class="join-icon">
+      <i class="bi bi-person-workspace"></i>
+    </div>
+    <h3>Law Firm Invitation</h3>
+    <p class="text-muted">You have been invited to join an immigration law firm team.</p>
+
+    <div class="case-info-grid">
+      <div *ngIf="invite.orgName" class="case-info-row">
+        <span class="ci-label">Firm</span>
+        <span class="ci-value"><i class="bi bi-building me-1"></i>{{ invite.orgName }}</span>
+      </div>
+      <div class="case-info-row">
+        <span class="ci-label">Role</span>
+        <span class="ci-value">{{ roleLabel(invite.role) }}</span>
+      </div>
+      <div class="case-info-row">
+        <span class="ci-label">Invited Email</span>
+        <span class="ci-value">{{ invite.email }}</span>
+      </div>
+    </div>
+
+    <div class="join-actions">
+      <!-- Already accepted -->
+      <ng-container *ngIf="invite.status === 'ACTIVE'">
+        <p class="text-muted small mb-3">This invitation has already been accepted.</p>
+        <a routerLink="/immigration/attorney" class="btn btn-primary btn-lg">Go to Dashboard</a>
+      </ng-container>
+
+      <!-- Pending: not logged in -->
+      <ng-container *ngIf="invite.status !== 'ACTIVE' && !isLoggedIn">
+        <p class="text-muted small mb-3">Sign in with Google to accept this invitation.</p>
+        <button class="btn btn-primary btn-lg" (click)="login()">
+          <i class="bi bi-google me-2"></i>Sign in with Google
+        </button>
+      </ng-container>
+
+      <!-- Pending: logged in -->
+      <ng-container *ngIf="invite.status !== 'ACTIVE' && isLoggedIn">
+        <p class="text-muted small mb-3">
+          By clicking Accept, you confirm that you are the intended recipient of this invitation.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+          <a routerLink="/immigration" class="btn btn-outline-secondary">Decline</a>
+          <button class="btn btn-primary btn-lg" (click)="accept()" [disabled]="accepting">
+            <span *ngIf="accepting"><i class="bi bi-arrow-repeat spin me-1"></i>Accepting…</span>
+            <span *ngIf="!accepting"><i class="bi bi-check-lg me-1"></i>Accept Invitation</span>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+</div>
