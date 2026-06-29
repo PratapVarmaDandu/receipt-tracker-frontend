@@ -405,6 +405,31 @@
       </div>
     </div>
 
+    <!-- ── Beneficiary: filing questionnaires awaiting completion ───────── -->
+    <div *ngIf="!caseLoading && case && isBeneficiary && myQuestionnaires.length > 0"
+         class="card mt-3 border-warning">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+          <i class="bi bi-exclamation-circle-fill text-warning me-2" style="font-size:1.2rem"></i>
+          <h6 class="mb-0">Action needed — review &amp; complete your filing details</h6>
+        </div>
+        <p class="text-muted small mb-3">
+          Your attorney has prepared a filing package. Please review the details already filled in,
+          answer the remaining questions, and submit.
+        </p>
+        <div *ngFor="let q of myQuestionnaires"
+             class="d-flex align-items-center justify-content-between py-2 border-top">
+          <div>
+            <span class="fw-semibold small">{{ q.packageName }}</span>
+            <span class="text-muted small ms-2">{{ q.answeredCount }}/{{ q.questionCount }} answered</span>
+          </div>
+          <button class="btn btn-warning btn-sm" (click)="openQuestionnaire(q.token)">
+            <i class="bi bi-pencil-square me-1"></i>Review &amp; Complete
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Beneficiary next-steps card ──────────────────────────────────── -->
     <div *ngIf="!caseLoading && case && isBeneficiary" class="card mt-3 p-0 overflow-hidden next-steps-card">
       <div class="next-steps-header">

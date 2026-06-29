@@ -12,7 +12,7 @@ import {
   CaseRfe, CreateRfeRequest, UscisStatusResult, PriorityDateStatus,
   ProfileDataRequest, CreateDataRequestRequest,
   ChecklistItem, GenerateChecklistRequest, UpdateChecklistItemRequest,
-  FilingPackage, GeneratedPdfPacket
+  FilingPackage, GeneratedPdfPacket, MyQuestionnaire
 } from '../../../services/immigration.service';
 import { ImmOrgService } from '../../../services/imm-org.service';
 import { ImmOrgMember } from '../../../models/imm-org.model';
@@ -431,6 +431,7 @@ export class CaseDetailComponent implements OnInit {
         if (this.isEbCaseType(c.caseType)) this.loadPriorityDateStatus();
         if (c.callerRelationship === 'BENEFICIARY') {
           this.checkAndShowConsent();
+          this.loadMyQuestionnaires();
         }
         if (c.callerRelationship === 'ATTORNEY' && c.lawFirmImmOrgId) {
           this.loadFirmMembers(c.lawFirmImmOrgId);
@@ -443,6 +444,20 @@ export class CaseDetailComponent implements OnInit {
         this.logger.error(this.source, 'loadCase failed', err);
       }
     });
+  }
+
+  // Beneficiary (and other parties): questionnaires the caller must complete in-app
+  myQuestionnaires: MyQuestionnaire[] = [];
+
+  loadMyQuestionnaires(): void {
+    this.immigrationService.getMyQuestionnaires(this.caseId).subscribe({
+      next: qs => { this.myQuestionnaires = qs; },
+      error: err => { this.logger.error(this.source, 'loadMyQuestionnaires failed', err); }
+    });
+  }
+
+  openQuestionnaire(token: string): void {
+    this.router.navigate(['/immigration/packages/questionnaire', token]);
   }
 
   loadKeyDates(): void {
