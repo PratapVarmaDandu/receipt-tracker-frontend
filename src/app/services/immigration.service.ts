@@ -532,6 +532,20 @@ export interface CreatePackageRequest {
   selectedFormTypes: string[];
 }
 
+// A questionnaire the current caller is responsible for (caller-scoped); powers the
+// in-app "action needed" surface so the beneficiary doesn't depend on the email link.
+export interface MyQuestionnaire {
+  questionnaireId: number;
+  packageId: number;
+  packageName: string;
+  targetRelationship: string;  // BENEFICIARY | EMPLOYER | ATTORNEY
+  token: string;
+  status: string;              // PENDING
+  questionCount: number;
+  answeredCount: number;
+  expiresAt: string;
+}
+
 export interface FormVersionUsed {
   formType: string;
   versionId: number;
@@ -1257,6 +1271,14 @@ export class ImmigrationService {
       timeout(45000),
       tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/packages`, t)),
       catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/packages`, err, t); throw err; })
+    );
+  }
+
+  getMyQuestionnaires(caseId: number): Observable<MyQuestionnaire[]> {
+    const t = Date.now();
+    return this.http.get<MyQuestionnaire[]>(`${this.base}/cases/${caseId}/my-questionnaires`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/cases/${caseId}/my-questionnaires`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/cases/${caseId}/my-questionnaires`, err, t); throw err; })
     );
   }
 
