@@ -10,6 +10,44 @@
       USCIS form editions are checked monthly. Review PDF field changes and verify the field
       mapping before approving a new edition for use in filing packages.
     </p>
+    <button class="btn btn-primary btn-sm" (click)="showCreatePanel = !showCreatePanel">
+      <i class="bi bi-upload me-1"></i>Add Form Version
+    </button>
+  </div>
+
+  <!-- Manual upload panel: bootstrap a form version by uploading the fillable USCIS PDF -->
+  <div *ngIf="showCreatePanel" class="card p-3 mb-3 border-primary">
+    <h6 class="mb-2">Upload a Form PDF</h6>
+    <p class="text-muted small mb-3">
+      Upload the official fillable USCIS PDF to create a <strong>Pending Review</strong> version,
+      then upload its field mapping and approve it. Use this when the monthly scheduler hasn't
+      created the edition yet.
+    </p>
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <label class="form-label small fw-semibold">Form Type</label>
+        <select class="form-select form-select-sm" [(ngModel)]="newFormType">
+          <option *ngFor="let ft of formTypeOptions" [value]="ft">{{ ft.replace('I', 'I-') }}</option>
+        </select>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label small fw-semibold">Edition Date</label>
+        <input type="text" class="form-control form-control-sm" [(ngModel)]="newEditionDate"
+               placeholder="e.g. 04/01/24" />
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label small fw-semibold">Fillable PDF</label>
+        <input type="file" class="form-control form-control-sm" accept="application/pdf,.pdf"
+               (change)="onCreateFileSelected($event)" />
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-primary btn-sm w-100" (click)="doCreate()" [disabled]="creating">
+          <span *ngIf="creating"><i class="bi bi-arrow-repeat spin me-1"></i>Uploading…</span>
+          <span *ngIf="!creating"><i class="bi bi-check-lg me-1"></i>Upload</span>
+        </button>
+      </div>
+    </div>
+    <div *ngIf="createError" class="alert alert-danger py-2 small mt-2 mb-0">{{ createError }}</div>
   </div>
 
   <div *ngIf="loading" class="fv-loading">

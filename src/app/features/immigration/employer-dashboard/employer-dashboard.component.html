@@ -328,7 +328,7 @@
           <i class="bi bi-building"></i>
         </div>
         <div class="flex-grow-1">
-          <div class="fw-semibold">{{ profileForm.name || selectedOrg?.name || 'Company Profile' }}</div>
+          <div class="fw-semibold">{{ profileForm.name || selectedOrg.name || 'Company Profile' }}</div>
           <div class="text-muted small">
             <span *ngIf="profileForm.city && profileForm.stateCode">{{ profileForm.city }}, {{ profileForm.stateCode }}</span>
             <span *ngIf="!profileForm.city || !profileForm.stateCode">Employer · Immigration Sponsor</span>

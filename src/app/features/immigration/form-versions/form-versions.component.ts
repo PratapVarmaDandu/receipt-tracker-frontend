@@ -28,6 +28,16 @@ export class FormVersionsComponent implements OnInit {
 
   readonly statusCss = FORM_VERSION_STATUS_CSS;
 
+  // Manual upload (bootstrap a form version when the scheduler hasn't created one)
+  showCreatePanel = false;
+  readonly formTypeOptions = ['I129', 'I140', 'I485', 'I765', 'I131', 'I539', 'I290B', 'I693', 'G28', 'PERM'];
+  newFormType = 'I129';
+  newEditionDate = '';
+  newFile: File | null = null;
+  newFileName = '';
+  creating = false;
+  createError = '';
+
   constructor(private immService: ImmigrationService) {}
 
   ngOnInit(): void {
@@ -119,6 +129,35 @@ export class FormVersionsComponent implements OnInit {
     });
   }
 
+  onCreateFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.newFile = input.files?.length ? input.files[0] : null;
+    this.newFileName = this.newFile?.name ?? '';
+  }
+
+  doCreate(): void {
+    if (!this.newFormType || !this.newEditionDate.trim() || !this.newFile) {
+      this.createError = 'Form type, edition date, and a PDF file are required.';
+      return;
+    }
+    this.creating = true;
+    this.createError = '';
+    this.immService.createFormVersion(this.newFormType, this.newEditionDate.trim(), this.newFile).subscribe({
+      next: () => {
+        this.creating = false;
+        this.showCreatePanel = false;
+        this.newEditionDate = '';
+        this.newFile = null;
+        this.newFileName = '';
+        this.load();
+      },
+      error: err => {
+        this.createError = err?.error?.error ?? err?.error?.message ?? 'Upload failed.';
+        this.creating = false;
+      }
+    });
+  }
+
   private replaceVersion(updated: FormVersion): void {
     for (const g of this.groups) {
       const idx = g.versions.findIndex(v => v.id === updated.id);
@@ -132,6 +171,7 @@ export class FormVersionsComponent implements OnInit {
   auditActionLabel(action: string): string {
     const labels: Record<string, string> = {
       DOWNLOADED:      'Downloaded',
+      MANUAL_UPLOAD:   'Manual Upload',
       APPROVED:        'Approved',
       DEPRECATED:      'Deprecated',
       MAPPING_UPDATED: 'Mapping Verified',
@@ -144,6 +184,7 @@ export class FormVersionsComponent implements OnInit {
   auditActionCss(action: string): string {
     const css: Record<string, string> = {
       DOWNLOADED:      'audit-info',
+      MANUAL_UPLOAD:   'audit-info',
       APPROVED:        'audit-success',
       DEPRECATED:      'audit-muted',
       MAPPING_UPDATED: 'audit-success',

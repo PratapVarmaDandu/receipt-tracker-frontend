@@ -1426,4 +1426,16 @@ export class ImmigrationService {
       catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/upload-mapping`, err, t); throw err; })
     );
   }
+
+  createFormVersion(formType: string, editionDate: string, file: File): Observable<FormVersion> {
+    const t = Date.now();
+    const fd = new FormData();
+    fd.append('formType', formType);
+    fd.append('editionDate', editionDate);
+    fd.append('file', file);
+    return this.http.post<FormVersion>(`${this.base}/form-versions`, fd).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', '/immigration/form-versions', t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', '/immigration/form-versions', err, t); throw err; })
+    );
+  }
 }
