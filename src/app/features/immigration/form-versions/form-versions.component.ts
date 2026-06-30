@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { ImmigrationService, FormVersion, FORM_VERSION_STATUS_CSS } from '../../../services/immigration.service';
+import {
+  ImmigrationService, FormVersion, FORM_VERSION_STATUS_CSS,
+  MappingBuilder, MappingBuilderQuestion
+} from '../../../services/immigration.service';
 
 interface FormTypeGroup {
   formType: string;
@@ -37,6 +40,14 @@ export class FormVersionsComponent implements OnInit {
   newFileName = '';
   creating = false;
   createError = '';
+
+  // Mapping builder (point-and-click question → PDF field pairing)
+  builderVersionId: number | null = null;
+  builder: MappingBuilder | null = null;
+  builderPairs: Record<string, string> = {};
+  builderLoading = false;
+  builderSaving = false;
+  builderError = '';
 
   constructor(private immService: ImmigrationService) {}
 
@@ -154,6 +165,64 @@ export class FormVersionsComponent implements OnInit {
       error: err => {
         this.createError = err?.error?.error ?? err?.error?.message ?? 'Upload failed.';
         this.creating = false;
+      }
+    });
+  }
+
+  // ── Mapping builder ────────────────────────────────────────────────────────
+
+  toggleBuilder(version: FormVersion): void {
+    if (this.builderVersionId === version.id) {
+      this.builderVersionId = null;
+      this.builder = null;
+      return;
+    }
+    this.builderVersionId = version.id;
+    this.builder = null;
+    this.builderError = '';
+    this.builderLoading = true;
+    this.immService.getMappingBuilder(version.id).subscribe({
+      next: b => {
+        this.builder = b;
+        this.builderPairs = { ...b.currentMapping };
+        this.builderLoading = false;
+      },
+      error: err => {
+        this.builderError = err?.error?.error ?? err?.error?.message ?? 'Failed to load mapping builder.';
+        this.builderLoading = false;
+      }
+    });
+  }
+
+  builderQuestionsBySection(): { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }[] {
+    if (!this.builder) return [];
+    const groups: Record<string, { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }> = {};
+    for (const q of this.builder.questions) {
+      const key = q.section || 'other';
+      if (!groups[key]) groups[key] = { section: key, sectionLabel: q.sectionLabel || key, questions: [] };
+      groups[key].questions.push(q);
+    }
+    return Object.values(groups);
+  }
+
+  builderMappedCount(): number {
+    return Object.values(this.builderPairs).filter(v => !!v && v.trim().length > 0).length;
+  }
+
+  saveBuilder(): void {
+    if (this.builderVersionId == null) return;
+    this.builderSaving = true;
+    this.builderError = '';
+    this.immService.saveFormVersionMapping(this.builderVersionId, this.builderPairs).subscribe({
+      next: updated => {
+        this.replaceVersion(updated);
+        this.builderSaving = false;
+        this.builderVersionId = null;
+        this.builder = null;
+      },
+      error: err => {
+        this.builderError = err?.error?.error ?? err?.error?.message ?? 'Save failed.';
+        this.builderSaving = false;
       }
     });
   }

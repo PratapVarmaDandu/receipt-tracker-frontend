@@ -677,6 +677,22 @@ export interface FormVersion {
   recentAudit: FormVersionAuditEvent[] | null;
 }
 
+export interface MappingBuilderQuestion {
+  key: string;
+  label: string;
+  owner: string;
+  section: string;
+  sectionLabel: string;
+}
+
+export interface MappingBuilder {
+  versionId: number;
+  formType: string;
+  pdfFieldNames: string[];
+  questions: MappingBuilderQuestion[];
+  currentMapping: Record<string, string>;
+}
+
 export const FORM_VERSION_STATUS_CSS: Record<string, string> = {
   PENDING_REVIEW: 'status-warning',
   APPROVED:       'status-success',
@@ -1424,6 +1440,22 @@ export class ImmigrationService {
     return this.http.post<FormVersion>(`${this.base}/form-versions/${id}/upload-mapping`, fd).pipe(
       tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/form-versions/${id}/upload-mapping`, t)),
       catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/upload-mapping`, err, t); throw err; })
+    );
+  }
+
+  getMappingBuilder(id: number): Observable<MappingBuilder> {
+    const t = Date.now();
+    return this.http.get<MappingBuilder>(`${this.base}/form-versions/${id}/mapping-builder`).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', `/immigration/form-versions/${id}/mapping-builder`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', `/immigration/form-versions/${id}/mapping-builder`, err, t); throw err; })
+    );
+  }
+
+  saveFormVersionMapping(id: number, pairs: Record<string, string>): Observable<FormVersion> {
+    const t = Date.now();
+    return this.http.post<FormVersion>(`${this.base}/form-versions/${id}/mapping`, pairs).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/form-versions/${id}/mapping`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/mapping`, err, t); throw err; })
     );
   }
 
