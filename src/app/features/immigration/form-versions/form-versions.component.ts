@@ -41,6 +41,13 @@ export class FormVersionsComponent implements OnInit {
   creating = false;
   createError = '';
 
+  // Generate a static AcroForm template (data sheet) — no PDF design / mapping needed
+  showTemplatePanel = false;
+  tplFormType = 'I129';
+  tplEditionDate = '';
+  generatingTemplate = false;
+  templateError = '';
+
   // Mapping builder (point-and-click question → PDF field pairing)
   builderVersionId: number | null = null;
   builder: MappingBuilder | null = null;
@@ -168,6 +175,27 @@ export class FormVersionsComponent implements OnInit {
       error: err => {
         this.createError = err?.error?.error ?? err?.error?.message ?? 'Upload failed.';
         this.creating = false;
+      }
+    });
+  }
+
+  doGenerateTemplate(): void {
+    if (!this.tplFormType || !this.tplEditionDate.trim()) {
+      this.templateError = 'Form type and edition date are required.';
+      return;
+    }
+    this.generatingTemplate = true;
+    this.templateError = '';
+    this.immService.generateFormTemplate(this.tplFormType, this.tplEditionDate.trim()).subscribe({
+      next: () => {
+        this.generatingTemplate = false;
+        this.showTemplatePanel = false;
+        this.tplEditionDate = '';
+        this.load();
+      },
+      error: err => {
+        this.templateError = err?.error?.error ?? err?.error?.message ?? 'Template generation failed.';
+        this.generatingTemplate = false;
       }
     });
   }

@@ -1443,6 +1443,14 @@ export class ImmigrationService {
     );
   }
 
+  generateFormTemplate(formType: string, editionDate: string): Observable<FormVersion> {
+    const t = Date.now();
+    return this.http.post<FormVersion>(`${this.base}/form-versions/generate-template`, { formType, editionDate }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', '/immigration/form-versions/generate-template', t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', '/immigration/form-versions/generate-template', err, t); throw err; })
+    );
+  }
+
   getMappingBuilder(id: number): Observable<MappingBuilder> {
     const t = Date.now();
     return this.http.get<MappingBuilder>(`${this.base}/form-versions/${id}/mapping-builder`).pipe(
