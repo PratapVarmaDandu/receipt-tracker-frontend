@@ -45,6 +45,9 @@ export class FormVersionsComponent implements OnInit {
   builderVersionId: number | null = null;
   builder: MappingBuilder | null = null;
   builderPairs: Record<string, string> = {};
+  // Precomputed once on load — never build this in the template (a new array per CD cycle
+  // with ngModel selects inside causes a change-detection loop that freezes the page).
+  builderSections: { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }[] = [];
   builderLoading = false;
   builderSaving = false;
   builderError = '';
@@ -173,18 +176,20 @@ export class FormVersionsComponent implements OnInit {
 
   toggleBuilder(version: FormVersion): void {
     if (this.builderVersionId === version.id) {
-      this.builderVersionId = null;
-      this.builder = null;
+      this.closeBuilder();
       return;
     }
     this.builderVersionId = version.id;
     this.builder = null;
+    this.builderSections = [];
     this.builderError = '';
     this.builderLoading = true;
     this.immService.getMappingBuilder(version.id).subscribe({
       next: b => {
         this.builder = b;
         this.builderPairs = { ...b.currentMapping };
+        this.builderSections = this.groupQuestions(b.questions);
+        this.builderMapped = this.countMapped();
         this.builderLoading = false;
       },
       error: err => {
@@ -194,10 +199,16 @@ export class FormVersionsComponent implements OnInit {
     });
   }
 
-  builderQuestionsBySection(): { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }[] {
-    if (!this.builder) return [];
+  closeBuilder(): void {
+    this.builderVersionId = null;
+    this.builder = null;
+    this.builderSections = [];
+  }
+
+  private groupQuestions(questions: MappingBuilderQuestion[]):
+      { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }[] {
     const groups: Record<string, { section: string; sectionLabel: string; questions: MappingBuilderQuestion[] }> = {};
-    for (const q of this.builder.questions) {
+    for (const q of questions) {
       const key = q.section || 'other';
       if (!groups[key]) groups[key] = { section: key, sectionLabel: q.sectionLabel || key, questions: [] };
       groups[key].questions.push(q);
@@ -205,9 +216,17 @@ export class FormVersionsComponent implements OnInit {
     return Object.values(groups);
   }
 
-  builderMappedCount(): number {
+  // Recomputed only when a select changes (not every CD cycle)
+  builderMapped = 0;
+  onPairChange(): void {
+    this.builderMapped = this.countMapped();
+  }
+  private countMapped(): number {
     return Object.values(this.builderPairs).filter(v => !!v && v.trim().length > 0).length;
   }
+
+  trackSection = (_: number, s: { section: string }) => s.section;
+  trackQuestion = (_: number, q: MappingBuilderQuestion) => q.key;
 
   saveBuilder(): void {
     if (this.builderVersionId == null) return;
@@ -217,8 +236,7 @@ export class FormVersionsComponent implements OnInit {
       next: updated => {
         this.replaceVersion(updated);
         this.builderSaving = false;
-        this.builderVersionId = null;
-        this.builder = null;
+        this.closeBuilder();
       },
       error: err => {
         this.builderError = err?.error?.error ?? err?.error?.message ?? 'Save failed.';

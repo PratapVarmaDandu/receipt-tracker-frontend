@@ -169,16 +169,17 @@
                       Leave a question blank to skip it. Saving verifies the mapping.
                     </p>
 
-                    <div *ngFor="let grp of builderQuestionsBySection()" class="mb-3">
+                    <div *ngFor="let grp of builderSections; trackBy: trackSection" class="mb-3">
                       <div class="fw-semibold small text-uppercase text-muted mb-1">{{ grp.sectionLabel }}</div>
-                      <div *ngFor="let q of grp.questions"
+                      <div *ngFor="let q of grp.questions; trackBy: trackQuestion"
                            class="d-flex align-items-center gap-2 py-1 border-bottom">
                         <div style="flex:0 0 45%">
                           <span class="small fw-semibold">{{ q.label }}</span>
                           <span class="text-muted small ms-1">({{ q.owner | titlecase }})</span>
                           <div class="text-muted" style="font-size:.7rem">{{ q.key }}</div>
                         </div>
-                        <select class="form-select form-select-sm" [(ngModel)]="builderPairs[q.key]" style="flex:1">
+                        <select class="form-select form-select-sm" [(ngModel)]="builderPairs[q.key]"
+                                (ngModelChange)="onPairChange()" style="flex:1">
                           <option value="">— not mapped —</option>
                           <option *ngFor="let fn of builder.pdfFieldNames" [value]="fn">{{ fn }}</option>
                         </select>
@@ -188,9 +189,9 @@
                     <div class="d-flex align-items-center gap-2 mt-2">
                       <button class="btn btn-success btn-sm" (click)="saveBuilder()" [disabled]="builderSaving">
                         <span *ngIf="builderSaving" class="spinner-border spinner-border-sm me-1"></span>
-                        Save Mapping ({{ builderMappedCount() }} fields)
+                        Save Mapping ({{ builderMapped }} fields)
                       </button>
-                      <button class="btn btn-outline-secondary btn-sm" (click)="toggleBuilder(v)">Cancel</button>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="closeBuilder()">Cancel</button>
                     </div>
                   </ng-container>
                 </div>
