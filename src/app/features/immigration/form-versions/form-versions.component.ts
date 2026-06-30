@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {
   ImmigrationService, FormVersion, FORM_VERSION_STATUS_CSS,
-  MappingBuilder, MappingBuilderQuestion
+  MappingBuilder, MappingBuilderQuestion, FieldSpec
 } from '../../../services/immigration.service';
 
 interface FormTypeGroup {
@@ -47,6 +47,17 @@ export class FormVersionsComponent implements OnInit {
   tplEditionDate = '';
   generatingTemplate = false;
   templateError = '';
+
+  // Field-name spec (for building A+ replicas) — generic across forms
+  showSpecPanel = false;
+  specFormType = 'I129';
+  fieldSpec: FieldSpec[] = [];
+  specLoading = false;
+  specError = '';
+
+  // Auto-map by field name (replica named to the spec)
+  autoMappingId: number | null = null;
+  autoMapError: Record<number, string> = {};
 
   // Mapping builder (point-and-click question → PDF field pairing)
   builderVersionId: number | null = null;
@@ -196,6 +207,57 @@ export class FormVersionsComponent implements OnInit {
       error: err => {
         this.templateError = err?.error?.error ?? err?.error?.message ?? 'Template generation failed.';
         this.generatingTemplate = false;
+      }
+    });
+  }
+
+  // ── Field-name spec (for building A+ replicas) ────────────────────────────
+
+  loadFieldSpec(): void {
+    this.specLoading = true;
+    this.specError = '';
+    this.immService.getFieldSpec(this.specFormType).subscribe({
+      next: spec => { this.fieldSpec = spec; this.specLoading = false; },
+      error: err => {
+        this.specError = err?.error?.error ?? err?.error?.message ?? 'Failed to load field spec.';
+        this.specLoading = false;
+      }
+    });
+  }
+
+  toggleSpecPanel(): void {
+    this.showSpecPanel = !this.showSpecPanel;
+    if (this.showSpecPanel) this.loadFieldSpec();
+  }
+
+  downloadSpecCsv(): void {
+    const rows = [['fieldName', 'questionKey', 'label', 'owner', 'section', 'type', 'required']];
+    for (const f of this.fieldSpec) {
+      rows.push([f.fieldName, f.questionKey, f.label, f.owner, f.sectionLabel, f.type, String(f.required)]);
+    }
+    const csv = rows.map(r => r.map(c => `"${(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${this.specFormType}-field-spec.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Auto-map by field name ────────────────────────────────────────────────
+
+  doAutoMap(versionId: number): void {
+    this.autoMappingId = versionId;
+    delete this.autoMapError[versionId];
+    this.immService.autoMapFormVersion(versionId).subscribe({
+      next: updated => {
+        this.replaceVersion(updated);
+        this.autoMappingId = null;
+      },
+      error: err => {
+        this.autoMapError[versionId] = err?.error?.error ?? err?.error?.message ?? 'Auto-map failed.';
+        this.autoMappingId = null;
       }
     });
   }

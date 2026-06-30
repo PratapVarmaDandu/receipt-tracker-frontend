@@ -17,6 +17,45 @@
       <button class="btn btn-outline-secondary btn-sm" (click)="showCreatePanel = !showCreatePanel">
         <i class="bi bi-upload me-1"></i>Upload PDF
       </button>
+      <button class="btn btn-outline-secondary btn-sm" (click)="toggleSpecPanel()">
+        <i class="bi bi-list-columns-reverse me-1"></i>Field Name Spec
+      </button>
+    </div>
+  </div>
+
+  <!-- Field-name spec: the contract a designer names a replica PDF's fields against -->
+  <div *ngIf="showSpecPanel" class="card p-3 mb-3 border-secondary">
+    <div class="d-flex align-items-end gap-2 mb-2">
+      <div>
+        <label class="form-label small fw-semibold mb-1">Form Type</label>
+        <select class="form-select form-select-sm" [(ngModel)]="specFormType" (ngModelChange)="loadFieldSpec()">
+          <option *ngFor="let ft of formTypeOptions" [value]="ft">{{ ft.replace('I', 'I-') }}</option>
+        </select>
+      </div>
+      <button class="btn btn-outline-primary btn-sm" (click)="downloadSpecCsv()" [disabled]="!fieldSpec.length">
+        <i class="bi bi-download me-1"></i>Download CSV
+      </button>
+    </div>
+    <p class="text-muted small mb-2">
+      When building a static replica PDF, name each AcroForm field exactly as <strong>Field Name</strong>
+      below — then <strong>Upload PDF</strong> and <strong>Auto-map by field name</strong> wires it up automatically.
+    </p>
+    <div *ngIf="specError" class="alert alert-danger py-1 small">{{ specError }}</div>
+    <div *ngIf="specLoading" class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Loading…</div>
+    <div *ngIf="!specLoading && fieldSpec.length" class="table-responsive" style="max-height:320px;overflow:auto">
+      <table class="table table-sm small mb-0">
+        <thead><tr><th>Field Name</th><th>Question</th><th>Owner</th><th>Section</th><th>Type</th><th>Req</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let f of fieldSpec">
+            <td><code>{{ f.fieldName }}</code></td>
+            <td>{{ f.label }}</td>
+            <td>{{ f.owner | titlecase }}</td>
+            <td>{{ f.sectionLabel }}</td>
+            <td>{{ f.type }}</td>
+            <td>{{ f.required ? '✓' : '' }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -184,13 +223,19 @@
                   {{ uploadError[v.id] }}
                 </div>
 
-                <!-- Point-and-click builder (alternative to uploading JSON) -->
-                <div class="mt-3">
+                <!-- Auto-map (replica named to the field spec) + point-and-click builder -->
+                <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                  <button class="btn btn-outline-success btn-sm" (click)="doAutoMap(v.id)"
+                          [disabled]="autoMappingId === v.id">
+                    <span *ngIf="autoMappingId === v.id" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="autoMappingId !== v.id" class="bi bi-magic me-1"></i>Auto-map by field name
+                  </button>
                   <button class="btn btn-outline-primary btn-sm" (click)="toggleBuilder(v)">
                     <i class="bi bi-ui-checks-grid me-1"></i>
                     {{ builderVersionId === v.id ? 'Close mapping builder' : 'Build mapping (point &amp; click)' }}
                   </button>
                 </div>
+                <div *ngIf="autoMapError[v.id]" class="alert alert-danger py-1 small mt-2 mb-0">{{ autoMapError[v.id] }}</div>
 
                 <div *ngIf="builderVersionId === v.id" class="mapping-builder card p-3 mt-2">
                   <div *ngIf="builderLoading" class="text-muted small">

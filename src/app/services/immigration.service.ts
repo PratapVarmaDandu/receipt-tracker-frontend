@@ -693,6 +693,17 @@ export interface MappingBuilder {
   currentMapping: Record<string, string>;
 }
 
+export interface FieldSpec {
+  fieldName: string;
+  questionKey: string;
+  label: string;
+  owner: string;
+  section: string;
+  sectionLabel: string;
+  type: string;
+  required: boolean;
+}
+
 export const FORM_VERSION_STATUS_CSS: Record<string, string> = {
   PENDING_REVIEW: 'status-warning',
   APPROVED:       'status-success',
@@ -1448,6 +1459,22 @@ export class ImmigrationService {
     return this.http.post<FormVersion>(`${this.base}/form-versions/generate-template`, { formType, editionDate }).pipe(
       tap(() => this.logger.apiCall(this.source, 'POST', '/immigration/form-versions/generate-template', t)),
       catchError(err => { this.logger.apiError(this.source, 'POST', '/immigration/form-versions/generate-template', err, t); throw err; })
+    );
+  }
+
+  getFieldSpec(formType: string): Observable<FieldSpec[]> {
+    const t = Date.now();
+    return this.http.get<FieldSpec[]>(`${this.base}/form-versions/field-spec`, { params: { formType } }).pipe(
+      tap(() => this.logger.apiCall(this.source, 'GET', '/immigration/form-versions/field-spec', t)),
+      catchError(err => { this.logger.apiError(this.source, 'GET', '/immigration/form-versions/field-spec', err, t); throw err; })
+    );
+  }
+
+  autoMapFormVersion(id: number): Observable<FormVersion> {
+    const t = Date.now();
+    return this.http.post<FormVersion>(`${this.base}/form-versions/${id}/auto-map`, {}).pipe(
+      tap(() => this.logger.apiCall(this.source, 'POST', `/immigration/form-versions/${id}/auto-map`, t)),
+      catchError(err => { this.logger.apiError(this.source, 'POST', `/immigration/form-versions/${id}/auto-map`, err, t); throw err; })
     );
   }
 
