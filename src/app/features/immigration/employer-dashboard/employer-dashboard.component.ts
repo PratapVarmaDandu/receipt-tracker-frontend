@@ -198,7 +198,7 @@ export class EmployerDashboardComponent implements OnInit {
     this.inviting = true;
     this.inviteError = null;
     this.inviteResult = null;
-    this.immOrgService.inviteMember(this.selectedOrg.id, { email: this.inviteEmail.trim(), role: 'MEMBER' }).subscribe({
+    this.immOrgService.inviteMember(this.selectedOrg.id, { email: this.inviteEmail.trim(), role: 'CASE_VIEWER' }).subscribe({
       next: m => {
         this.inviting = false;
         this.inviteEmail = '';

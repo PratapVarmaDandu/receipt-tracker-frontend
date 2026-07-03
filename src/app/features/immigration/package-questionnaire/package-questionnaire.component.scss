@@ -210,3 +210,16 @@
   overflow: hidden;
   .confidence-fill { height: 100%; border-radius: 2px; }
 }
+
+// ── LIST (repeat group) row editor ──────────────────────────────────────────
+.list-group-editor {
+  .list-row {
+    border: 1px solid #e2e8f0;
+    border-radius: .5rem;
+    overflow: hidden;
+  }
+  .list-row-header {
+    background: #f8fafc;
+    border-radius: .5rem .5rem 0 0;
+  }
+}

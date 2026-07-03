@@ -22,6 +22,8 @@ export class PackageQuestionnaireComponent implements OnInit {
 
   // Answers keyed by question key
   answers: Record<string, string> = {};
+  // LIST question rows keyed by question key; serialized to JSON on submit
+  listRows: Record<string, Array<Record<string, string>>> = {};
   // Whether the user has verified each prefilled answer
   verified: Record<string, boolean> = {};
   // Show/hide toggle for TEXT_SENSITIVE fields
@@ -75,12 +77,72 @@ export class PackageQuestionnaireComponent implements OnInit {
   prefillAnswers(spec: QuestionnairePublicSpec): void {
     for (const section of spec.sections) {
       for (const q of section.questions) {
+        if (q.type === 'LIST') {
+          this.listRows[q.key] = this.parseListPrefill(q.prefillValue);
+          if (this.listRows[q.key].length > 0) this.verified[q.key] = false;
+          continue;
+        }
         if (q.prefillValue && q.type !== 'TEXT_SENSITIVE') {
           this.answers[q.key] = q.prefillValue;
           this.verified[q.key] = false; // must explicitly verify
         }
       }
     }
+  }
+
+  private parseListPrefill(prefillValue?: string): Array<Record<string, string>> {
+    if (!prefillValue) return [];
+    try {
+      const rows = JSON.parse(prefillValue);
+      if (!Array.isArray(rows)) return [];
+      return rows.map(r => {
+        const row: Record<string, string> = {};
+        for (const [k, v] of Object.entries(r || {})) {
+          if (v !== null && v !== undefined) row[k] = String(v);
+        }
+        return row;
+      });
+    } catch {
+      this.logger.error(this.source, 'Could not parse LIST prefill value');
+      return [];
+    }
+  }
+
+  // ── LIST question rows ────────────────────────────────────────────────────
+
+  rowsFor(q: QuestionnaireQuestion): Array<Record<string, string>> {
+    if (!this.listRows[q.key]) this.listRows[q.key] = [];
+    return this.listRows[q.key];
+  }
+
+  canAddRow(q: QuestionnaireQuestion): boolean {
+    return this.rowsFor(q).length < (q.maxRows ?? 10);
+  }
+
+  addRow(q: QuestionnaireQuestion): void {
+    if (this.canAddRow(q)) this.rowsFor(q).push({});
+  }
+
+  removeRow(q: QuestionnaireQuestion, index: number): void {
+    this.rowsFor(q).splice(index, 1);
+  }
+
+  private rowHasContent(row: Record<string, string>): boolean {
+    return Object.values(row).some(v => v !== null && v !== undefined && v.trim() !== '');
+  }
+
+  /** Rows the user actually filled in — blank rows are ignored. */
+  filledRows(q: QuestionnaireQuestion): Array<Record<string, string>> {
+    return this.rowsFor(q).filter(r => this.rowHasContent(r));
+  }
+
+  /** Question labels whose filled rows are missing a required column. */
+  private get incompleteListQuestions(): string[] {
+    return this.sections.flatMap(s => s.questions)
+      .filter(q => q.type === 'LIST' && (q.itemFields || []).some(f => f.required)
+        && this.filledRows(q).some(row =>
+            (q.itemFields || []).some(f => f.required && !(row[f.key] || '').trim())))
+      .map(q => q.label);
   }
 
   get sections(): QuestionnaireSection[] {
@@ -99,6 +161,7 @@ export class PackageQuestionnaireComponent implements OnInit {
   }
 
   hasAnswer(q: QuestionnaireQuestion): boolean {
+    if (q.type === 'LIST') return this.filledRows(q).length > 0;
     const v = this.answers[q.key];
     return v !== undefined && v !== null && v !== '';
   }
@@ -183,10 +246,28 @@ export class PackageQuestionnaireComponent implements OnInit {
       return;
     }
 
+    const incompleteLists = this.incompleteListQuestions;
+    if (incompleteLists.length > 0) {
+      this.submitError = 'Please complete the required columns in every row of: '
+        + incompleteLists.join(', ');
+      return;
+    }
+
+    // LIST answers are serialized JSON arrays of the filled rows
+    const payload: Record<string, string> = { ...this.answers };
+    for (const section of this.sections) {
+      for (const q of section.questions) {
+        if (q.type !== 'LIST') continue;
+        const rows = this.filledRows(q);
+        if (rows.length > 0) payload[q.key] = JSON.stringify(rows);
+        else delete payload[q.key];
+      }
+    }
+
     this.submitting = true;
     this.submitError = null;
 
-    this.immigrationService.submitPublicQuestionnaire(this.token, this.answers).subscribe({
+    this.immigrationService.submitPublicQuestionnaire(this.token, payload).subscribe({
       next: () => {
         this.submitting = false;
         this.submitted = true;

@@ -593,12 +593,22 @@ export interface QuestionnaireQuestion {
   key: string;
   label: string;
   sublabel?: string;
-  type: string;                // TEXT | TEXT_SENSITIVE | DATE | NUMBER | BOOLEAN | SELECT | TEXTAREA
+  type: string;                // TEXT | TEXT_SENSITIVE | DATE | NUMBER | BOOLEAN | SELECT | TEXTAREA | LIST
   required: boolean;
   validation?: Record<string, unknown>;
   options?: string[];
-  prefillValue?: string;
+  prefillValue?: string;       // LIST: JSON array string of row objects
   prefillSource?: string;      // profile | org | questionnaire | none
+  maxRows?: number;            // LIST only
+  itemFields?: QuestionnaireItemField[]; // LIST only — row-editor column spec
+}
+
+export interface QuestionnaireItemField {
+  key: string;
+  label: string;
+  type: string;                // TEXT | DATE | NUMBER | SELECT
+  required: boolean;
+  options?: string[];
 }
 
 export interface QuestionnaireSection {

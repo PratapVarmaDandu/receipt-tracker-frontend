@@ -382,10 +382,11 @@ Multi-section form; 5 tabs: Personal Info, Passport, US Entry & Status, Educatio
 - Reads `QuestionnairePublicSpec` from `GET /api/immigration/packages/questionnaires/{token}`
 - States: loading → error | expired | alreadySubmitted → wizard (sections) → submitted success | login prompt
 - `prefillAnswers()` copies non-sensitive prefill values into `answers` map; sets `verified[key] = false` for each — user must check verify box before submit is accepted
-- Dynamic renderer: `*ngFor` over `spec.sections` → section tabs; `*ngFor` over `section.questions`; per-type rendering via `*ngIf` on `q.type`: TEXT→`<input>`, DATE→date input, NUMBER→number input, TEXT_SENSITIVE→password input with show/hide toggle, BOOLEAN→yes/no radios, SELECT→`<select>` from `q.options[]`, TEXTAREA→`<textarea>`
+- Dynamic renderer: `*ngFor` over `spec.sections` → section tabs; `*ngFor` over `section.questions`; per-type rendering via `*ngIf` on `q.type`: TEXT→`<input>`, DATE→date input, NUMBER→number input, TEXT_SENSITIVE→password input with show/hide toggle, BOOLEAN→yes/no radios, SELECT→`<select>` from `q.options[]`, TEXTAREA→`<textarea>`, LIST→row-card editor (add/remove rows)
+- LIST questions (repeat groups): rows live in `listRows: Record<string, Array<Record<string,string>>>` (not `answers`); columns from `q.itemFields` (`QuestionnaireItemField`), Add button hidden at `q.maxRows`; prefill JSON parsed in `parseListPrefill()`; `doSubmit()` serializes filled rows via `JSON.stringify` into the payload so the submit shape stays `Record<string,string>`; blank rows ignored; `incompleteListQuestions` blocks submit when a filled row misses a required column
 - Pre-fill chip: shown when `isPrefilled(q)` (non-null `prefillValue` and not TEXT_SENSITIVE); includes Verify checkbox — unchecked prefills block submit with error
-- Progress bar per section: `sectionProgress(section)` = answered / total * 100
-- `doSubmit()`: checks `currentUser` (shows login prompt if null, stores `postLoginRedirect`); validates required fields; validates unverified prefills; calls `immigrationService.submitPublicQuestionnaire(token, answers)`
+- Progress bar per section: `sectionProgress(section)` = answered / total * 100; `hasAnswer(q)` counts LIST questions by filled rows
+- `doSubmit()`: checks `currentUser` (shows login prompt if null, stores `postLoginRedirect`); validates required fields; validates unverified prefills; calls `immigrationService.submitPublicQuestionnaire(token, payload)`
 - "Scan Passport" not implemented in this component — see data-request component for pattern
 - `AppComponent.isLoginPage` returns `true` for `/immigration/packages/questionnaire/` prefix (hides sidebar/header)
 - Declared in `ImmigrationModule`; no `AuthGuard` on route
