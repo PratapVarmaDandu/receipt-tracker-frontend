@@ -34,6 +34,9 @@ export class EmployerDashboardComponent implements OnInit {
   inviteResult: string | null = null;
   inviteError: string | null = null;
 
+  memberActionBusy: Record<number, boolean> = {};
+  memberActionError: string | null = null;
+
   readonly caseTypeLabels = CASE_TYPE_LABELS;
   readonly statusLabels = STATUS_LABELS;
   readonly statusCss = STATUS_CSS;
@@ -210,6 +213,58 @@ export class EmployerDashboardComponent implements OnInit {
       error: err => {
         this.inviting = false;
         this.inviteError = err?.error?.error || 'Invite failed';
+      }
+    });
+  }
+
+  resendInvite(m: ImmOrgMember): void {
+    if (!this.selectedOrg) return;
+    this.memberActionError = null;
+    this.memberActionBusy = { ...this.memberActionBusy, [m.id]: true };
+    this.immOrgService.resendInvite(this.selectedOrg.id, m.id).subscribe({
+      next: () => {
+        delete this.memberActionBusy[m.id];
+        this.loadMembers();
+      },
+      error: err => {
+        delete this.memberActionBusy[m.id];
+        this.memberActionError = err?.error?.error || 'Failed to resend invite';
+        this.logger.error(this.source, 'resendInvite failed', err);
+      }
+    });
+  }
+
+  revokeMember(m: ImmOrgMember): void {
+    if (!this.selectedOrg) return;
+    if (!confirm(`Revoke portal access for ${m.email}? Their case history and assignments are kept — you can restore access anytime.`)) return;
+    this.memberActionError = null;
+    this.memberActionBusy = { ...this.memberActionBusy, [m.id]: true };
+    this.immOrgService.removeMember(this.selectedOrg.id, m.id).subscribe({
+      next: () => {
+        delete this.memberActionBusy[m.id];
+        this.loadMembers();
+      },
+      error: err => {
+        delete this.memberActionBusy[m.id];
+        this.memberActionError = err?.error?.error || 'Failed to revoke access';
+        this.logger.error(this.source, 'revokeMember failed', err);
+      }
+    });
+  }
+
+  reactivateMember(m: ImmOrgMember): void {
+    if (!this.selectedOrg) return;
+    this.memberActionError = null;
+    this.memberActionBusy = { ...this.memberActionBusy, [m.id]: true };
+    this.immOrgService.reactivateMember(this.selectedOrg.id, m.id).subscribe({
+      next: () => {
+        delete this.memberActionBusy[m.id];
+        this.loadMembers();
+      },
+      error: err => {
+        delete this.memberActionBusy[m.id];
+        this.memberActionError = err?.error?.error || 'Failed to restore access';
+        this.logger.error(this.source, 'reactivateMember failed', err);
       }
     });
   }

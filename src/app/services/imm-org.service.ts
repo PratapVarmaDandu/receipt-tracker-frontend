@@ -41,6 +41,14 @@ export class ImmOrgService {
     return this.http.delete<void>(`${BASE}/api/immigration/orgs/${orgId}/members/${memberId}`, OPTS);
   }
 
+  resendInvite(orgId: number, memberId: number): Observable<ImmOrgMember> {
+    return this.http.post<ImmOrgMember>(`${BASE}/api/immigration/orgs/${orgId}/members/${memberId}/resend`, {}, OPTS);
+  }
+
+  reactivateMember(orgId: number, memberId: number): Observable<ImmOrgMember> {
+    return this.http.put<ImmOrgMember>(`${BASE}/api/immigration/orgs/${orgId}/members/${memberId}/reactivate`, {}, OPTS);
+  }
+
   getJoinInfo(token: string): Observable<ImmOrgMember> {
     return this.http.get<ImmOrgMember>(`${BASE}/api/immigration/orgs/join/${token}`, OPTS);
   }

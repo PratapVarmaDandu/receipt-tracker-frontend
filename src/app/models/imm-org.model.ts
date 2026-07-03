@@ -45,7 +45,7 @@ export interface ImmOrgMember {
   immOrgId: number;
   userId: number | null;
   email: string;
-  role: 'OWNER' | 'MEMBER';
+  role: 'OWNER' | 'ATTORNEY' | 'PARALEGAL' | 'CASE_VIEWER' | 'MEMBER';
   status: 'PENDING' | 'ACTIVE' | 'REMOVED';
   inviteToken?: string | null;
   orgName?: string | null;   // populated only by the public join-info call

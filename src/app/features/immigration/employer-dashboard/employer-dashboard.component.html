@@ -173,14 +173,31 @@
             <span *ngIf="!inviting">Invite</span>
           </button>
         </div>
+        <div *ngIf="memberActionError" class="alert alert-danger alert-sm mb-2">{{ memberActionError }}</div>
         <div *ngFor="let m of members" class="member-row">
           <div>
             <div class="small fw-semibold">{{ m.email }}</div>
             <div class="text-muted" style="font-size:.75rem">{{ m.role | titlecase }}</div>
           </div>
-          <span class="badge" [ngClass]="m.status === 'ACTIVE' ? 'bg-success' : m.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary'">
-            {{ m.status | titlecase }}
-          </span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge" [ngClass]="m.status === 'ACTIVE' ? 'bg-success' : m.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-secondary'">
+              {{ m.status === 'REMOVED' ? 'Revoked' : (m.status | titlecase) }}
+            </span>
+            <ng-container *ngIf="m.role !== 'OWNER'">
+              <button *ngIf="m.status === 'PENDING'" class="btn btn-xs btn-outline-secondary"
+                      [disabled]="memberActionBusy[m.id]" (click)="resendInvite(m)" title="Resend invite email">
+                <i class="bi bi-arrow-repeat" [class.spin]="memberActionBusy[m.id]"></i> Resend
+              </button>
+              <button *ngIf="m.status === 'PENDING' || m.status === 'ACTIVE'" class="btn btn-xs btn-outline-danger"
+                      [disabled]="memberActionBusy[m.id]" (click)="revokeMember(m)" title="Revoke portal access">
+                Revoke
+              </button>
+              <button *ngIf="m.status === 'REMOVED'" class="btn btn-xs btn-outline-primary"
+                      [disabled]="memberActionBusy[m.id]" (click)="reactivateMember(m)" title="Restore portal access">
+                Restore Access
+              </button>
+            </ng-container>
+          </div>
         </div>
       </div>
     </div>
