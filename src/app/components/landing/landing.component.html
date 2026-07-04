@@ -1,0 +1,126 @@
+<div class="landing-page">
+
+  <!-- ── Nav ─────────────────────────────────────────────── -->
+  <header class="landing-nav">
+    <div class="landing-nav-inner">
+      <span class="landing-brand">
+        <span class="brand-icon"><i class="bi bi-gem"></i></span>
+        Steward
+      </span>
+      <div class="landing-nav-actions">
+        <a class="nav-link" (click)="scrollToFeatures()">Features</a>
+        <button class="btn-nav-signin" (click)="loginWithGoogle()">Sign in</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Hero ────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-logo">
+        <i class="bi bi-gem"></i>
+      </div>
+      <h1 class="hero-title">Your finances, documents &amp; vehicles<br>all in one place.</h1>
+      <p class="hero-subtitle">
+        Steward brings receipts, shared expenses, secure documents, vehicle maintenance,
+        job hunting, and team purchasing together, so nothing falls through the cracks.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-google-hero" (click)="loginWithGoogle()">
+          <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Get started with Google
+        </button>
+        <button class="btn-explore" (click)="scrollToFeatures()">
+          Explore features <i class="bi bi-arrow-down"></i>
+        </button>
+      </div>
+      <p class="hero-note">
+        <i class="bi bi-shield-lock-fill me-1"></i>
+        Free to start. Your data is private, only you see your receipts.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Feature sections, one per audience ───────────────── -->
+  <section class="features" id="features">
+    <div class="features-inner">
+      <div class="section-heading">
+        <span class="eyebrow">Everything in one workspace</span>
+        <h2>Built for however you use it.</h2>
+        <p>Whichever group you're in, it's all under one login.</p>
+      </div>
+
+      <div class="audience-group" *ngFor="let g of groups">
+        <div class="audience-group-header">
+          <div class="audience-icon"><i class="bi" [ngClass]="g.icon"></i></div>
+          <h3>For {{ g.label }}</h3>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card" *ngFor="let f of g.features">
+            <div class="feature-icon"><i class="bi" [ngClass]="f.icon"></i></div>
+            <h3>{{ f.title }}</h3>
+            <p class="feature-desc">{{ f.description }}</p>
+            <ul class="feature-points">
+              <li *ngFor="let p of f.points"><i class="bi bi-check2"></i>{{ p }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Trust strip ─────────────────────────────────────── -->
+  <section class="trust">
+    <div class="trust-inner">
+      <div class="trust-item">
+        <i class="bi bi-google"></i>
+        <div>
+          <h4>Google sign-in only</h4>
+          <p>No new passwords to remember or leak, secure session-based access.</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <i class="bi bi-lock"></i>
+        <div>
+          <h4>Encrypted where it matters</h4>
+          <p>Sensitive fields are encrypted at rest; shares expire and are revocable anytime.</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <i class="bi bi-eye-slash"></i>
+        <div>
+          <h4>You control what's shared</h4>
+          <p>Nothing is visible to anyone else until you explicitly create a share link.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ───────────────────────────────────────── -->
+  <section class="final-cta">
+    <div class="final-cta-inner">
+      <h2>Ready to get organized?</h2>
+      <p>Sign in with Google and start with whichever tool you need first.</p>
+      <button class="btn-google-hero" (click)="loginWithGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Sign in with Google
+      </button>
+    </div>
+  </section>
+
+  <footer class="landing-footer">
+    <span><i class="bi bi-gem"></i> Steward</span>
+    <span class="footer-copy">&copy; 2026 Steward. All rights reserved.</span>
+  </footer>
+
+</div>

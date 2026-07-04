@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login.component';
+import { LandingComponent } from './components/landing/landing.component';
 import { WelcomeBannerComponent } from './components/welcome-banner/welcome-banner.component';
 import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
 import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
@@ -8,6 +9,7 @@ import { UploadComponent } from './components/upload/upload.component';
 import { ShareResponseComponent } from './components/share-response/share-response.component';
 import { PlansComponent } from './components/plans/plans.component';
 import { AuthGuard } from './guards/auth.guard';
+import { environment } from '../environments/environment';
 
 const routes: Routes = [
   // ── Eager shell routes (declared in AppModule) ──────────────────────────
@@ -18,8 +20,14 @@ const routes: Routes = [
   { path: 'upload',           component: UploadComponent,          canActivate: [AuthGuard] },
   { path: 'plans',            component: PlansComponent,           canActivate: [AuthGuard] },
 
-  // ── Redirect root ────────────────────────────────────────────────────────
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  // ── Public marketing page (root) ─────────────────────────────────────────
+  { path: '', component: LandingComponent, pathMatch: 'full' },
+
+  // ── Dev-only preview: always shows the landing page, even when the local
+  //    `environment.localDev` auth mock would otherwise redirect to /dashboard ──
+  ...(environment.production ? [] : [
+    { path: 'welcome-preview', component: LandingComponent, data: { preview: true } }
+  ]),
 
   // ── Lazy feature modules ─────────────────────────────────────────────────
   {

@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { LoginComponent } from './components/login/login.component';
+import { LandingComponent } from './components/landing/landing.component';
 import { WelcomeBannerComponent } from './components/welcome-banner/welcome-banner.component';
 import { FeatureLockedComponent } from './components/feature-locked/feature-locked.component';
 import { StorageSettingsComponent } from './components/storage-settings/storage-settings.component';
@@ -26,6 +27,7 @@ export function initAuth(authService: AuthService): () => Promise<void> {
   declarations: [
     AppComponent,
     LoginComponent,
+    LandingComponent,
     WelcomeBannerComponent,
     FeatureLockedComponent,
     StorageSettingsComponent,

@@ -76,6 +76,8 @@ export class AppComponent implements OnInit {
         // Strip query string / fragment so e.g. "/login?error=true" still counts as the login page
         const path: string = url.split('?')[0].split('#')[0];
         this.isLoginPage = path === '/login'
+          || path === '/'
+          || path === '/welcome-preview'
           || url.startsWith('/share/')
           || url.startsWith('/group/join/')
           || url.startsWith('/documents/shared/')
