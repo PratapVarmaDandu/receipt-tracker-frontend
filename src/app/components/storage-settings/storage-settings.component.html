@@ -32,6 +32,59 @@
 
 <ng-container *ngIf="!loading">
 
+  <!-- ── Refer a Friend Card ─────────────────────────────────────── -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-1">
+        <i class="bi bi-gift me-2 text-primary"></i>Refer a Friend
+      </h5>
+      <p class="text-muted small mb-3">
+        Share your link — when a friend signs up and logs in for the first time,
+        you get 1 month free.
+      </p>
+
+      <div *ngIf="referralLoading" class="text-center py-3 text-muted small">
+        <div class="spinner-border spinner-border-sm me-2"></div>Loading…
+      </div>
+
+      <div *ngIf="!referralLoading && referral">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Your referral code</label>
+            <div class="input-group">
+              <input type="text" class="form-control" [value]="referral.referralCode" readonly>
+              <button class="btn btn-outline-secondary" type="button" (click)="copyReferralCode()">
+                <i class="bi" [class.bi-clipboard]="!codeCopied" [class.bi-check2]="codeCopied"></i>
+                {{ codeCopied ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Shareable link</label>
+            <div class="input-group">
+              <input type="text" class="form-control" [value]="referral.shareLink" readonly>
+              <button class="btn btn-outline-secondary" type="button" (click)="copyReferralLink()">
+                <i class="bi" [class.bi-clipboard]="!linkCopied" [class.bi-check2]="linkCopied"></i>
+                {{ linkCopied ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 d-flex gap-4 flex-wrap">
+          <div>
+            <div class="fw-600">{{ referral.totalReferrals }}</div>
+            <div class="text-muted small">Friends referred</div>
+          </div>
+          <div>
+            <div class="fw-600">{{ referral.rewardedReferrals }} / {{ referral.annualCap }}</div>
+            <div class="text-muted small">Free months earned this year</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Storage Usage Card ──────────────────────────────────────── -->
   <div class="card mb-4">
     <div class="card-body">

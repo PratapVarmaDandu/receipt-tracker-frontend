@@ -95,6 +95,28 @@
   border-radius: 20px;
 }
 
+.plan-cancel-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+.btn-cancel-plan {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  background: none;
+  color: var(--danger, #dc3545);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--danger, #dc3545) 10%, transparent); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
 .btn-subscribe {
   width: 100%;
   padding: 0.5rem 1rem;

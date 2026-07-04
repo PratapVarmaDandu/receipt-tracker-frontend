@@ -115,9 +115,12 @@
     </aside>
 
     <main class="main-content flex-grow-1">
+      <app-past-due-banner *ngIf="currentUser"></app-past-due-banner>
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <app-feedback-widget *ngIf="currentUser"></app-feedback-widget>
 </ng-container>
 
 <!-- Welcome / privacy banner -->

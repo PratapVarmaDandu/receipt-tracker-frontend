@@ -1,0 +1,15 @@
+<div class="alert alert-danger past-due-alert d-flex align-items-center gap-3 flex-wrap"
+     *ngIf="pastDueSubscriptions.length > 0 && !dismissed"
+     role="alert">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <div class="flex-grow-1">
+    <strong>Payment failed.</strong>
+    Update your card
+    <ng-container *ngIf="earliestGraceDeadline">by {{ earliestGraceDeadline | date:'mediumDate' }} </ng-container>
+    to keep your subscription features active.
+  </div>
+  <a routerLink="/plans" class="btn btn-sm btn-outline-danger">Update Payment</a>
+  <button type="button" class="btn-close-banner" (click)="dismiss()" aria-label="Dismiss">
+    <i class="bi bi-x-lg"></i>
+  </button>
+</div>

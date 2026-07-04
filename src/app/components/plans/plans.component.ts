@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FeatureService } from '../../services/feature.service';
-import { SubscriptionService } from '../../services/subscription.service';
+import { SubscriptionService, MySubscription } from '../../services/subscription.service';
 import { LoggerService } from '../../services/logger.service';
 import { PlatformSquareConfig } from '../../models/platform.model';
 
@@ -75,6 +75,9 @@ export class PlansComponent implements OnInit, OnDestroy {
   successMessage = '';
   error = '';
 
+  mySubscriptions: MySubscription[] = [];
+  cancelingPlanKey: string | null = null;
+
   private payments: any = null;
   private card: any = null;
 
@@ -98,10 +101,43 @@ export class PlansComponent implements OnInit, OnDestroy {
         this.configError = 'Could not load payment configuration.';
       }
     });
+    this.loadMySubscriptions();
+  }
+
+  private loadMySubscriptions(): void {
+    this.subscriptionService.getMine().subscribe(subs => this.mySubscriptions = subs);
   }
 
   isPlanOwned(plan: PlanCard): boolean {
     return plan.features.every(f => this.featureService.has(f));
+  }
+
+  /** The active (non-CANCELED) local subscription row backing this plan card, if any. */
+  subscriptionForPlan(plan: PlanCard): MySubscription | undefined {
+    const planIdField = plan.planId as keyof PlatformSquareConfig;
+    const squarePlanId = this.squareConfig?.[planIdField] as string | undefined;
+    if (!squarePlanId) return undefined;
+    return this.mySubscriptions.find(s => s.planId === squarePlanId && s.status !== 'CANCELED');
+  }
+
+  cancelPlan(plan: PlanCard): void {
+    const sub = this.subscriptionForPlan(plan);
+    if (!sub || sub.cancelEffectiveDate) return;
+    if (!confirm(`Cancel ${plan.label}? You'll keep access until the end of your current billing period.`)) return;
+
+    this.cancelingPlanKey = plan.key;
+    this.error = '';
+    this.subscriptionService.cancel(sub.id).subscribe({
+      next: () => {
+        this.cancelingPlanKey = null;
+        this.loadMySubscriptions();
+      },
+      error: err => {
+        this.cancelingPlanKey = null;
+        this.error = err?.error?.error || 'Failed to cancel subscription. Please try again.';
+        this.logger.error(this.source, 'cancelPlan failed', err);
+      }
+    });
   }
 
   selectPlan(plan: PlanCard): void {

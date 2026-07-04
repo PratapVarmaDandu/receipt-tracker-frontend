@@ -4,6 +4,7 @@ import { filter, take } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
 import { OrganizationService } from './services/organization.service';
+import { ReferralService } from './services/referral.service';
 import { UiEventsService } from './services/ui-events.service';
 import { User } from './models/user.model';
 
@@ -23,6 +24,7 @@ export class AppComponent implements OnInit {
     private authService: AuthService,
     public features: FeatureService,
     private orgService: OrganizationService,
+    private referralService: ReferralService,
     private router: Router,
     private uiEvents: UiEventsService
   ) {}
@@ -61,12 +63,14 @@ export class AppComponent implements OnInit {
     this.authService.currentUser().pipe(
       filter(user => user !== null),
       take(1)
-    ).subscribe(() => {
+    ).subscribe(user => {
       const redirect = localStorage.getItem('postLoginRedirect');
       if (redirect) {
         localStorage.removeItem('postLoginRedirect');
         this.router.navigateByUrl(redirect);
       }
+      // Attempts the claim only once, right after this fresh login (see ReferralService).
+      this.referralService.claimPendingCodeIfAny(!!user!.isNewUser);
     });
 
     this.router.events

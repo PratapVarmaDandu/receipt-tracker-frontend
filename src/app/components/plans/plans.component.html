@@ -28,6 +28,24 @@
       <div *ngIf="isPlanOwned(plan)" class="plan-owned-badge">
         <i class="bi bi-check-circle-fill me-1"></i>Active
       </div>
+
+      <ng-container *ngIf="isPlanOwned(plan)">
+        <div *ngIf="subscriptionForPlan(plan) as sub">
+          <div *ngIf="sub.cancelEffectiveDate" class="plan-cancel-note">
+            <i class="bi bi-clock-history me-1"></i>Cancels {{ sub.cancelEffectiveDate }}
+          </div>
+          <button *ngIf="!sub.cancelEffectiveDate"
+                  class="btn-cancel-plan"
+                  [disabled]="cancelingPlanKey === plan.key"
+                  (click)="cancelPlan(plan)">
+            <span *ngIf="cancelingPlanKey !== plan.key">Cancel Plan</span>
+            <span *ngIf="cancelingPlanKey === plan.key">
+              <span class="spinner-border spinner-border-sm me-1"></span>Canceling…
+            </span>
+          </button>
+        </div>
+      </ng-container>
+
       <button *ngIf="!isPlanOwned(plan)"
               class="btn-subscribe"
               [disabled]="!!configError || !squareConfig?.configured"

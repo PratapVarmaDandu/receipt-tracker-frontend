@@ -15,9 +15,12 @@ import { StorageSettingsComponent } from './components/storage-settings/storage-
 import { UploadComponent } from './components/upload/upload.component';
 import { ShareResponseComponent } from './components/share-response/share-response.component';
 import { PlansComponent } from './components/plans/plans.component';
+import { PastDueBannerComponent } from './components/past-due-banner/past-due-banner.component';
+import { FeedbackWidgetComponent } from './components/feedback-widget/feedback-widget.component';
 
 import { AuthService } from './services/auth.service';
 import { CredentialsInterceptor } from './interceptors/credentials.interceptor';
+import { DiagnosticLogInterceptor } from './interceptors/diagnostic-log.interceptor';
 
 export function initAuth(authService: AuthService): () => Promise<void> {
   return () => firstValueFrom(authService.checkAuth()).then(() => {}).catch(() => {});
@@ -33,7 +36,9 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     StorageSettingsComponent,
     UploadComponent,
     ShareResponseComponent,
-    PlansComponent
+    PlansComponent,
+    PastDueBannerComponent,
+    FeedbackWidgetComponent
   ],
   imports: [
     BrowserModule,
@@ -50,6 +55,11 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: CredentialsInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: DiagnosticLogInterceptor,
       multi: true
     },
     {

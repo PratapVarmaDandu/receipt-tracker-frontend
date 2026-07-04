@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { StorageConfig, StorageTestResult, StorageType, StorageUsage } from '../../models/storage-config.model';
 import { StorageService } from '../../services/storage.service';
+import { ReferralService, ReferralSummary } from '../../services/referral.service';
 import { UiEventsService } from '../../services/ui-events.service';
 
 @Component({
@@ -22,6 +23,11 @@ export class StorageSettingsComponent implements OnInit {
   usage: StorageUsage | null = null;
   loadingUsage = false;
   defaultStoragePath = '';
+
+  referral: ReferralSummary | null = null;
+  referralLoading = true;
+  codeCopied = false;
+  linkCopied = false;
 
   readonly awsRegions = [
     { value: 'us-east-1',      label: 'US East (N. Virginia)' },
@@ -45,6 +51,7 @@ export class StorageSettingsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private storageService: StorageService,
+    private referralService: ReferralService,
     private uiEvents: UiEventsService
   ) {
     this.form = this.fb.group({
@@ -75,6 +82,25 @@ export class StorageSettingsComponent implements OnInit {
       },
       error: () => { this.loading = false; }
     });
+
+    this.referralService.getMine().subscribe(summary => {
+      this.referral = summary;
+      this.referralLoading = false;
+    });
+  }
+
+  copyReferralCode(): void {
+    if (!this.referral?.referralCode) return;
+    navigator.clipboard.writeText(this.referral.referralCode);
+    this.codeCopied = true;
+    setTimeout(() => this.codeCopied = false, 2000);
+  }
+
+  copyReferralLink(): void {
+    if (!this.referral?.shareLink) return;
+    navigator.clipboard.writeText(this.referral.shareLink);
+    this.linkCopied = true;
+    setTimeout(() => this.linkCopied = false, 2000);
   }
 
   loadUsage(): void {

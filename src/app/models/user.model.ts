@@ -7,4 +7,6 @@ export interface User {
   welcomeDismissed: boolean;
   storageConfigured: boolean;
   platformAdmin: boolean;
+  /** True exactly once, on the /api/auth/me response(s) right after a brand-new account's first login. */
+  isNewUser?: boolean;
 }

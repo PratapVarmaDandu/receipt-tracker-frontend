@@ -1,0 +1,22 @@
+.past-due-alert {
+  border-radius: 0;
+  margin-bottom: 0;
+  padding: 0.6rem 1.25rem;
+
+  i.bi-exclamation-triangle-fill {
+    font-size: 1.1rem;
+  }
+}
+
+.btn-close-banner {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.7;
+  line-height: 1;
+  padding: 0.25rem;
+
+  &:hover {
+    opacity: 1;
+  }
+}

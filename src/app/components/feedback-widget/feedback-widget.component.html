@@ -1,0 +1,99 @@
+<!-- Floating action button -->
+<button *ngIf="!open"
+        class="fw-fab"
+        (click)="openWidget()"
+        title="Feedback & ideas"
+        aria-label="Open feedback form">
+  <i class="bi bi-chat-dots-fill"></i>
+</button>
+
+<!-- Modal -->
+<div class="fw-backdrop" *ngIf="open" (click)="close()">
+  <div class="fw-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Feedback form">
+
+    <div class="fw-header">
+      <div class="fw-header-icon"><i class="bi bi-chat-dots"></i></div>
+      <div>
+        <h5 class="fw-title">Help us improve</h5>
+        <p class="fw-subtitle">Feedback, bug reports and ideas go straight to the team</p>
+      </div>
+      <button class="fw-close" (click)="close()" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div class="fw-body" *ngIf="submitted">
+      <div class="fw-success">
+        <i class="bi bi-check-circle-fill"></i>
+        <h6>Thank you!</h6>
+        <p>Your {{ type === 'BUG_REPORT' ? 'bug report' : (type === 'IDEA' ? 'idea' : 'feedback') }}
+          has been sent to the team.</p>
+        <button class="fw-btn fw-btn-primary" (click)="close()">Done</button>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="fw-body" *ngIf="!submitted">
+
+      <!-- Type selector -->
+      <div class="fw-types">
+        <button *ngFor="let opt of typeOptions"
+                class="fw-type"
+                [class.selected]="type === opt.value"
+                (click)="selectType(opt.value)">
+          <i class="bi" [ngClass]="opt.icon"></i>
+          <span class="fw-type-label">{{ opt.label }}</span>
+          <span class="fw-type-hint">{{ opt.hint }}</span>
+        </button>
+      </div>
+
+      <!-- Message -->
+      <label class="fw-label" for="fw-message">
+        {{ type === 'BUG_REPORT' ? 'What went wrong?' : (type === 'IDEA' ? 'What\'s your idea?' : 'Your feedback') }}
+      </label>
+      <textarea id="fw-message"
+                class="fw-textarea"
+                rows="4"
+                maxlength="4000"
+                [(ngModel)]="message"
+                [placeholder]="type === 'BUG_REPORT'
+                  ? 'Describe what happened and what you expected…'
+                  : (type === 'IDEA' ? 'Describe the feature you\'d like to see…' : 'Tell us what you think…')">
+      </textarea>
+
+      <!-- Attachment (hidden for ideas) -->
+      <div class="fw-attach" *ngIf="showFilePicker">
+        <label class="fw-attach-btn" *ngIf="!file">
+          <i class="bi bi-paperclip"></i> {{ fileHint }}
+          <input type="file" hidden [accept]="fileAccept" (change)="onFilePick($event)">
+        </label>
+        <div class="fw-attach-chip" *ngIf="file">
+          <i class="bi bi-file-earmark"></i>
+          <span class="fw-attach-name">{{ file.name }}</span>
+          <button class="fw-attach-remove" (click)="removeFile()" aria-label="Remove attachment">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="fw-diag-note">
+        <i class="bi bi-info-circle"></i>
+        Basic diagnostic info (current page, recent errors) is included automatically.
+      </div>
+
+      <div class="fw-error" *ngIf="error">
+        <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+      </div>
+
+      <div class="fw-actions">
+        <button class="fw-btn fw-btn-secondary" (click)="close()" [disabled]="submitting">Cancel</button>
+        <button class="fw-btn fw-btn-primary" (click)="submit()" [disabled]="submitting || !message.trim()">
+          <span *ngIf="!submitting"><i class="bi bi-send"></i> Send</span>
+          <span *ngIf="submitting">Sending…</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -8,7 +8,7 @@
 - `APP_INITIALIZER` calls `AuthService.checkAuth()` before bootstrap
 
 ### Shell (AppModule — eagerly loaded)
-`AppComponent`, `LoginComponent`, `WelcomeBannerComponent`, `FeatureLockedComponent`, `StorageSettingsComponent`, `UploadComponent`, `ShareResponseComponent`, `PlansComponent`
+`AppComponent`, `LoginComponent`, `WelcomeBannerComponent`, `FeatureLockedComponent`, `StorageSettingsComponent`, `UploadComponent`, `ShareResponseComponent`, `PlansComponent`, `PastDueBannerComponent`, `FeedbackWidgetComponent` (global FAB + feedback/bug/idea modal; auto-attaches `DiagnosticLogService.capture()` as `clientLog` on POST `/api/feedback`)
 
 ### Lazy feature modules
 | Module | Path prefix | Key components |
