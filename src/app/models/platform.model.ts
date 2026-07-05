@@ -50,3 +50,18 @@ export const APP_FEATURES: { key: string; label: string; icon: string }[] = [
   { key: 'JOB_TRACKER',     label: 'Job Tracker',     icon: 'bi-briefcase' },
   { key: 'SHOP_POS',        label: 'Shop (POS)',      icon: 'bi-shop' }
 ];
+
+export type SubmissionType = 'FEEDBACK' | 'BUG_REPORT' | 'IDEA';
+export type SubmissionStatus = 'NEW' | 'REVIEWED' | 'RESOLVED';
+
+export interface PlatformSubmission {
+  id: number;
+  type: SubmissionType;
+  message: string;
+  attachmentMimeType: string | null;
+  status: SubmissionStatus;
+  rewardGranted: boolean;
+  createdAt: string;
+  submitterName: string;
+  submitterEmail: string;
+}

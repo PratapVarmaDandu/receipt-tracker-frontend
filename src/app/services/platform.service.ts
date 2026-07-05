@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LoggerService } from './logger.service';
 import { Organization } from '../models/organization.model';
-import { PlatformStats, PlatformUser, PlatformSquareConfig, PlatformSquareConfigRequest } from '../models/platform.model';
+import {
+  PlatformStats, PlatformUser, PlatformSquareConfig, PlatformSquareConfigRequest,
+  PlatformSubmission
+} from '../models/platform.model';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformService {
@@ -100,5 +103,35 @@ export class PlatformService {
     return this.http.post<any>(`${this.base}/square-config/test`, {}).pipe(
       catchError(err => { this.logger.error(this.source, 'testPlatformSquareConnection failed', err); throw err; })
     );
+  }
+
+  // ── Feedback / bug / idea review console ─────────────────────────────────
+
+  listFeedback(type?: string, status?: string): Observable<PlatformSubmission[]> {
+    const t = Date.now();
+    let params = new HttpParams();
+    if (type) params = params.set('type', type);
+    if (status) params = params.set('status', status);
+    return this.http.get<PlatformSubmission[]>(`${this.base}/feedback`, { params }).pipe(
+      catchError(err => { this.logger.apiError(this.source, 'GET', '/platform/feedback', err, t); return of([]); })
+    );
+  }
+
+  updateFeedbackStatus(id: number, status: string): Observable<PlatformSubmission> {
+    return this.http.put<PlatformSubmission>(`${this.base}/feedback/${id}/status`, { status }).pipe(
+      catchError(err => { this.logger.error(this.source, 'updateFeedbackStatus failed', err); throw err; })
+    );
+  }
+
+  grantFeedbackReward(id: number, feature: string, months?: number): Observable<{ feature: string; expiresAt: string }> {
+    const body: any = { feature };
+    if (months) body.months = months;
+    return this.http.put<{ feature: string; expiresAt: string }>(`${this.base}/feedback/${id}/grant-reward`, body).pipe(
+      catchError(err => { this.logger.error(this.source, 'grantFeedbackReward failed', err); throw err; })
+    );
+  }
+
+  feedbackAttachmentUrl(id: number): string {
+    return `${this.base}/feedback/${id}/attachment`;
   }
 }

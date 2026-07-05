@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { PlatformService } from '../../services/platform.service';
 import { LoggerService } from '../../services/logger.service';
 import { Organization } from '../../models/organization.model';
-import { PlatformStats, PlatformUser, APP_FEATURES } from '../../models/platform.model';
+import { PlatformStats, PlatformUser, PlatformSubmission, APP_FEATURES } from '../../models/platform.model';
 
 @Component({
   selector: 'app-platform',
@@ -13,7 +13,7 @@ import { PlatformStats, PlatformUser, APP_FEATURES } from '../../models/platform
 export class PlatformComponent implements OnInit {
   private readonly source = 'PlatformComponent';
 
-  activeTab: 'orgs' | 'users' = 'orgs';
+  activeTab: 'orgs' | 'users' | 'feedback' = 'orgs';
 
   orgs: Organization[] = [];
   stats: PlatformStats | null = null;
@@ -35,6 +35,20 @@ export class PlatformComponent implements OnInit {
 
   /** Personal features only — SHOP_POS stays org-scoped */
   readonly userFeatures = APP_FEATURES.filter(f => f.key !== 'SHOP_POS');
+
+  // Feedback tab
+  submissions: PlatformSubmission[] = [];
+  feedbackLoading = false;
+  feedbackLoaded = false;
+  feedbackError = '';
+  feedbackTypeFilter = '';
+  feedbackStatusFilter = '';
+  expandedSubmissionId: number | null = null;
+  statusInProgress: { [id: number]: boolean } = {};
+  rewardInProgress: { [id: number]: boolean } = {};
+  rewardFeature: { [id: number]: string } = {};
+  rewardMonths: { [id: number]: number } = {};
+  rewardError: { [id: number]: string } = {};
 
   constructor(
     private platformService: PlatformService,
@@ -95,9 +109,10 @@ export class PlatformComponent implements OnInit {
     });
   }
 
-  switchTab(tab: 'orgs' | 'users'): void {
+  switchTab(tab: 'orgs' | 'users' | 'feedback'): void {
     this.activeTab = tab;
     if (tab === 'users' && !this.usersLoaded) this.loadUsers();
+    if (tab === 'feedback' && !this.feedbackLoaded) this.loadFeedback();
   }
 
   loadUsers(): void {
@@ -178,6 +193,75 @@ export class PlatformComponent implements OnInit {
         alert(err?.error?.error || 'Failed to update feature.');
         this.featureInProgress[key] = false;
         this.logger.error(this.source, 'toggleFeature failed', err);
+      }
+    });
+  }
+
+  // ── Feedback / bug / idea review console ─────────────────────────────────
+
+  loadFeedback(): void {
+    this.feedbackLoading = true;
+    this.feedbackError = '';
+    this.platformService.listFeedback(this.feedbackTypeFilter, this.feedbackStatusFilter).subscribe({
+      next: submissions => {
+        this.submissions = submissions;
+        this.feedbackLoading = false;
+        this.feedbackLoaded = true;
+      },
+      error: err => {
+        this.feedbackError = err?.error?.error || 'Failed to load submissions.';
+        this.feedbackLoading = false;
+        this.logger.error(this.source, 'loadFeedback failed', err);
+      }
+    });
+  }
+
+  toggleSubmissionExpand(submission: PlatformSubmission): void {
+    this.expandedSubmissionId = this.expandedSubmissionId === submission.id ? null : submission.id;
+    if (!this.rewardFeature[submission.id]) this.rewardFeature[submission.id] = this.userFeatures[0].key;
+    if (!this.rewardMonths[submission.id]) this.rewardMonths[submission.id] = 1;
+  }
+
+  isImageAttachment(submission: PlatformSubmission): boolean {
+    return !!submission.attachmentMimeType && submission.attachmentMimeType.startsWith('image/');
+  }
+
+  attachmentUrl(submission: PlatformSubmission): string {
+    return this.platformService.feedbackAttachmentUrl(submission.id);
+  }
+
+  updateSubmissionStatus(submission: PlatformSubmission, status: string): void {
+    if (this.statusInProgress[submission.id]) return;
+    this.statusInProgress[submission.id] = true;
+    this.platformService.updateFeedbackStatus(submission.id, status).subscribe({
+      next: updated => {
+        const idx = this.submissions.findIndex(s => s.id === submission.id);
+        if (idx !== -1) this.submissions[idx] = updated;
+        this.statusInProgress[submission.id] = false;
+      },
+      error: err => {
+        alert(err?.error?.error || 'Failed to update status.');
+        this.statusInProgress[submission.id] = false;
+        this.logger.error(this.source, 'updateSubmissionStatus failed', err);
+      }
+    });
+  }
+
+  submitReward(submission: PlatformSubmission): void {
+    if (this.rewardInProgress[submission.id]) return;
+    this.rewardInProgress[submission.id] = true;
+    this.rewardError[submission.id] = '';
+    const feature = this.rewardFeature[submission.id];
+    const months = this.rewardMonths[submission.id] || 1;
+    this.platformService.grantFeedbackReward(submission.id, feature, months).subscribe({
+      next: () => {
+        submission.rewardGranted = true;
+        this.rewardInProgress[submission.id] = false;
+      },
+      error: err => {
+        this.rewardError[submission.id] = err?.error?.error || 'Failed to grant reward.';
+        this.rewardInProgress[submission.id] = false;
+        this.logger.error(this.source, 'submitReward failed', err);
       }
     });
   }

@@ -82,6 +82,7 @@ export class AppComponent implements OnInit {
         this.isLoginPage = path === '/login'
           || path === '/'
           || path === '/welcome-preview'
+          || path === '/security'
           || url.startsWith('/share/')
           || url.startsWith('/group/join/')
           || url.startsWith('/documents/shared/')

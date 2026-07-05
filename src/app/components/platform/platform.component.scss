@@ -187,3 +187,29 @@
     &:hover:not(:disabled) { border-color: #fca5a5; color: #b91c1c; background: #fef2f2; }
   }
 }
+
+.feedback-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.attachment-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.submission-detail {
+  padding: 8px 4px;
+}
+
+.reward-form {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}

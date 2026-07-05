@@ -19,6 +19,9 @@
     <button class="ptab" [class.active]="activeTab === 'users'" (click)="switchTab('users')">
       <i class="bi bi-people me-1"></i>Users
     </button>
+    <button class="ptab" [class.active]="activeTab === 'feedback'" (click)="switchTab('feedback')">
+      <i class="bi bi-chat-square-text me-1"></i>Feedback
+    </button>
   </div>
 
   <!-- ═══ ORGS TAB ═══════════════════════════════════════════════════════════ -->
@@ -267,5 +270,129 @@
 
   </ng-container>
   <!-- ═══ END USERS TAB ════════════════════════════════════════════════════ -->
+
+  <!-- ═══ FEEDBACK TAB ═══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="activeTab === 'feedback'">
+
+    <div class="feedback-filters">
+      <select class="form-select form-select-sm" style="width:auto" [(ngModel)]="feedbackTypeFilter" (change)="loadFeedback()">
+        <option value="">All types</option>
+        <option value="FEEDBACK">Feedback</option>
+        <option value="BUG_REPORT">Bug Report</option>
+        <option value="IDEA">Idea</option>
+      </select>
+      <select class="form-select form-select-sm" style="width:auto" [(ngModel)]="feedbackStatusFilter" (change)="loadFeedback()">
+        <option value="">All statuses</option>
+        <option value="NEW">New</option>
+        <option value="REVIEWED">Reviewed</option>
+        <option value="RESOLVED">Resolved</option>
+      </select>
+      <button class="btn btn-sm btn-outline-secondary" (click)="loadFeedback()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+    </div>
+
+    <div *ngIf="feedbackLoading" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2 text-muted">Loading submissions…</p>
+    </div>
+
+    <div *ngIf="feedbackError" class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ feedbackError }}
+    </div>
+
+    <div *ngIf="!feedbackLoading && submissions.length === 0 && !feedbackError" class="empty-state">
+      <i class="bi bi-chat-square-text"></i>
+      <h5>No submissions found</h5>
+    </div>
+
+    <div *ngIf="!feedbackLoading && submissions.length > 0" class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Submitter</th>
+            <th>Type</th>
+            <th>Message</th>
+            <th>Attachment</th>
+            <th>Status</th>
+            <th>Reward</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let s of submissions">
+          <tr (click)="toggleSubmissionExpand(s)" style="cursor:pointer">
+            <td>
+              <div class="owner-cell">
+                <div class="owner-name">{{ s.submitterName }}</div>
+                <div class="owner-email text-muted">{{ s.submitterEmail }}</div>
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ s.type }}</span>
+            </td>
+            <td class="text-truncate" style="max-width:280px">{{ s.message }}</td>
+            <td>
+              <span *ngIf="!s.attachmentMimeType" class="text-muted small">—</span>
+              <img *ngIf="isImageAttachment(s)" [src]="attachmentUrl(s)" class="attachment-thumb" alt="attachment">
+              <a *ngIf="s.attachmentMimeType && !isImageAttachment(s)" [href]="attachmentUrl(s)" target="_blank"
+                 (click)="$event.stopPropagation()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-file-earmark-arrow-down me-1"></i>View
+              </a>
+            </td>
+            <td>
+              <span class="status-pill" [class.active]="s.status === 'RESOLVED'" [class.suspended]="s.status === 'NEW'">
+                <span class="status-dot"></span>{{ s.status }}
+              </span>
+            </td>
+            <td>
+              <i class="bi" [class.bi-check-circle-fill]="s.rewardGranted" [class.bi-dash-circle]="!s.rewardGranted"
+                 [class.text-success]="s.rewardGranted" [class.text-muted]="!s.rewardGranted"></i>
+            </td>
+            <td class="text-muted small">{{ s.createdAt | date:'MMM d, y' }}</td>
+          </tr>
+
+          <!-- Detail expander -->
+          <tr *ngIf="expandedSubmissionId === s.id" class="feature-row">
+            <td colspan="7">
+              <div class="submission-detail">
+                <p class="mb-3">{{ s.message }}</p>
+
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                  <button class="btn btn-sm btn-outline-secondary" [disabled]="statusInProgress[s.id] || s.status === 'REVIEWED'"
+                          (click)="updateSubmissionStatus(s, 'REVIEWED')">Mark Reviewed</button>
+                  <button class="btn btn-sm btn-outline-success" [disabled]="statusInProgress[s.id] || s.status === 'RESOLVED'"
+                          (click)="updateSubmissionStatus(s, 'RESOLVED')">Mark Resolved</button>
+                </div>
+
+                <div *ngIf="!s.rewardGranted" class="reward-form">
+                  <label class="form-label small fw-600">Grant bonus-month reward</label>
+                  <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <select class="form-select form-select-sm" style="width:auto" [(ngModel)]="rewardFeature[s.id]">
+                      <option *ngFor="let f of userFeatures" [value]="f.key">{{ f.label }}</option>
+                    </select>
+                    <input type="number" min="1" class="form-control form-control-sm" style="width:70px"
+                           [(ngModel)]="rewardMonths[s.id]">
+                    <span class="small text-muted">month(s)</span>
+                    <button class="btn btn-sm btn-primary" [disabled]="rewardInProgress[s.id]" (click)="submitReward(s)">
+                      <span *ngIf="rewardInProgress[s.id]" class="spinner-border spinner-border-sm me-1"></span>
+                      Grant Reward
+                    </button>
+                  </div>
+                  <div *ngIf="rewardError[s.id]" class="text-danger small mt-1">{{ rewardError[s.id] }}</div>
+                </div>
+                <div *ngIf="s.rewardGranted" class="text-success small">
+                  <i class="bi bi-check-circle-fill me-1"></i>Reward already granted for this submission.
+                </div>
+              </div>
+            </td>
+          </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+  </ng-container>
+  <!-- ═══ END FEEDBACK TAB ═════════════════════════════════════════════════ -->
 
 </div>
