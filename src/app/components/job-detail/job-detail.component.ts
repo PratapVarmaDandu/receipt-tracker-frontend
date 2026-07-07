@@ -7,6 +7,7 @@ import {
 } from '../../models/job-application.model';
 import { JobApplicationService, CreateJobApplicationRequest, CreateInterviewRoundRequest } from '../../services/job-application.service';
 import { DocumentService } from '../../services/document.service';
+import { JobNavigationService } from '../../services/job-navigation.service';
 import { LoggerService } from '../../services/logger.service';
 import { DocFile } from '../../models/document.model';
 
@@ -39,6 +40,10 @@ export class JobDetailComponent implements OnInit {
 
   // Portal credentials visibility (view mode)
   showPortalPassword = false;
+
+  // Prev/Next navigation within the last-viewed list (kanban board / filtered table)
+  prevId: number | null = null;
+  nextId: number | null = null;
 
   // Interview round form
   showRoundForm = false;
@@ -73,16 +78,63 @@ export class JobDetailComponent implements OnInit {
     private router: Router,
     private jobService: JobApplicationService,
     private docService: DocumentService,
+    private jobNav: JobNavigationService,
     private logger: LoggerService
   ) {}
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.jobService.getById(id).subscribe({
-      next: app => { this.app = app; this.loading = false; },
-      error: () => { this.error = 'Application not found.'; this.loading = false; }
+    this.route.paramMap.subscribe(params => {
+      const id = Number(params.get('id'));
+      this.loadApp(id);
     });
     this.docService.list('RESUME').subscribe({ next: docs => this.resumeDocs = docs, error: () => {} });
+  }
+
+  private loadApp(id: number): void {
+    this.loading = true;
+    this.error = null;
+    this.editMode = false;
+    this.jobService.getById(id).subscribe({
+      next: app => {
+        this.app = app;
+        this.loading = false;
+        this.updateNavContext(id);
+      },
+      error: () => { this.error = 'Application not found.'; this.loading = false; }
+    });
+  }
+
+  // ── Prev / Next navigation ─────────────────────────────────────────────────
+
+  private updateNavContext(currentId: number): void {
+    const ids = this.jobNav.getContext();
+    if (ids.includes(currentId)) {
+      this.setPrevNext(ids, currentId);
+      return;
+    }
+    // No context (direct link / refresh) — fall back to the full list order.
+    this.jobService.list().subscribe({
+      next: apps => {
+        const fallbackIds = apps.map(a => a.id);
+        this.jobNav.setContext(fallbackIds);
+        this.setPrevNext(fallbackIds, currentId);
+      },
+      error: () => { this.prevId = null; this.nextId = null; }
+    });
+  }
+
+  private setPrevNext(ids: number[], currentId: number): void {
+    const idx = ids.indexOf(currentId);
+    this.prevId = idx > 0 ? ids[idx - 1] : null;
+    this.nextId = idx >= 0 && idx < ids.length - 1 ? ids[idx + 1] : null;
+  }
+
+  goToPrev(): void {
+    if (this.prevId != null) this.router.navigate(['/jobs', this.prevId]);
+  }
+
+  goToNext(): void {
+    if (this.nextId != null) this.router.navigate(['/jobs', this.nextId]);
   }
 
   // ── Edit mode ──────────────────────────────────────────────────────────────

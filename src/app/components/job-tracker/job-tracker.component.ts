@@ -6,6 +6,7 @@ import {
 } from '../../models/job-application.model';
 import { JobApplicationService, CreateJobApplicationRequest } from '../../services/job-application.service';
 import { DocumentService } from '../../services/document.service';
+import { JobNavigationService } from '../../services/job-navigation.service';
 import { LoggerService } from '../../services/logger.service';
 import { DocFile } from '../../models/document.model';
 
@@ -85,6 +86,7 @@ export class JobTrackerComponent implements OnInit {
   constructor(
     private jobService: JobApplicationService,
     private docService: DocumentService,
+    private jobNav: JobNavigationService,
     private logger: LoggerService,
     private router: Router
   ) {}
@@ -184,6 +186,10 @@ export class JobTrackerComponent implements OnInit {
   // ── Navigation ─────────────────────────────────────────────────────────────
 
   openApp(id: number): void {
+    const orderedIds = this.viewMode === 'table'
+      ? this.sorted.map(a => a.id)
+      : this.KANBAN_COLUMNS.flatMap(col => this.columnApps(col).map(a => a.id));
+    this.jobNav.setContext(orderedIds);
     this.router.navigate(['/jobs', id]);
   }
 
