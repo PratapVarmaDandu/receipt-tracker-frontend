@@ -9,7 +9,7 @@ import { DocumentService } from '../../services/document.service';
 import { LoggerService } from '../../services/logger.service';
 import { DocFile } from '../../models/document.model';
 
-type SortField = 'companyName' | 'jobTitle' | 'status' | 'appliedDate' | 'followUpDate' | 'nextInterviewAt' | 'salaryRange';
+type SortField = 'companyName' | 'jobTitle' | 'status' | 'appliedDate' | 'followUpDate' | 'nextInterviewAt' | 'salaryRange' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'kanban' | 'table';
 
@@ -26,6 +26,12 @@ interface AddForm {
   hrName: string;
   hrEmail: string;
   followUpDate: string;
+  portalUsername: string;
+  portalPassword: string;
+  emailConfirmationReceived: boolean;
+  jobDescription: string;
+  prepNotes: string;
+  notes: string;
 }
 
 @Component({
@@ -156,6 +162,7 @@ export class JobTrackerComponent implements OnInit {
       case 'followUpDate':   return app.followUpDate;
       case 'nextInterviewAt': return app.nextInterviewAt;
       case 'salaryRange':    return app.salaryRange;
+      case 'updatedAt':      return app.updatedAt;
       default:               return null;
     }
   }
@@ -208,7 +215,13 @@ export class JobTrackerComponent implements OnInit {
       resumeVersion:    this.addForm.resumeVersion || undefined,
       hrName:           this.addForm.hrName || undefined,
       hrEmail:          this.addForm.hrEmail || undefined,
-      followUpDate:     this.addForm.followUpDate || undefined
+      followUpDate:     this.addForm.followUpDate || undefined,
+      portalUsername:   this.addForm.portalUsername || undefined,
+      portalPassword:   this.addForm.portalPassword || undefined,
+      emailConfirmationReceived: this.addForm.emailConfirmationReceived,
+      jobDescription:   this.addForm.jobDescription || undefined,
+      prepNotes:        this.addForm.prepNotes || undefined,
+      notes:            this.addForm.notes || undefined
     };
 
     this.jobService.create(req).subscribe({
@@ -295,7 +308,9 @@ export class JobTrackerComponent implements OnInit {
     return {
       companyName: '', jobTitle: '', status: 'APPLIED',
       appliedDate: this.TODAY, location: '', salaryRange: '', jobUrl: '',
-      resumeDocumentId: null, resumeVersion: '', hrName: '', hrEmail: '', followUpDate: ''
+      resumeDocumentId: null, resumeVersion: '', hrName: '', hrEmail: '', followUpDate: '',
+      portalUsername: '', portalPassword: '', emailConfirmationReceived: false,
+      jobDescription: '', prepNotes: '', notes: ''
     };
   }
 }

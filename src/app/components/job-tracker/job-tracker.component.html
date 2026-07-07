@@ -115,6 +115,40 @@
           <input type="email" [(ngModel)]="addForm.hrEmail" placeholder="hr@company.com">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Portal Username</label>
+          <input type="text" [(ngModel)]="addForm.portalUsername" placeholder="Login for the application portal" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Portal Password</label>
+          <input type="password" [(ngModel)]="addForm.portalPassword" placeholder="Login for the application portal" autocomplete="new-password">
+        </div>
+        <div class="form-group form-group-checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="addForm.emailConfirmationReceived">
+            Email confirmation received?
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label>Job Description</label>
+          <textarea [(ngModel)]="addForm.jobDescription" rows="4" placeholder="Paste the job description here…"></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label>Prep Notes</label>
+          <textarea [(ngModel)]="addForm.prepNotes" rows="3" placeholder="Interview prep, company research, talking points…"></textarea>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label>Notes</label>
+          <textarea [(ngModel)]="addForm.notes" rows="3" placeholder="Any other notes…"></textarea>
+        </div>
+      </div>
     </div>
     <div class="add-panel-footer">
       <span class="save-error" *ngIf="saveError">{{ saveError }}</span>
@@ -251,6 +285,9 @@
             <th class="sortable" (click)="sort('appliedDate')">
               Applied <i class="bi" [ngClass]="sortIcon('appliedDate')"></i>
             </th>
+            <th class="sortable" (click)="sort('updatedAt')">
+              Last Updated <i class="bi" [ngClass]="sortIcon('updatedAt')"></i>
+            </th>
             <th class="sortable" (click)="sort('followUpDate')">
               Follow-up <i class="bi" [ngClass]="sortIcon('followUpDate')"></i>
             </th>
@@ -266,7 +303,7 @@
         </thead>
         <tbody>
           <tr *ngIf="sorted.length === 0">
-            <td colspan="9" class="no-results">No applications match your filters.</td>
+            <td colspan="10" class="no-results">No applications match your filters.</td>
           </tr>
           <tr *ngFor="let app of sorted; trackBy: trackById"
               class="table-row" (click)="openApp(app.id)">
@@ -289,6 +326,8 @@
             </td>
 
             <td class="cell-date">{{ formatShortDate(app.appliedDate) }}</td>
+
+            <td class="cell-date">{{ formatShortDate(app.updatedAt) }}</td>
 
             <td class="cell-date" [class.overdue]="app.followUpDue">
               <span *ngIf="app.followUpDate">

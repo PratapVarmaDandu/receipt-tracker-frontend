@@ -37,6 +37,9 @@ export class JobDetailComponent implements OnInit {
   // Edit form mirrors all editable fields
   editForm: Partial<CreateJobApplicationRequest> = {};
 
+  // Portal credentials visibility (view mode)
+  showPortalPassword = false;
+
   // Interview round form
   showRoundForm = false;
   editingRound: InterviewRound | null = null;
@@ -100,6 +103,9 @@ export class JobDetailComponent implements OnInit {
       hrPhone:          this.app.hrPhone || undefined,
       recruiterName:    this.app.recruiterName || undefined,
       recruiterEmail:   this.app.recruiterEmail || undefined,
+      portalUsername:   this.app.portalUsername || undefined,
+      portalPassword:   this.app.portalPassword || undefined,
+      emailConfirmationReceived: this.app.emailConfirmationReceived,
       jobDescription:   this.app.jobDescription || undefined,
       prepNotes:        this.app.prepNotes || undefined,
       notes:            this.app.notes || undefined,
@@ -228,6 +234,10 @@ export class JobDetailComponent implements OnInit {
       },
       error: err => this.logger.error(this.source, 'Delete round failed', err)
     });
+  }
+
+  togglePortalPasswordVisibility(): void {
+    this.showPortalPassword = !this.showPortalPassword;
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────

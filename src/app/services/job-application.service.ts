@@ -22,6 +22,9 @@ export interface CreateJobApplicationRequest {
   hrPhone?: string;
   recruiterName?: string;
   recruiterEmail?: string;
+  portalUsername?: string;
+  portalPassword?: string;
+  emailConfirmationReceived?: boolean;
   jobDescription?: string;
   prepNotes?: string;
   notes?: string;

@@ -31,6 +31,9 @@ export interface JobApplication {
   hrPhone: string | null;
   recruiterName: string | null;
   recruiterEmail: string | null;
+  portalUsername: string | null;
+  portalPassword: string | null;
+  emailConfirmationReceived: boolean;
   jobDescription: string | null;
   prepNotes: string | null;
   notes: string | null;

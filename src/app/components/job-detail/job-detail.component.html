@@ -133,6 +133,24 @@
           </div>
         </div>
 
+        <div class="section-title">Application Portal</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Portal Username</label>
+            <input type="text" [(ngModel)]="editForm.portalUsername" placeholder="Login for the application portal" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Portal Password</label>
+            <input type="password" [(ngModel)]="editForm.portalPassword" placeholder="Login for the application portal" autocomplete="new-password">
+          </div>
+          <div class="form-group form-group-checkbox">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editForm.emailConfirmationReceived">
+              Email confirmation received?
+            </label>
+          </div>
+        </div>
+
         <div class="section-title">Resume Version</div>
         <div class="form-row">
           <div class="form-group">
@@ -215,6 +233,35 @@
               <div class="contact-role">Recruiter</div>
               <div class="contact-name" *ngIf="app.recruiterName">{{ app.recruiterName }}</div>
               <a class="contact-email" *ngIf="app.recruiterEmail" [href]="'mailto:' + app.recruiterEmail">{{ app.recruiterEmail }}</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Application portal card -->
+        <div class="info-card" *ngIf="app.portalUsername || app.portalPassword || app.emailConfirmationReceived">
+          <div class="card-header-sm"><i class="bi bi-box-arrow-in-right"></i> Application Portal</div>
+          <div class="card-section">
+            <div class="info-row" *ngIf="app.portalUsername">
+              <span class="info-label"><i class="bi bi-person"></i> Username</span>
+              <span class="info-value">{{ app.portalUsername }}</span>
+            </div>
+            <div class="info-row" *ngIf="app.portalPassword">
+              <span class="info-label"><i class="bi bi-key"></i> Password</span>
+              <span class="info-value password-value">
+                <span>{{ showPortalPassword ? app.portalPassword : '••••••••' }}</span>
+                <button class="btn-icon-inline" (click)="togglePortalPasswordVisibility()" type="button">
+                  <i class="bi" [ngClass]="showPortalPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+                </button>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label"><i class="bi bi-envelope-check"></i> Email Confirmation</span>
+              <span class="info-value">
+                <span class="confirmation-badge" [class.received]="app.emailConfirmationReceived">
+                  <i class="bi" [ngClass]="app.emailConfirmationReceived ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                  {{ app.emailConfirmationReceived ? 'Received' : 'Not received' }}
+                </span>
+              </span>
             </div>
           </div>
         </div>
