@@ -1,67 +1,60 @@
-.security-page {
-  min-height: 100dvh;
+/* ── Modal shell ─────────────────────────────────────────── */
+.si-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.si-modal {
+  position: relative;
   background: var(--surface);
   color: var(--text-primary);
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 840px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* ── Nav ─────────────────────────────────────────────────── */
-.security-nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.85);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.security-nav-inner {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 0.9rem 1.5rem;
+.si-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 5;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover { background: rgba(255, 255, 255, 0.28); }
 }
 
-.security-brand {
+/* ── Footer ──────────────────────────────────────────────── */
+.si-footer {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 800;
-  font-size: 1.15rem;
-  letter-spacing: -0.02em;
-  color: var(--primary);
-  text-decoration: none;
-
-  .brand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 0.6rem;
-    background: linear-gradient(135deg, #1A4E8C 0%, #1473E6 50%, #0CBDAD 100%);
-    color: #fff;
-    font-size: 1rem;
-  }
-}
-
-.btn-back {
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-
-  &:hover { color: var(--primary); }
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
 }
 
 /* ── Hero ────────────────────────────────────────────────── */
 .security-hero {
-  padding: max(3.5rem, calc(2.5rem + env(safe-area-inset-top, 0px))) 1.5rem 3rem;
+  padding: 2.5rem 1.5rem 2rem;
+  border-radius: 1rem 1rem 0 0;
   background:
     radial-gradient(ellipse 90% 70% at 90% 0%, rgba(12, 189, 173, 0.5) 0%, transparent 55%),
     radial-gradient(ellipse 60% 60% at 5% 30%, rgba(26, 78, 140, 0.45) 0%, transparent 60%),
@@ -244,22 +237,3 @@
   white-space: nowrap;
 }
 
-/* ── Footer ──────────────────────────────────────────────── */
-.security-footer {
-  padding: 1.75rem 1.5rem max(1.75rem, env(safe-area-inset-bottom, 0px));
-  background: #0D1F3C;
-  color: #7EC8B0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1120px;
-  margin: 0 auto;
-  font-size: 0.85rem;
-  font-weight: 700;
-
-  .footer-copy { color: rgba(126, 200, 176, 0.6); font-weight: 500; font-size: 0.78rem; }
-}
-
-@media (max-width: 480px) {
-  .security-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
-}

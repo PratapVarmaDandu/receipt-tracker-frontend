@@ -76,10 +76,6 @@ const routes: Routes = [
     path: 'immigration',
     loadChildren: () => import('./features/immigration/immigration.module').then(m => m.ImmigrationModule)
   },
-  {
-    path: 'security',      // public — data/security transparency page
-    loadChildren: () => import('./features/security/security.module').then(m => m.SecurityModule)
-  },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

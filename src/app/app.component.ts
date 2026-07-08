@@ -17,6 +17,7 @@ export class AppComponent implements OnInit {
   currentUser: User | null = null;
   isLoginPage = false;
   showWelcomeBanner = false;
+  showSecurityInfo = false;
   sidebarOpen = false;
   hasPublicShop = false;
 
@@ -82,7 +83,6 @@ export class AppComponent implements OnInit {
         this.isLoginPage = path === '/login'
           || path === '/'
           || path === '/welcome-preview'
-          || path === '/security'
           || url.startsWith('/share/')
           || url.startsWith('/group/join/')
           || url.startsWith('/documents/shared/')
@@ -122,6 +122,14 @@ export class AppComponent implements OnInit {
 
   openWelcomeBanner(): void {
     this.showWelcomeBanner = true;
+  }
+
+  openSecurityInfo(): void {
+    this.showSecurityInfo = true;
+  }
+
+  closeSecurityInfo(): void {
+    this.showSecurityInfo = false;
   }
 
   logout(): void {

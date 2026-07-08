@@ -24,6 +24,8 @@ export class LandingComponent implements OnInit {
     features: FEATURES.filter(f => f.audiences.includes(a.key))
   }));
 
+  showSecurityInfo = false;
+
   constructor(
     private authService: AuthService,
     private router: Router,
@@ -47,5 +49,13 @@ export class LandingComponent implements OnInit {
 
   scrollToFeatures(): void {
     document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  openSecurityInfo(): void {
+    this.showSecurityInfo = true;
+  }
+
+  closeSecurityInfo(): void {
+    this.showSecurityInfo = false;
   }
 }

@@ -385,12 +385,16 @@
   .footer-copy { color: rgba(126, 200, 176, 0.6); font-weight: 500; font-size: 0.78rem; }
 
   .footer-security-link {
+    background: none;
+    border: none;
     color: #7EC8B0;
     text-decoration: none;
     font-size: 0.8rem;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
+    cursor: pointer;
 
     &:hover { color: #fff; }
   }

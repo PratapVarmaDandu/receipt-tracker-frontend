@@ -108,9 +108,9 @@
         <button class="sidebar-info-btn" (click)="openWelcomeBanner()">
           <i class="bi bi-shield-lock me-1"></i>Privacy &amp; Legal
         </button>
-        <a class="sidebar-info-btn" routerLink="/security" (click)="closeSidebar()">
+        <button class="sidebar-info-btn" (click)="openSecurityInfo(); closeSidebar()">
           <i class="bi bi-shield-check me-1"></i>Security &amp; Data
-        </a>
+        </button>
         <div class="sidebar-cashback">
           <i class="bi bi-lightning-charge-fill me-1"></i>Cashback Optimizer
         </div>
@@ -131,3 +131,9 @@
   *ngIf="showWelcomeBanner && !isLoginPage"
   (closed)="onBannerClosed()">
 </app-welcome-banner>
+
+<!-- Security & Data popup -->
+<app-security-info
+  *ngIf="showSecurityInfo"
+  (closed)="closeSecurityInfo()">
+</app-security-info>

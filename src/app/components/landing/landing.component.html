@@ -120,10 +120,15 @@
 
   <footer class="landing-footer">
     <span><i class="bi bi-gem"></i> Steward</span>
-    <a class="footer-security-link" routerLink="/security">
+    <button class="footer-security-link" (click)="openSecurityInfo()">
       <i class="bi bi-shield-lock"></i> Security &amp; Data
-    </a>
+    </button>
     <span class="footer-copy">&copy; 2026 Steward. All rights reserved.</span>
   </footer>
 
 </div>
+
+<app-security-info
+  *ngIf="showSecurityInfo"
+  (closed)="closeSecurityInfo()">
+</app-security-info>

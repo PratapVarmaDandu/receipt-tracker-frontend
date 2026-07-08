@@ -1,21 +1,14 @@
-<div class="security-page">
+<div class="si-backdrop" (click)="onBackdropClick($event)">
+  <div class="si-modal" role="dialog" aria-modal="true" aria-labelledby="si-title">
 
-  <header class="security-nav">
-    <div class="security-nav-inner">
-      <a class="security-brand" routerLink="/">
-        <span class="brand-icon"><i class="bi bi-gem"></i></span>
-        Steward
-      </a>
-      <a class="btn-back" routerLink="/">
-        <i class="bi bi-arrow-left"></i> Back
-      </a>
-    </div>
-  </header>
+  <button class="si-close" (click)="close()" aria-label="Close">
+    <i class="bi bi-x-lg"></i>
+  </button>
 
   <section class="security-hero">
     <div class="security-hero-inner">
       <div class="hero-icon"><i class="bi bi-shield-lock-fill"></i></div>
-      <h1>Your data, and how we handle it</h1>
+      <h1 id="si-title">Your data, and how we handle it</h1>
       <p>
         A plain-language look at the security architecture behind Steward — what's
         encrypted, what's sent to third parties, and what never leaves our servers.
@@ -67,9 +60,9 @@
     </div>
   </section>
 
-  <footer class="security-footer">
-    <span><i class="bi bi-gem"></i> Steward</span>
-    <span class="footer-copy">&copy; 2026 Steward. All rights reserved.</span>
-  </footer>
+  <div class="si-footer">
+    <button class="btn btn-outline-secondary btn-sm" (click)="close()">Close</button>
+  </div>
 
+  </div>
 </div>

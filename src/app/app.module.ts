@@ -17,6 +17,7 @@ import { ShareResponseComponent } from './components/share-response/share-respon
 import { PlansComponent } from './components/plans/plans.component';
 import { PastDueBannerComponent } from './components/past-due-banner/past-due-banner.component';
 import { FeedbackWidgetComponent } from './components/feedback-widget/feedback-widget.component';
+import { SecurityInfoComponent } from './components/security-info/security-info.component';
 
 import { AuthService } from './services/auth.service';
 import { CredentialsInterceptor } from './interceptors/credentials.interceptor';
@@ -38,7 +39,8 @@ export function initAuth(authService: AuthService): () => Promise<void> {
     ShareResponseComponent,
     PlansComponent,
     PastDueBannerComponent,
-    FeedbackWidgetComponent
+    FeedbackWidgetComponent,
+    SecurityInfoComponent
   ],
   imports: [
     BrowserModule,

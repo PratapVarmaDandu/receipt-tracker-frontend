@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 
 interface SecuritySection {
   icon: string;
@@ -20,6 +20,18 @@ interface ThirdPartyRow {
   styleUrls: ['./security-info.component.scss']
 })
 export class SecurityInfoComponent {
+  @Output() closed = new EventEmitter<void>();
+
+  close(): void {
+    this.closed.emit();
+  }
+
+  onBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('si-backdrop')) {
+      this.close();
+    }
+  }
+
   readonly sections: SecuritySection[] = [
     {
       icon: 'bi-google',
