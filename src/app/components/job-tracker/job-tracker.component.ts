@@ -13,6 +13,12 @@ import { DocFile } from '../../models/document.model';
 type SortField = 'companyName' | 'jobTitle' | 'status' | 'appliedDate' | 'followUpDate' | 'nextInterviewAt' | 'salaryRange' | 'updatedAt';
 type SortDir = 'asc' | 'desc';
 type ViewMode = 'kanban' | 'table';
+type OptionalColumnKey = 'updatedAt' | 'followUpDate' | 'nextInterviewAt' | 'salaryRange' | 'resume';
+
+interface ColumnDef {
+  key: OptionalColumnKey;
+  label: string;
+}
 
 interface AddForm {
   companyName: string;
@@ -54,10 +60,24 @@ export class JobTrackerComponent implements OnInit {
   // Filters (table view)
   searchText = '';
   statusFilter: JobApplicationStatus | '' = '';
+  showAllStatusFilters = false;
 
   // Sorting (table view)
   sortField: SortField = 'appliedDate';
   sortDir: SortDir = 'desc';
+
+  // Column picker (table view)
+  showColumnPicker = false;
+  readonly OPTIONAL_COLUMNS: ColumnDef[] = [
+    { key: 'updatedAt',       label: 'Last Updated' },
+    { key: 'followUpDate',    label: 'Follow-up' },
+    { key: 'nextInterviewAt', label: 'Next Interview' },
+    { key: 'salaryRange',     label: 'Salary' },
+    { key: 'resume',          label: 'Resume' }
+  ];
+  visibleColumns: Record<OptionalColumnKey, boolean> = {
+    updatedAt: true, followUpDate: true, nextInterviewAt: true, salaryRange: true, resume: true
+  };
 
   // Add panel
   showAddPanel = false;
@@ -94,6 +114,14 @@ export class JobTrackerComponent implements OnInit {
   ngOnInit(): void {
     const saved = localStorage.getItem('jobTrackerView');
     if (saved === 'table' || saved === 'kanban') this.viewMode = saved;
+
+    const savedCols = localStorage.getItem('jobTrackerColumns');
+    if (savedCols) {
+      try {
+        this.visibleColumns = { ...this.visibleColumns, ...JSON.parse(savedCols) };
+      } catch { /* ignore malformed saved prefs */ }
+    }
+
     this.load();
     this.loadResumeDocs();
   }
@@ -181,6 +209,37 @@ export class JobTrackerComponent implements OnInit {
   sortIcon(field: SortField): string {
     if (this.sortField !== field) return 'bi-arrow-down-up';
     return this.sortDir === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
+  }
+
+  // ── Status filter chips (hide zero-count statuses by default) ──────────────
+
+  get visibleStatusFilters(): JobApplicationStatus[] {
+    if (this.showAllStatusFilters) return this.ALL_STATUSES;
+    return this.ALL_STATUSES.filter(s => (this.summary?.byStatus?.[s] ?? 0) > 0 || this.statusFilter === s);
+  }
+
+  get hiddenStatusFilterCount(): number {
+    return this.ALL_STATUSES.length - this.visibleStatusFilters.length;
+  }
+
+  toggleAllStatusFilters(): void {
+    this.showAllStatusFilters = !this.showAllStatusFilters;
+  }
+
+  // ── Column picker ────────────────────────────────────────────────────────
+
+  toggleColumnPicker(): void {
+    this.showColumnPicker = !this.showColumnPicker;
+  }
+
+  toggleColumn(key: OptionalColumnKey): void {
+    this.visibleColumns[key] = !this.visibleColumns[key];
+    localStorage.setItem('jobTrackerColumns', JSON.stringify(this.visibleColumns));
+  }
+
+  get visibleColumnCount(): number {
+    // 5 always-visible columns: Company, Title, Status, Applied, Actions
+    return 5 + this.OPTIONAL_COLUMNS.filter(c => this.visibleColumns[c.key]).length;
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────

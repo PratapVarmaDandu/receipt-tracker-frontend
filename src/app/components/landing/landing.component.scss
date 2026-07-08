@@ -6,9 +6,18 @@
 }
 
 /* ── Nav ─────────────────────────────────────────────────── */
+// `.landing-page` sets overflow-x: hidden, which forces the browser to compute
+// overflow-y as auto (CSS2.1 §11.1.1) and breaks position: sticky's scroll
+// anchoring. Use position: fixed instead, with explicit left/right/width so it
+// spans the full viewport (fixed elements shrink-to-fit by default otherwise).
+$landing-nav-height: 4rem;
+
 .landing-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 20;
   background: rgba(255, 255, 255, 0.85);
   -webkit-backdrop-filter: blur(12px);
@@ -78,7 +87,9 @@
 
 /* ── Hero ────────────────────────────────────────────────── */
 .hero {
-  padding: max(4rem, calc(3rem + env(safe-area-inset-top, 0px))) 1.5rem 5rem;
+  // Nav is now position: fixed (out of flow) — add its height on top of the
+  // existing top padding so hero content isn't hidden underneath it.
+  padding: calc(max(4rem, calc(3rem + env(safe-area-inset-top, 0px))) + #{$landing-nav-height}) 1.5rem 5rem;
   background:
     radial-gradient(ellipse 90% 70% at 90% 0%, rgba(12, 189, 173, 0.5) 0%, transparent 55%),
     radial-gradient(ellipse 60% 60% at 5% 30%, rgba(26, 78, 140, 0.45) 0%, transparent 60%),
@@ -177,7 +188,12 @@
 }
 
 /* ── Feature grid ────────────────────────────────────────── */
-.features { padding: 5rem 1.5rem; }
+.features {
+  padding: 5rem 1.5rem;
+  // Offsets the "Explore features" scrollIntoView() target so the section
+  // heading doesn't land underneath the fixed nav.
+  scroll-margin-top: $landing-nav-height;
+}
 
 .features-inner { max-width: 1120px; margin: 0 auto; }
 
@@ -370,15 +386,22 @@
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
+// Background lives on the full-bleed outer element; content is capped by the
+// inner wrapper — same pattern as .hero/.features/.trust/.final-cta above.
+// Previously both lived on one element, so the dark background only spanned
+// 1120px instead of the full viewport width on wide screens.
 .landing-footer {
-  padding: 1.75rem 1.5rem max(1.75rem, env(safe-area-inset-bottom, 0px));
   background: #0D1F3C;
   color: #7EC8B0;
+}
+
+.landing-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem max(1.75rem, env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1120px;
-  margin: 0 auto;
   font-size: 0.85rem;
   font-weight: 700;
 
@@ -401,5 +424,5 @@
 }
 
 @media (max-width: 480px) {
-  .landing-footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+  .landing-footer-inner { flex-direction: column; gap: 0.5rem; text-align: center; }
 }

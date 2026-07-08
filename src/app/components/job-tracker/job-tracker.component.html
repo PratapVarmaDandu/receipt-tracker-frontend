@@ -256,7 +256,7 @@
         <button class="filter-chip" [class.active]="statusFilter === ''" (click)="statusFilter = ''">
           All <span class="chip-count">{{ apps.length }}</span>
         </button>
-        <ng-container *ngFor="let s of ALL_STATUSES">
+        <ng-container *ngFor="let s of visibleStatusFilters">
           <button class="filter-chip"
                   [class.active]="statusFilter === s"
                   [style.--chip-color]="STATUS_COLORS[s]"
@@ -264,6 +264,27 @@
             {{ STATUS_LABELS[s] }}
             <span class="chip-count">{{ summary?.byStatus?.[s] ?? 0 }}</span>
           </button>
+        </ng-container>
+        <button class="filter-chip filter-chip-more"
+                *ngIf="hiddenStatusFilterCount > 0 || showAllStatusFilters"
+                (click)="toggleAllStatusFilters()">
+          <ng-container *ngIf="!showAllStatusFilters">+{{ hiddenStatusFilterCount }} more</ng-container>
+          <ng-container *ngIf="showAllStatusFilters">Show less</ng-container>
+        </button>
+      </div>
+
+      <div class="column-picker">
+        <button class="btn-columns" (click)="toggleColumnPicker()">
+          <i class="bi bi-layout-three-columns"></i> Columns
+        </button>
+        <ng-container *ngIf="showColumnPicker">
+          <div class="dropdown-backdrop" (click)="showColumnPicker = false"></div>
+          <div class="column-picker-dropdown" (click)="$event.stopPropagation()">
+            <label class="column-option" *ngFor="let col of OPTIONAL_COLUMNS">
+              <input type="checkbox" [checked]="visibleColumns[col.key]" (change)="toggleColumn(col.key)">
+              {{ col.label }}
+            </label>
+          </div>
         </ng-container>
       </div>
     </div>
@@ -285,35 +306,35 @@
             <th class="sortable" (click)="sort('appliedDate')">
               Applied <i class="bi" [ngClass]="sortIcon('appliedDate')"></i>
             </th>
-            <th class="sortable" (click)="sort('updatedAt')">
+            <th class="sortable" *ngIf="visibleColumns.updatedAt" (click)="sort('updatedAt')">
               Last Updated <i class="bi" [ngClass]="sortIcon('updatedAt')"></i>
             </th>
-            <th class="sortable" (click)="sort('followUpDate')">
+            <th class="sortable" *ngIf="visibleColumns.followUpDate" (click)="sort('followUpDate')">
               Follow-up <i class="bi" [ngClass]="sortIcon('followUpDate')"></i>
             </th>
-            <th class="sortable" (click)="sort('nextInterviewAt')">
+            <th class="sortable" *ngIf="visibleColumns.nextInterviewAt" (click)="sort('nextInterviewAt')">
               Next Interview <i class="bi" [ngClass]="sortIcon('nextInterviewAt')"></i>
             </th>
-            <th class="sortable" (click)="sort('salaryRange')">
+            <th class="sortable" *ngIf="visibleColumns.salaryRange" (click)="sort('salaryRange')">
               Salary <i class="bi" [ngClass]="sortIcon('salaryRange')"></i>
             </th>
-            <th>Resume</th>
+            <th *ngIf="visibleColumns.resume">Resume</th>
             <th class="col-actions"></th>
           </tr>
         </thead>
         <tbody>
           <tr *ngIf="sorted.length === 0">
-            <td colspan="10" class="no-results">No applications match your filters.</td>
+            <td [attr.colspan]="visibleColumnCount" class="no-results">No applications match your filters.</td>
           </tr>
           <tr *ngFor="let app of sorted; trackBy: trackById"
               class="table-row" (click)="openApp(app.id)">
 
             <td class="cell-company">
-              <span class="company-name">{{ app.companyName }}</span>
-              <span class="location-sub" *ngIf="app.location">{{ app.location }}</span>
+              <span class="company-name" [title]="app.companyName">{{ app.companyName }}</span>
+              <span class="location-sub" *ngIf="app.location" [title]="app.location">{{ app.location }}</span>
             </td>
 
-            <td class="cell-title">{{ app.jobTitle }}</td>
+            <td class="cell-title" [title]="app.jobTitle">{{ app.jobTitle }}</td>
 
             <td class="cell-status">
               <span class="status-pill"
@@ -327,9 +348,9 @@
 
             <td class="cell-date">{{ formatShortDate(app.appliedDate) }}</td>
 
-            <td class="cell-date">{{ formatShortDate(app.updatedAt) }}</td>
+            <td class="cell-date" *ngIf="visibleColumns.updatedAt">{{ formatShortDate(app.updatedAt) }}</td>
 
-            <td class="cell-date" [class.overdue]="app.followUpDue">
+            <td class="cell-date" *ngIf="visibleColumns.followUpDate" [class.overdue]="app.followUpDue">
               <span *ngIf="app.followUpDate">
                 <i class="bi bi-bell" *ngIf="app.followUpDue"></i>
                 {{ formatShortDate(app.followUpDate) }}
@@ -337,7 +358,7 @@
               <span *ngIf="!app.followUpDate" class="muted">—</span>
             </td>
 
-            <td class="cell-date">
+            <td class="cell-date" *ngIf="visibleColumns.nextInterviewAt">
               <span *ngIf="app.nextInterviewAt" class="interview-chip">
                 <i class="bi bi-calendar-event"></i>
                 {{ formatInterviewDate(app.nextInterviewAt) }}
@@ -345,12 +366,12 @@
               <span *ngIf="!app.nextInterviewAt" class="muted">—</span>
             </td>
 
-            <td class="cell-salary">
+            <td class="cell-salary" *ngIf="visibleColumns.salaryRange">
               <span *ngIf="app.salaryRange">{{ app.salaryRange }}</span>
               <span *ngIf="!app.salaryRange" class="muted">—</span>
             </td>
 
-            <td class="cell-resume">
+            <td class="cell-resume" *ngIf="visibleColumns.resume">
               <span class="resume-tag" *ngIf="app.resumeVersion" [title]="app.resumeDocumentTitle || ''">
                 <i class="bi bi-file-earmark-text"></i> {{ app.resumeVersion }}
               </span>

@@ -595,6 +595,73 @@
   &:hover:not(.active) { border-color: var(--text-muted); color: var(--text-primary); }
 }
 
+.filter-chip-more {
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-muted);
+
+  &:hover { border-style: dashed; }
+}
+
+.column-picker {
+  position: relative;
+  margin-left: auto;
+}
+
+.btn-columns {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+
+  &:hover { border-color: var(--text-muted); color: var(--text-primary); }
+}
+
+.dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.column-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 31;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.column-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+
+  &:hover { background: var(--surface); }
+
+  input { cursor: pointer; }
+}
+
 .table-wrapper {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -662,20 +729,36 @@
 }
 
 .cell-company {
+  max-width: 200px;
+
   .company-name {
     display: block;
     font-weight: 600;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .location-sub {
     display: block;
     font-size: 0.75rem;
     color: var(--text-muted);
     margin-top: 0.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-.cell-title { color: var(--text-secondary); }
+// Truncate to a single line so long titles don't wrap and create ragged,
+// uneven row heights — full text is still available via the title attribute.
+.cell-title {
+  color: var(--text-secondary);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .cell-status { white-space: nowrap; }
 
@@ -920,6 +1003,9 @@
   .search-box input { width: 100%; }
   .status-filters { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
   .filter-chip { flex-shrink: 0; }
+  .column-picker { margin-left: 0; width: 100%; }
+  .btn-columns { width: 100%; justify-content: center; }
+  .column-picker-dropdown { left: 0; right: 0; }
 
   .table-wrapper { margin-left: -0.875rem; margin-right: -0.875rem; border-radius: 0; border-left: none; border-right: none; }
 }
