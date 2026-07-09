@@ -1,12 +1,21 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter, take } from 'rxjs/operators';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
+import { App, URLOpenListenerEvent } from '@capacitor/app';
+import { PushNotifications, Token } from '@capacitor/push-notifications';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { AuthService } from './services/auth.service';
 import { FeatureService } from './services/feature.service';
 import { OrganizationService } from './services/organization.service';
+import { PushService } from './services/push.service';
 import { ReferralService } from './services/referral.service';
 import { UiEventsService } from './services/ui-events.service';
+import { LoggerService } from './services/logger.service';
 import { User } from './models/user.model';
+
+const PUSH_TOKEN_STORAGE_KEY = 'pushDeviceToken';
 
 @Component({
   selector: 'app-root',
@@ -21,16 +30,52 @@ export class AppComponent implements OnInit {
   sidebarOpen = false;
   hasPublicShop = false;
 
+  private readonly source = 'AppComponent';
+
   constructor(
     private authService: AuthService,
     public features: FeatureService,
     private orgService: OrganizationService,
+    private pushService: PushService,
     private referralService: ReferralService,
     private router: Router,
-    private uiEvents: UiEventsService
+    private uiEvents: UiEventsService,
+    private logger: LoggerService
   ) {}
 
   ngOnInit(): void {
+    // Native shell only: OAuth2SuccessHandler redirects to this custom URL scheme after a
+    // mobile login (see login.component.ts / MobileAwareOAuth2AuthorizationRequestResolver).
+    // The OS hands control back to the app, closes the in-app browser, and re-checks auth.
+    if (Capacitor.isNativePlatform()) {
+      // By default the WKWebView draws edge-to-edge and the native status bar floats on
+      // top of it, overlapping the app's own fixed header. The existing safe-area CSS
+      // (env(safe-area-inset-top)) is written for mobile Safari's rendering model, not
+      // Capacitor's — so instead push the webview itself below the status bar natively.
+      StatusBar.setOverlaysWebView({ overlay: false })
+        .then(() => this.logger.info(this.source, 'StatusBar.setOverlaysWebView(false) applied'))
+        .catch(err => this.logger.error(this.source, 'StatusBar.setOverlaysWebView failed — plugin may not be linked in this build', err));
+      StatusBar.setStyle({ style: Style.Dark }).catch(err =>
+        this.logger.error(this.source, 'StatusBar.setStyle failed', err));
+
+      App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+        if (event.url.startsWith('receipttracker://auth-callback')) {
+          Browser.close();
+          this.authService.checkAuth().subscribe(() => {
+            this.router.navigate(['/dashboard']);
+          });
+        }
+      });
+
+      // Fires once the OS hands back a device token; forward it to the backend so
+      // JobFollowUpReminderService can push to this device (see push.service.ts).
+      PushNotifications.addListener('registration', (token: Token) => {
+        const platform = Capacitor.getPlatform() === 'ios' ? 'IOS' : 'ANDROID';
+        localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token.value);
+        this.pushService.register(token.value, platform).subscribe();
+      });
+    }
+
     this.authService.currentUser().subscribe(user => {
       this.currentUser = user;
       if (user) {
@@ -40,6 +85,13 @@ export class AppComponent implements OnInit {
         this.orgService.getPublicStores().subscribe(
           stores => { this.hasPublicShop = stores.length > 0; }
         );
+        if (Capacitor.isNativePlatform()) {
+          PushNotifications.requestPermissions().then(result => {
+            if (result.receive === 'granted') {
+              PushNotifications.register();
+            }
+          });
+        }
       } else {
         this.hasPublicShop = false;
       }
@@ -133,8 +185,20 @@ export class AppComponent implements OnInit {
   }
 
   logout(): void {
-    this.authService.logout().subscribe(() => {
-      this.router.navigate(['/login']);
-    });
+    const finishLogout = () => {
+      this.authService.logout().subscribe(() => {
+        this.router.navigate(['/login']);
+      });
+    };
+    // Unregister before invalidating the session — /api/push/register requires auth.
+    const token = Capacitor.isNativePlatform() ? localStorage.getItem(PUSH_TOKEN_STORAGE_KEY) : null;
+    if (token) {
+      this.pushService.unregister(token).subscribe(() => {
+        localStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
+        finishLogout();
+      });
+    } else {
+      finishLogout();
+    }
   }
 }

@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { ReceiptService } from '../../services/receipt.service';
 import { Receipt, STORE_TYPE_LABELS } from '../../models/receipt.model';
 
@@ -80,7 +82,13 @@ export class UploadComponent {
     if (file) this.processFile(file);
   }
 
-  openFilePicker(fileInput: HTMLInputElement, camera: boolean) {
+  async openFilePicker(fileInput: HTMLInputElement, camera: boolean) {
+    // Native app shell: use the Capacitor Camera plugin instead of the HTML file input,
+    // which has no native camera to defer to inside a Capacitor WebView.
+    if (camera && Capacitor.isNativePlatform()) {
+      await this.captureNativePhoto();
+      return;
+    }
     this.useCamera = camera;
     // Set capture attribute dynamically before triggering click
     if (camera) {
@@ -89,6 +97,24 @@ export class UploadComponent {
       fileInput.removeAttribute('capture');
     }
     fileInput.click();
+  }
+
+  private async captureNativePhoto(): Promise<void> {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera,
+        quality: 90
+      });
+      if (!photo.webPath) return;
+      const blob = await (await fetch(photo.webPath)).blob();
+      const ext = photo.format || 'jpeg';
+      const file = new File([blob], `receipt.${ext}`, { type: blob.type || `image/${ext}` });
+      this.processFile(file);
+    } catch {
+      // User cancelled the camera or denied permission — same silent no-op as
+      // dismissing the native file picker on web.
+    }
   }
 
   processFile(file: File) {

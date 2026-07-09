@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { AuthService } from '../../services/auth.service';
 import { ReferralService } from '../../services/referral.service';
 import { environment } from '../../../environments/environment';
@@ -33,6 +35,15 @@ export class LoginComponent implements OnInit {
   }
 
   loginWithGoogle(): void {
-    window.location.href = `${environment.backendUrl}/oauth2/authorization/google`;
+    const url = `${environment.backendUrl}/oauth2/authorization/google`;
+    if (Capacitor.isNativePlatform()) {
+      // Google blocks OAuth consent inside a bare app WebView — use an in-app browser
+      // (SFSafariViewController/Custom Tabs) instead. ?mobile=true tells the backend
+      // to redirect back to the app's custom URL scheme instead of the web dashboard
+      // (see MobileAwareOAuth2AuthorizationRequestResolver / OAuth2SuccessHandler).
+      Browser.open({ url: `${url}?mobile=true` });
+    } else {
+      window.location.href = url;
+    }
   }
 }
