@@ -187,7 +187,7 @@ export class AppComponent implements OnInit {
   logout(): void {
     const finishLogout = () => {
       this.authService.logout().subscribe(() => {
-        this.router.navigate(['/login']);
+        this.router.navigate(['/']);
       });
     };
     // Unregister before invalidating the session — /api/push/register requires auth.

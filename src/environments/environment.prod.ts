@@ -12,12 +12,10 @@ const nrBrowser = {
 export const environment = {
   production: true,
   localDev: false,
-  // Nginx serves both frontend and proxies /api → backend on the same origin
-  apiUrl: '/api',
-  backendUrl: '',
+  apiUrl: 'https://api.secure-steward.com/api',
+  backendUrl: 'https://api.secure-steward.com',
   newrelic: {
     ...nrBrowser,
-    // Automatically enabled when licenseKey and applicationId are filled in
     enabled: !!(nrBrowser.licenseKey && nrBrowser.applicationId)
   }
 };
